@@ -29,9 +29,9 @@ Si vous les avez déjà via Homebrew (`/opt/homebrew/bin`), ils sont réutilisé
 
 ### Option 1 — télécharger l'app compilée
 
-1. Onglet **Actions** du dépôt → dernier build « Build macOS app » → artefact **YT-Downloader-macOS**
+1. Onglet **Actions** du dépôt → dernier build « Build macOS app » → artefact **YT-Downloader-macOS** (contient le `.dmg`)
    (ou page **Releases** si un tag `v*` a été publié).
-2. Dézippez, glissez **YT Downloader.app** dans `/Applications`.
+2. Ouvrez `YT-Downloader.dmg` et glissez **YT Downloader** sur le raccourci **Applications**.
 3. L'app n'est pas notarisée par Apple : au premier lancement, faites **clic droit → Ouvrir**, ou exécutez :
    ```bash
    xattr -cr "/Applications/YT Downloader.app"
@@ -44,7 +44,7 @@ Prérequis : macOS 13 ou plus récent, Xcode (ou les Command Line Tools) install
 ```bash
 git clone https://github.com/powermaxv2/IA_ytb.git
 cd IA_ytb
-./scripts/build_app.sh          # crée dist/YT Downloader.app (universel Apple Silicon + Intel)
+./scripts/build_app.sh          # crée dist/YT-Downloader.dmg et dist/YT Downloader.app (universel)
 open dist
 ```
 

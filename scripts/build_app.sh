@@ -42,5 +42,15 @@ echo "▶︎ Archive zip…"
 rm -f "$DIST/YT-Downloader-macOS.zip"
 ditto -c -k --keepParent "$APP" "$DIST/YT-Downloader-macOS.zip"
 
+echo "▶︎ Image disque .dmg…"
+DMG="$DIST/YT-Downloader.dmg"
+STAGE="$(mktemp -d)"
+cp -R "$APP" "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
+rm -f "$DMG"
+hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+rm -rf "$STAGE"
+
 echo "✅ $APP"
 echo "✅ $DIST/YT-Downloader-macOS.zip"
+echo "✅ $DMG"
