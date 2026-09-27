@@ -111,9 +111,9 @@ final class ToolManager: ObservableObject {
     }
 
     func refresh() {
-        ytdlp = Self.locate("yt-dlp", preferManaged: true).map { .ready($0) } ?? .missing
-        ffmpeg = Self.locate("ffmpeg", preferManaged: false).map { .ready($0) } ?? .missing
-        deno = Self.locate("deno", preferManaged: false).map { .ready($0) } ?? .missing
+        ytdlp = Self.locate("yt-dlp", preferManaged: true).map { ToolStatus.ready($0) } ?? .missing
+        ffmpeg = Self.locate("ffmpeg", preferManaged: false).map { ToolStatus.ready($0) } ?? .missing
+        deno = Self.locate("deno", preferManaged: false).map { ToolStatus.ready($0) } ?? .missing
     }
 
     func installMissing() async {
