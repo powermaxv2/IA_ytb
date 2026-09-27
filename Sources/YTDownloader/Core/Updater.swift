@@ -60,6 +60,8 @@ final class Updater: ObservableObject {
     @Published var notes: String?
     @Published private(set) var log: [String] = []
     @Published var lastCheck: Date?
+    /// Exact commit the available update was read from; the install downloads this commit only.
+    @Published private(set) var pinnedCommit: String?
 
     let currentVersion = AppInfo.version
     private var didAutoCheck = false
@@ -87,12 +89,15 @@ final class Updater: ObservableObject {
         guard !isWorking else { return }
         if !silent { state = .checking }
         do {
-            let version = try await Self.fetchText("VERSION").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !version.isEmpty else { throw UpdateError.message("fichier VERSION vide") }
+            let commit = await Self.latestCommit()
+            let ref = commit ?? AppInfo.branch
+            let version = try await Self.fetchText("VERSION", ref: ref).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !version.isEmpty, version.count < 32 else { throw UpdateError.message("fichier VERSION invalide") }
             latestVersion = version
             lastCheck = Date()
             if SemVer.isNewer(version, than: currentVersion) {
-                notes = (try? await Self.fetchText("RELEASE_NOTES.md")).map(Self.notesSummary)
+                pinnedCommit = commit
+                notes = (try? await Self.fetchText("RELEASE_NOTES.md", ref: ref)).map(Self.notesSummary)
                 state = .available(version)
             } else {
                 state = silent ? .idle : .upToDate
@@ -107,10 +112,28 @@ final class Updater: ObservableObject {
         state = .idle
     }
 
-    /// Reads a file of the repository (GitHub API first, raw CDN as fallback).
-    nonisolated static func fetchText(_ path: String) async throws -> String {
+    /// SHA of the newest commit on the update branch (nil if GitHub's API is unreachable).
+    nonisolated static func latestCommit() async -> String? {
+        let branch = AppInfo.branch.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? AppInfo.branch
+        var request = URLRequest(url: URL(string: "https://api.github.com/repos/\(AppInfo.repo)/commits/\(branch)")!)
+        request.setValue("application/vnd.github.sha", forHTTPHeaderField: "Accept")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 20
+        guard let result = try? await URLSession.shared.data(for: request),
+              (result.1 as? HTTPURLResponse)?.statusCode == 200
+        else { return nil }
+        let sha = String(decoding: result.0, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return isCommitSHA(sha) ? sha : nil
+    }
+
+    nonisolated static func isCommitSHA(_ value: String) -> Bool {
+        value.count == 40 && value.allSatisfy { $0.isHexDigit }
+    }
+
+    /// Reads a file of the repository at `ref` (GitHub API first, raw CDN as fallback).
+    nonisolated static func fetchText(_ path: String, ref: String) async throws -> String {
         var components = URLComponents(string: "https://api.github.com/repos/\(AppInfo.repo)/contents/\(path)")!
-        components.queryItems = [URLQueryItem(name: "ref", value: AppInfo.branch)]
+        components.queryItems = [URLQueryItem(name: "ref", value: ref)]
         var request = URLRequest(url: components.url!)
         request.setValue("application/vnd.github.raw", forHTTPHeaderField: "Accept")
         request.cachePolicy = .reloadIgnoringLocalCacheData
@@ -120,7 +143,7 @@ final class Updater: ObservableObject {
             return String(decoding: result.0, as: UTF8.self)
         }
 
-        let raw = URL(string: "https://raw.githubusercontent.com/\(AppInfo.repo)/\(AppInfo.branch)/\(path)")!
+        let raw = URL(string: "https://raw.githubusercontent.com/\(AppInfo.repo)/\(ref)/\(path)")!
         var fallback = URLRequest(url: raw)
         fallback.cachePolicy = .reloadIgnoringLocalCacheData
         fallback.timeoutInterval = 20
@@ -184,9 +207,18 @@ final class Updater: ObservableObject {
             }
 
             state = .working("Téléchargement de la nouvelle version…")
-            let branch = AppInfo.branch.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? AppInfo.branch
+            // Download exactly the commit that was checked (never a later, unchecked one).
+            let commit: String
+            if let pinned = pinnedCommit {
+                commit = pinned
+            } else if let latest = await Self.latestCommit() {
+                commit = latest
+            } else {
+                throw UpdateError.message("Impossible d'identifier la version sur GitHub. Réessayez dans quelques minutes.")
+            }
+            appendLog("Commit installé : \(commit)")
             let archive = work.appendingPathComponent("source.tar.gz")
-            try await Installer.download(URL(string: "https://codeload.github.com/\(AppInfo.repo)/tar.gz/refs/heads/\(branch)")!, to: archive)
+            try await Installer.download(URL(string: "https://codeload.github.com/\(AppInfo.repo)/tar.gz/\(commit)")!, to: archive)
             let source = work.appendingPathComponent("src", isDirectory: true)
             try fm.createDirectory(at: source, withIntermediateDirectories: true)
             let untar = try await Shell.run(
@@ -194,6 +226,13 @@ final class Updater: ObservableObject {
                 ["-xzf", archive.path, "-C", source.path, "--strip-components", "1"]
             )
             guard untar.status == 0 else { throw UpdateError.message("Archive du code source illisible.") }
+
+            // Refuse a downgrade even if the branch was rolled back after the check.
+            let fetchedVersion = (try? String(contentsOf: source.appendingPathComponent("VERSION"), encoding: .utf8))?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard SemVer.isNewer(fetchedVersion, than: currentVersion) else {
+                throw UpdateError.message("La version téléchargée (\(fetchedVersion)) n'est pas plus récente que la version installée : mise à jour annulée.")
+            }
 
             state = .working("Compilation (1 à 3 minutes)…")
             var environment = AppPaths.processEnvironment

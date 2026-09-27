@@ -29,7 +29,16 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 say "Téléchargement du code source…"
-curl -fsSL "https://codeload.github.com/${REPO}/tar.gz/refs/heads/${BRANCH}" | tar -xz -C "$WORK"
+# Pin the exact commit so what is built is what was resolved (HTTPS only, GitHub only).
+COMMIT="$(curl -fsSL --proto '=https' -H "Accept: application/vnd.github.sha" \
+  "https://api.github.com/repos/${REPO}/commits/${BRANCH}" 2>/dev/null || true)"
+if [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "  Commit : $COMMIT"
+  REF="$COMMIT"
+else
+  REF="refs/heads/${BRANCH}"
+fi
+curl -fsSL --proto '=https' "https://codeload.github.com/${REPO}/tar.gz/${REF}" | tar -xz -C "$WORK"
 SRC="$(find "$WORK" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 [[ -n "$SRC" ]] || fail "Archive du code source introuvable."
 

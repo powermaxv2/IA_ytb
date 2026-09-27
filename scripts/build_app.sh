@@ -119,8 +119,10 @@ else
 fi
 rm -rf "$ICON_WORK"
 
-echo "▶︎ Signature ad-hoc…"
-codesign --force --deep --sign - "$APP"
+echo "▶︎ Signature (hardened runtime)…"
+# Hardened runtime: blocks code injection (DYLD_* variables, unsigned libraries, debugger attach).
+codesign --force --options runtime --sign - "$APP"
+codesign --verify --strict "$APP"
 
 if [[ "${SKIP_PACKAGES:-0}" == "1" ]]; then
   echo "✅ $APP"

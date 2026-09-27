@@ -1,5 +1,13 @@
 # Notes de version
 
+## 1.3.0
+- Sécurité : yt-dlp et Deno sont vérifiés par empreinte SHA-256 officielle avant installation.
+- Contrôle d'intégrité à chaque lancement : un outil modifié est supprimé et réinstallé (alerte affichée).
+- yt-dlp isolé : aucun fichier de configuration ni plugin externe, environnement nettoyé.
+- Mises à jour épinglées sur un commit précis, sans retour possible à une version antérieure.
+- App signée avec le runtime renforcé d'Apple ; seuls les liens https:// sont acceptés.
+- Nouvelle section « Sécurité » dans les Réglages.
+
 ## 1.2.0
 - Mise à jour automatique : l'app vérifie GitHub au lancement et se met à jour en un clic.
 - Section « Mises à jour » dans les Réglages et menu « Rechercher des mises à jour… ».

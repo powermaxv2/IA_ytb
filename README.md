@@ -70,6 +70,24 @@ Menu **YT Downloader → Rechercher des mises à jour…** pour vérifier à la 
 ajouter une section en haut de `RELEASE_NOTES.md`, puis pousser sur la branche
 `claude/youtube-downloader-mac-51ojpa`.
 
+## Sécurité
+
+- **Outils vérifiés** : yt-dlp et Deno sont téléchargés depuis leurs pages GitHub officielles et comparés à
+  l'empreinte SHA-256 publiée avec la même release ; un fichier non conforme est refusé.
+  FFmpeg est vérifié si le site de build publie une empreinte (sinon : HTTPS seul — préférez `brew install ffmpeg`,
+  que l'app utilise en priorité).
+- **Contrôle d'intégrité** : l'empreinte de chaque outil est enregistrée (`manifest.json`) et recontrôlée à chaque
+  lancement ; un fichier modifié est supprimé, réinstallé, et une alerte s'affiche.
+- **yt-dlp isolé** : `--ignore-config`, `--no-plugin-dirs`, environnement réduit (pas de `PYTHONPATH`, `DYLD_*`…),
+  dossier des outils accessible uniquement à votre compte (`chmod 700`).
+- **Entrées** : seuls les liens `http(s)://` sont acceptés.
+- **App** : signée avec le *hardened runtime* d'Apple (pas d'injection de bibliothèques).
+- **Mises à jour** : code téléchargé en HTTPS pour un commit précis, jamais de retour à une version antérieure.
+  La sécurité repose sur votre compte GitHub : activez la validation en deux étapes (2FA) et ne donnez à personne
+  l'accès en écriture au dépôt.
+
+Réglages → **Sécurité** affiche l'état de chaque outil et permet de relancer la vérification.
+
 ## Utilisation
 
 1. Copiez un lien YouTube puis cliquez **Coller** (ou glissez le lien dans la fenêtre).

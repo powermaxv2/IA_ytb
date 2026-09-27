@@ -118,6 +118,8 @@ struct SettingsView: View {
                 Label("Composants", systemImage: "shippingbox")
             }
 
+            SecuritySettingsSection()
+
             UpdateSettingsSection()
 
             if showsDoneButton {

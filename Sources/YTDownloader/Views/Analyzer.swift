@@ -39,6 +39,11 @@ final class Analyzer: ObservableObject {
         let url = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !url.isEmpty, let paths else { return }
         urlText = url
+        // Only plain web links are handed to yt-dlp (no file://, no options, no multi-line input).
+        guard Self.isWebLink(url) else {
+            withAnimation { phase = .failed("Lien invalide : seules les adresses web (https://…) sont acceptées.") }
+            return
+        }
         if clipboardSuggestion == url { clipboardSuggestion = nil }
         task?.cancel()
         phase = .loading
@@ -98,6 +103,16 @@ final class Analyzer: ObservableObject {
               text != urlText
         else { return }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { clipboardSuggestion = text }
+    }
+
+    static func isWebLink(_ text: String) -> Bool {
+        guard text.count < 2048,
+              !text.contains(where: { $0.isWhitespace || $0.isNewline }),
+              let url = URL(string: text),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, !host.isEmpty
+        else { return false }
+        return true
     }
 
     static func isYouTubeLink(_ text: String) -> Bool {

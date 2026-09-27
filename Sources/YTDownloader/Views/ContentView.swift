@@ -16,6 +16,7 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     HeaderView(showSettings: $showSettings)
+                    SecurityAlertBanner()
                     UpdateBanner()
                     ToolsBanner()
                     URLBar(analyzer: analyzer)
