@@ -5,13 +5,17 @@ Application macOS native (SwiftUI) pour télécharger des vidéos YouTube **avec
 ## Fonctionnalités
 
 - **Coller / glisser-déposer** un lien → analyse automatique des qualités disponibles
+- **Détection du presse-papiers** : copiez un lien YouTube, revenez dans l'app, un bandeau propose de l'analyser
+- **Playlists** : liste des vidéos avec cases à cocher, qualité commune, téléchargement en file
 - **Choix de la qualité** sous forme de tuiles : résolution, fps, HDR et taille estimée ; la meilleure qualité est marquée **MAX**
 - **Audio + vidéo fusionnés** automatiquement (YouTube sépare les flux au-delà de 720p)
 - Formats vidéo : **MP4**, **MKV**, ou **MP4 QuickTime** (H.264, lecture native sur Mac)
 - **Audio seul** : M4A (AAC), MP3, Opus (flux d'origine) ou FLAC
 - **File d'attente** avec progression, vitesse, temps restant, annulation et nouvelle tentative
 - Miniature, métadonnées, chapitres et sous-titres intégrés (réglables)
-- Notification à la fin d'un téléchargement, bouton « Afficher dans le Finder »
+- Notification à la fin d'un téléchargement, badge sur l'icône du Dock, bouton « Afficher dans le Finder »
+- **Cookies du navigateur** (Safari, Chrome, Firefox, Brave, Edge, Arc) pour les vidéos avec limite d'âge
+  ou quand YouTube demande « confirm you're not a bot »
 - Interface sombre moderne, fenêtre sans barre de titre
 
 Au premier lancement, l'app installe elle-même ses composants dans
@@ -25,31 +29,33 @@ Au premier lancement, l'app installe elle-même ses composants dans
 
 Si vous les avez déjà via Homebrew (`/opt/homebrew/bin`), ils sont réutilisés.
 
-## Installation
+## Installation (la plus simple)
 
-### Option 1 — télécharger l'app compilée
-
-1. Onglet **Actions** du dépôt → dernier build « Build macOS app » → artefact **YT-Downloader-macOS** (contient le `.dmg`)
-   (ou page **Releases** si un tag `v*` a été publié).
-2. Ouvrez `YT-Downloader.dmg` et glissez **YT Downloader** sur le raccourci **Applications**.
-3. L'app n'est pas notarisée par Apple : au premier lancement, faites **clic droit → Ouvrir**, ou exécutez :
-   ```bash
-   xattr -cr "/Applications/YT Downloader.app"
-   ```
-
-### Option 2 — compiler vous-même
-
-Prérequis : macOS 13 ou plus récent, Xcode (ou les Command Line Tools) installé.
+Ouvrez **Terminal** (⌘ Espace → tapez « Terminal » → Entrée), collez cette ligne puis appuyez sur Entrée :
 
 ```bash
-git clone https://github.com/powermaxv2/IA_ytb.git
-cd IA_ytb
-./scripts/build_app.sh          # crée dist/YT-Downloader.dmg et dist/YT Downloader.app (universel)
-open dist
+curl -fsSL https://raw.githubusercontent.com/powermaxv2/IA_ytb/claude/youtube-downloader-mac-51ojpa/install.sh | bash
 ```
 
-Pour compiler uniquement pour votre Mac : `ARCHS=arm64 ./scripts/build_app.sh`.
-Pour lancer en développement : `swift run` (les notifications sont désactivées hors bundle .app).
+Le script télécharge le code, compile l'app **sur votre Mac**, l'installe dans **Applications**, la lance,
+et dépose aussi `YT-Downloader.dmg` dans **Téléchargements** (pour l'installer sur un autre Mac).
+
+- La première fois, macOS peut ouvrir une fenêtre « Installer les outils de développement » :
+  cliquez **Installer**, attendez la fin, puis **relancez la même commande**.
+- Compilée localement, l'app n'affiche pas d'alerte Gatekeeper.
+
+### Autres options
+
+- **Compiler à la main** (macOS 13+, Xcode ou Command Line Tools) :
+  ```bash
+  git clone -b claude/youtube-downloader-mac-51ojpa https://github.com/powermaxv2/IA_ytb.git
+  cd IA_ytb
+  ARCHS=native ./scripts/build_app.sh   # ou sans ARCHS pour un binaire universel (nécessite Xcode)
+  open dist                             # YT-Downloader.dmg + YT Downloader.app
+  ```
+- **GitHub Actions** : le workflow « Build macOS app » produit le `.dmg` en artefact
+  (et en Release pour un tag `v*`). L'app téléchargée ainsi n'est pas notarisée :
+  premier lancement par **clic droit → Ouvrir**, ou `xattr -cr "/Applications/YT Downloader.app"`.
 
 ## Utilisation
 

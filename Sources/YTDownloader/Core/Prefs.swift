@@ -11,6 +11,7 @@ enum Prefs {
     static let subtitleLangs = "subtitleLangs"
     static let notify = "notifyOnFinish"
     static let maxConcurrent = "maxConcurrent"
+    static let cookiesBrowser = "cookiesBrowser"
 
     static var defaultFolder: String {
         FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first?.path
@@ -29,6 +30,7 @@ enum Prefs {
             subtitleLangs: "fr,en",
             notify: true,
             maxConcurrent: 3,
+            cookiesBrowser: "",
         ])
     }
 

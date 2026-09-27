@@ -138,6 +138,134 @@ struct VideoInfo: Decodable, Sendable {
     }
 }
 
+// MARK: - Playlists
+
+struct PlaylistEntry: Identifiable, Hashable, Sendable {
+    let id: String
+    let title: String
+    let url: String
+    let duration: Double?
+    let thumbnail: URL?
+
+    /// Private / deleted videos still appear in playlists but cannot be downloaded.
+    var isUnavailable: Bool {
+        let t = title.lowercased()
+        return t == "[private video]" || t == "[deleted video]" || t == "[unavailable video]"
+    }
+}
+
+struct PlaylistInfo: Decodable, Sendable {
+    let id: String
+    let title: String
+    let uploader: String?
+    let entries: [PlaylistEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, uploader, channel, entries
+    }
+
+    private struct RawEntry: Decodable {
+        let id: String?
+        let title: String?
+        let url: String?
+        let duration: Double?
+        let type: String?
+        let ieKey: String?
+        let thumbnail: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id, title, url, duration, thumbnails
+            case type = "_type"
+            case ieKey = "ie_key"
+        }
+
+        private struct Thumb: Decodable { let url: String? }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = c.lenientString(.id)
+            title = c.lenientString(.title)
+            url = c.lenientString(.url)
+            duration = c.lenientDouble(.duration)
+            type = c.lenientString(.type)
+            ieKey = c.lenientString(.ieKey)
+            let thumbs = (try? c.decodeIfPresent([Thumb].self, forKey: .thumbnails)) ?? []
+            thumbnail = thumbs.last?.url
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = c.lenientString(.id) ?? ""
+        title = c.lenientString(.title) ?? "Playlist"
+        uploader = c.lenientString(.channel) ?? c.lenientString(.uploader)
+        let raw = (try? c.decodeIfPresent([RawEntry?].self, forKey: .entries)) ?? []
+        var seen = Set<String>()
+        entries = raw.compactMap { entry -> PlaylistEntry? in
+            // Skip nested playlists (e.g. channel tabs): only single videos are listed.
+            guard let entry, entry.type != "playlist", entry.ieKey != "YoutubeTab" else { return nil }
+            guard let id = entry.id ?? entry.url, !seen.contains(id) else { return nil }
+            seen.insert(id)
+            let isYouTube = entry.ieKey == "Youtube"
+            let url = entry.url ?? (isYouTube ? "https://www.youtube.com/watch?v=\(id)" : id)
+            var thumbnail = entry.thumbnail.flatMap(URL.init(string:))
+            if isYouTube, let id = entry.id {
+                thumbnail = URL(string: "https://i.ytimg.com/vi/\(id)/mqdefault.jpg")
+            }
+            return PlaylistEntry(id: id, title: entry.title ?? url, url: url, duration: entry.duration, thumbnail: thumbnail)
+        }
+    }
+}
+
+enum MediaInfo: Sendable {
+    case video(VideoInfo)
+    case playlist(PlaylistInfo)
+}
+
+/// Fixed quality ladder used for playlists (formats are not known per video in advance).
+struct PlaylistQuality: Identifiable, Hashable {
+    let height: Int?
+    var id: Int { height ?? 0 }
+
+    static let ladder: [PlaylistQuality] = {
+        let heights: [Int?] = [nil, 2160, 1440, 1080, 720, 480, 360]
+        return heights.map { PlaylistQuality(height: $0) }
+    }()
+
+    var title: String { height.map { "\($0)p" } ?? "Max" }
+
+    var badge: String {
+        guard let height else { return "MAX" }
+        switch height {
+        case 2160...: return "4K"
+        case 1440...: return "2K"
+        case 1080...: return "Full HD"
+        case 720...: return "HD"
+        default: return "SD"
+        }
+    }
+
+    var detail: String { height == nil ? "Meilleure qualité de chaque vidéo" : "Ou la meilleure en dessous" }
+    var summaryLabel: String { height.map { "≤ \($0)p" } ?? "Max" }
+}
+
+enum CookieBrowser: String, CaseIterable, Identifiable {
+    case off = "", safari, chrome, firefox, brave, edge, arc
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .off: return "Aucun"
+        case .safari: return "Safari"
+        case .chrome: return "Chrome"
+        case .firefox: return "Firefox"
+        case .brave: return "Brave"
+        case .edge: return "Edge"
+        case .arc: return "Arc"
+        }
+    }
+}
+
 struct QualityOption: Identifiable, Hashable, Sendable {
     /// Value used in the yt-dlp `height<=` filter.
     let height: Int
@@ -248,6 +376,32 @@ struct DownloadRequest: Sendable {
     let subtitles: Bool
     let subtitleLangs: String
 
+    /// Builds a request using the options saved in the preferences.
+    static func fromPreferences(
+        url: String,
+        mode: MediaMode,
+        height: Int?,
+        qualityLabel: String,
+        container: VideoContainer,
+        audioFormat: AudioFormat
+    ) -> DownloadRequest {
+        let d = UserDefaults.standard
+        return DownloadRequest(
+            url: url,
+            mode: mode,
+            height: height,
+            qualityLabel: qualityLabel,
+            container: container,
+            audioFormat: audioFormat,
+            folder: Prefs.currentFolder,
+            embedThumbnail: d.bool(forKey: Prefs.embedThumbnail),
+            embedMetadata: d.bool(forKey: Prefs.embedMetadata),
+            embedChapters: d.bool(forKey: Prefs.embedChapters),
+            subtitles: d.bool(forKey: Prefs.subtitles),
+            subtitleLangs: d.string(forKey: Prefs.subtitleLangs) ?? "fr,en"
+        )
+    }
+
     var summary: String {
         switch mode {
         case .video: return "\(qualityLabel) · \(container.title)"
@@ -255,8 +409,8 @@ struct DownloadRequest: Sendable {
         }
     }
 
-    func arguments(ffmpegPath: String?) -> [String] {
-        var args: [String] = [
+    func arguments(paths: ToolPaths) -> [String] {
+        var args: [String] = paths.commonArguments + [
             "--newline", "--progress", "--no-colors", "--no-playlist", "--no-mtime", "--no-simulate",
             "--concurrent-fragments", "4",
             "--progress-template",
@@ -293,7 +447,7 @@ struct DownloadRequest: Sendable {
 
         if embedMetadata { args.append("--embed-metadata") }
         if embedThumbnail { args.append("--embed-thumbnail") }
-        if let ffmpegPath { args += ["--ffmpeg-location", ffmpegPath] }
+        if let ffmpeg = paths.ffmpeg { args += ["--ffmpeg-location", ffmpeg] }
         args += ["-P", folder, "--", url]
         return args
     }

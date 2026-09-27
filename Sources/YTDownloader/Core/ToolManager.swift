@@ -39,6 +39,8 @@ struct ToolPaths: Sendable {
     let ytdlp: String
     let ffmpeg: String?
     let environment: [String: String]
+    /// Options shared by every yt-dlp call (e.g. browser cookies).
+    let commonArguments: [String]
 }
 
 enum ToolError: LocalizedError {
@@ -100,7 +102,10 @@ final class ToolManager: ObservableObject {
 
     var paths: ToolPaths? {
         guard let y = ytdlp.path else { return nil }
-        return ToolPaths(ytdlp: y, ffmpeg: ffmpeg.path, environment: AppPaths.processEnvironment)
+        var common: [String] = []
+        let browser = UserDefaults.standard.string(forKey: Prefs.cookiesBrowser) ?? ""
+        if !browser.isEmpty { common += ["--cookies-from-browser", browser] }
+        return ToolPaths(ytdlp: y, ffmpeg: ffmpeg.path, environment: AppPaths.processEnvironment, commonArguments: common)
     }
 
     func bootstrap() async {

@@ -7,14 +7,17 @@ APP_NAME="YT Downloader"
 EXEC="YTDownloader"
 DIST="dist"
 APP="$DIST/$APP_NAME.app"
+# ARCHS="arm64 x86_64" (universal, needs Xcode) or ARCHS=native (this Mac only, Command Line Tools suffice)
 ARCHS="${ARCHS:-arm64 x86_64}"
 
 ARCH_FLAGS=()
-for a in $ARCHS; do ARCH_FLAGS+=(--arch "$a"); done
+if [[ "$ARCHS" != "native" ]]; then
+  for a in $ARCHS; do ARCH_FLAGS+=(--arch "$a"); done
+fi
 
 echo "▶︎ Compilation (${ARCHS})…"
-swift build -c release "${ARCH_FLAGS[@]}"
-BIN_DIR="$(swift build -c release "${ARCH_FLAGS[@]}" --show-bin-path)"
+swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN_DIR="$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 echo "▶︎ Création du bundle…"
 rm -rf "$APP"

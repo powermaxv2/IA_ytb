@@ -141,10 +141,10 @@ final class StreamingProcess: @unchecked Sendable {
             }
             ProcessRegistry.shared.add(self)
 
-            let process = self.process
+            let runningProcess = self.process
             group.notify(queue: .global()) {
                 ProcessRegistry.shared.remove(self)
-                continuation.yield(.exit(process.terminationStatus))
+                continuation.yield(.exit(runningProcess.terminationStatus))
                 continuation.finish()
             }
         }

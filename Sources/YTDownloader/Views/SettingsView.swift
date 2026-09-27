@@ -15,8 +15,16 @@ struct SettingsView: View {
     @AppStorage(Prefs.subtitleLangs) private var subtitleLangs = "fr,en"
     @AppStorage(Prefs.notify) private var notify = true
     @AppStorage(Prefs.maxConcurrent) private var maxConcurrent = 3
+    @AppStorage(Prefs.cookiesBrowser) private var cookiesBrowser: CookieBrowser = .off
 
     var body: some View {
+        ScrollView {
+            content
+        }
+        .frame(width: 580, height: 640)
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Réglages")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
@@ -50,6 +58,16 @@ struct SettingsView: View {
                     }
                     Toggle("Notification à la fin d'un téléchargement", isOn: $notify)
                     Stepper("Téléchargements simultanés : \(maxConcurrent)", value: $maxConcurrent, in: 1...6)
+                    Divider()
+                    Picker("Cookies du navigateur", selection: $cookiesBrowser) {
+                        ForEach(CookieBrowser.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 320)
+                    Text("Utile pour les vidéos avec limite d'âge ou si YouTube demande une vérification « not a bot » : l'app utilise votre session YouTube du navigateur choisi. Pour Safari, autorisez « Accès complet au disque » à YT Downloader (Réglages Système → Confidentialité).")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(6)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -109,7 +127,6 @@ struct SettingsView: View {
             }
         }
         .padding(24)
-        .frame(width: 560)
     }
 
     private func chooseFolder() {

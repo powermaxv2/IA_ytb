@@ -8,11 +8,6 @@ struct VideoCard: View {
 
     @AppStorage(Prefs.container) private var container: VideoContainer = .mp4
     @AppStorage(Prefs.audioFormat) private var audioFormat: AudioFormat = .m4a
-    @AppStorage(Prefs.embedThumbnail) private var embedThumbnail = true
-    @AppStorage(Prefs.embedMetadata) private var embedMetadata = true
-    @AppStorage(Prefs.embedChapters) private var embedChapters = true
-    @AppStorage(Prefs.subtitles) private var subtitles = false
-    @AppStorage(Prefs.subtitleLangs) private var subtitleLangs = "fr,en"
 
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 10)]
 
@@ -177,19 +172,13 @@ struct VideoCard: View {
     private func startDownload() {
         guard let paths = tools.paths else { return }
         let option = selectedOption
-        let request = DownloadRequest(
+        let request = DownloadRequest.fromPreferences(
             url: info.webpageURL ?? analyzer.urlText,
             mode: analyzer.mode,
             height: option?.height,
             qualityLabel: option.map { "\($0.label) (\($0.badge))" } ?? "Meilleure",
             container: container,
-            audioFormat: audioFormat,
-            folder: Prefs.currentFolder,
-            embedThumbnail: embedThumbnail,
-            embedMetadata: embedMetadata,
-            embedChapters: embedChapters,
-            subtitles: subtitles,
-            subtitleLangs: subtitleLangs
+            audioFormat: audioFormat
         )
         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
             downloads.enqueue(request, title: info.title, thumbnail: info.thumbnailURL, paths: paths)

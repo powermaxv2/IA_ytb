@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 struct ContentView: View {
@@ -16,6 +17,14 @@ struct ContentView: View {
                     HeaderView(showSettings: $showSettings)
                     ToolsBanner()
                     URLBar(analyzer: analyzer)
+                    if let suggestion = analyzer.clipboardSuggestion {
+                        ClipboardBanner(link: suggestion) {
+                            analyzer.useSuggestion(with: tools.paths)
+                        } dismiss: {
+                            withAnimation { analyzer.clipboardSuggestion = nil }
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
                     mainCard
                     DownloadsSection()
                 }
@@ -41,6 +50,10 @@ struct ContentView: View {
             analyzer.analyze(with: tools.paths)
             return true
         } isTargeted: { dropTargeted = $0 }
+        .onAppear { analyzer.checkClipboard() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            analyzer.checkClipboard()
+        }
         .sheet(isPresented: $showSettings) {
             SettingsView(showsDoneButton: true)
                 .environmentObject(tools)
@@ -60,8 +73,11 @@ struct ContentView: View {
         case .failed(let message):
             ErrorCard(message: message) { analyzer.analyze(with: tools.paths) }
                 .transition(.opacity)
-        case .loaded(let info):
+        case .video(let info):
             VideoCard(info: info, analyzer: analyzer)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        case .playlist(let playlist):
+            PlaylistCard(playlist: playlist, analyzer: analyzer)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -179,6 +195,40 @@ struct URLBar: View {
     }
 }
 
+// MARK: - Clipboard suggestion
+
+struct ClipboardBanner: View {
+    let link: String
+    let analyze: () -> Void
+    let dismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "doc.on.clipboard.fill")
+                .foregroundStyle(Theme.gradient)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Lien YouTube détecté dans le presse-papiers")
+                    .font(.system(size: 12.5, weight: .semibold))
+                Text(link)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer()
+            Button("Analyser", action: analyze)
+                .buttonStyle(PrimaryButtonStyle())
+            Button(action: dismiss) { Image(systemName: "xmark") }
+                .buttonStyle(IconButtonStyle(size: 28))
+                .help("Ignorer")
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.accent.opacity(0.12)))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.accent.opacity(0.35), lineWidth: 1))
+    }
+}
+
 // MARK: - Placeholder cards
 
 struct EmptyStateView: View {
@@ -190,7 +240,7 @@ struct EmptyStateView: View {
                     .font(.system(size: 30))
                     .foregroundStyle(Theme.gradient)
             }
-            Text("Collez un lien ou glissez-le dans la fenêtre")
+            Text("Collez un lien de vidéo ou de playlist, ou glissez-le dans la fenêtre")
                 .font(.system(size: 15, weight: .semibold))
             Text("Choisissez ensuite la qualité : de 144p jusqu'au maximum disponible (4K, 8K, HDR, 60 fps).")
                 .font(.system(size: 12.5))
@@ -200,7 +250,7 @@ struct EmptyStateView: View {
                 FeaturePill(icon: "sparkles.tv", text: "Jusqu'en 8K")
                 FeaturePill(icon: "speaker.wave.2.fill", text: "Son inclus")
                 FeaturePill(icon: "music.note", text: "MP3 · M4A · FLAC")
-                FeaturePill(icon: "square.stack.3d.down.right", text: "File d'attente")
+                FeaturePill(icon: "list.bullet.rectangle", text: "Playlists")
             }
             .padding(.top, 4)
         }

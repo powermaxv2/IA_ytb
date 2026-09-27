@@ -115,6 +115,7 @@ final class DownloadItem: ObservableObject, Identifiable {
         state = .downloading
         var pieces: [String] = ["\(Int(progress * 100)) %"]
         if expected == 2 { pieces.append(phase == 0 ? "vidéo" : "audio") }
+        if let total, total > 0 { pieces.append("\(Fmt.bytes(downloaded)) / \(Fmt.bytes(total))") }
         if let speed, speed > 0 { pieces.append("\(Fmt.bytes(speed))/s") }
         if let eta, eta > 0 { pieces.append("reste \(Fmt.duration(eta))") }
         statusText = pieces.joined(separator: " · ")
@@ -193,6 +194,13 @@ final class DownloadManager: ObservableObject {
         while activeCount < limit, let next = items.last(where: { $0.state == .queued }) {
             start(next)
         }
+        updateDockBadge()
+    }
+
+    /// Shows the number of pending downloads on the Dock icon.
+    private func updateDockBadge() {
+        let pending = items.filter { $0.isActive || $0.state == .queued }.count
+        NSApp?.dockTile.badgeLabel = pending > 0 ? "\(pending)" : nil
     }
 
     private func start(_ item: DownloadItem) {
@@ -204,7 +212,7 @@ final class DownloadManager: ObservableObject {
         item.process = process
         let stream = process.run(
             executable: item.paths.ytdlp,
-            arguments: item.request.arguments(ffmpegPath: item.paths.ffmpeg),
+            arguments: item.request.arguments(paths: item.paths),
             environment: item.paths.environment
         )
         Task { [weak self] in
