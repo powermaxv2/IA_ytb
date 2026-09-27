@@ -56,7 +56,7 @@ enum IntegrityError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .mismatch(let name):
-            return "l'empreinte de \(name) ne correspond pas à celle publiée officiellement : fichier refusé"
+            return "l'empreinte de \(name) ne correspond pas à l'empreinte officielle attendue : fichier refusé"
         case .missingChecksum(let name):
             return "empreinte officielle de \(name) introuvable : fichier refusé"
         }

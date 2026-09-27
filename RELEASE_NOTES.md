@@ -1,5 +1,9 @@
 # Notes de version
 
+## 1.3.1
+- FFmpeg est désormais vérifié : version 6.1.1 figée, empreinte SHA-256 inscrite dans l'app.
+- Un FFmpeg installé sans vérification par une version précédente est automatiquement remplacé.
+
 ## 1.3.0
 - Sécurité : yt-dlp et Deno sont vérifiés par empreinte SHA-256 officielle avant installation.
 - Contrôle d'intégrité à chaque lancement : un outil modifié est supprimé et réinstallé (alerte affichée).

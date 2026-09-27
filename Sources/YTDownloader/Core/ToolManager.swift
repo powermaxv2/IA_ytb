@@ -208,6 +208,12 @@ final class ToolManager: ObservableObject {
                 try? fm.removeItem(at: file)
                 continue
             }
+            if !entry.verified {
+                // Installed without an official checksum (older versions): replace with a verified copy.
+                try? fm.removeItem(at: file)
+                manifest.entries[name] = nil
+                continue
+            }
             let hash = try? await Integrity.sha256Async(of: file)
             if hash != entry.sha256 {
                 try? fm.removeItem(at: file)
@@ -268,25 +274,43 @@ final class ToolManager: ObservableObject {
         }
     }
 
+    /// FFmpeg build pinned to a fixed release: the SHA-256 of each archive is written in this
+    /// source code, so a file changed on the server (or in transit) is always refused.
+    /// Builds: evermeet.cx (Intel) and osxexperts.net (Apple Silicon), FFmpeg 6.1.1, mirrored on
+    /// github.com/eugeneware/ffmpeg-static (release b6.1.1). Self-contained (system frameworks only).
+    private enum PinnedFFmpeg {
+        static let release = "b6.1.1"
+        static let base = "https://github.com/eugeneware/ffmpeg-static/releases/download/\(release)/"
+        static let sha256: [String: String] = [
+            "ffmpeg-darwin-arm64.gz": "8923876afa8db5585022d7860ec7e589af192f441c56793971276d450ed3bbfa",
+            "ffprobe-darwin-arm64.gz": "d986a8ec7b030899fe66a8a288ed809a3543338705a3ce178cfb85869c5d80be",
+            "ffmpeg-darwin-x64.gz": "929b375c1182d956c51f7ac25e0b2b0411fb01f6f407aa15c9758efeb4242106",
+            "ffprobe-darwin-x64.gz": "d4da574d6e2e197bd259b47d69cf262df9e312af24ad960444f6d806d3d4c186",
+        ]
+        static let source = "FFmpeg 6.1.1, empreinte intégrée à l'app"
+    }
+
     private func installFFmpeg() async {
         ffmpeg = .installing("Téléchargement de FFmpeg…")
         #if arch(arm64)
         let arch = "arm64"
         #else
-        let arch = "amd64"
+        let arch = "x64"
         #endif
         do {
             for name in ["ffmpeg", "ffprobe"] {
-                let url = URL(string: "https://ffmpeg.martin-riedl.de/redirect/latest/macos/\(arch)/release/\(name).zip")!
-                // The build site may publish a .sha256 next to the archive: use it when present.
-                let checksumText = try? await Installer.fetchText(URL(string: url.absoluteString + ".sha256")!)
-                let expected = checksumText.flatMap { Integrity.checksum(in: $0, for: nil) }
-                try await Installer.installZip(url, binary: name, sha256: expected)
-                await record(name, source: "ffmpeg.martin-riedl.de", verified: expected != nil)
+                let asset = "\(name)-darwin-\(arch).gz"
+                guard let expected = PinnedFFmpeg.sha256[asset] else { throw IntegrityError.missingChecksum(name) }
+                try await Installer.installGzip(
+                    URL(string: PinnedFFmpeg.base + asset)!,
+                    binary: name,
+                    sha256: expected
+                )
+                await record(name, source: PinnedFFmpeg.source, verified: true)
             }
             ffmpeg = .ready(AppPaths.bin.appendingPathComponent("ffmpeg").path)
         } catch {
-            ffmpeg = .failed("\(error.localizedDescription) — installez-le avec « brew install ffmpeg »")
+            ffmpeg = .failed("\(error.localizedDescription) — ou installez-le avec « brew install ffmpeg »")
         }
     }
 
@@ -407,6 +431,25 @@ enum Installer {
         let dest = AppPaths.bin.appendingPathComponent(binary)
         if fm.fileExists(atPath: dest.path) { try fm.removeItem(at: dest) }
         try fm.moveItem(at: found, to: dest)
+        try await makeExecutable(dest)
+    }
+
+    /// Downloads a .gz single-file archive, checks its SHA-256, then installs the decompressed binary.
+    static func installGzip(_ url: URL, binary: String, sha256 expected: String) async throws {
+        let fm = FileManager.default
+        let work = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fm.createDirectory(at: work, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: work) }
+
+        let archive = work.appendingPathComponent("\(binary).gz")
+        try await downloadVerified(url, to: archive, sha256: expected, name: binary)
+        let result = try await Shell.run(URL(fileURLWithPath: "/usr/bin/gunzip"), ["-f", archive.path])
+        let extracted = work.appendingPathComponent(binary)
+        guard result.status == 0, fm.fileExists(atPath: extracted.path) else { throw ToolError.unzip }
+
+        let dest = AppPaths.bin.appendingPathComponent(binary)
+        if fm.fileExists(atPath: dest.path) { try fm.removeItem(at: dest) }
+        try fm.moveItem(at: extracted, to: dest)
         try await makeExecutable(dest)
     }
 

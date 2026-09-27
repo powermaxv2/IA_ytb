@@ -26,9 +26,7 @@ jobs:
         run: |
           for u in \
             https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos \
-            https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffmpeg.zip \
-            https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffprobe.zip \
-            https://ffmpeg.martin-riedl.de/redirect/latest/macos/amd64/release/ffmpeg.zip \
+            https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-darwin-arm64.gz \
             https://github.com/denoland/deno/releases/latest/download/deno-aarch64-apple-darwin.zip ; do
             code=$(curl -sSL -o /dev/null -r 0-0 -w '%{http_code}' "$u")
             echo "$code  $u"

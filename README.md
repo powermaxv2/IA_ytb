@@ -24,7 +24,7 @@ Au premier lancement, l'app installe elle-même ses composants dans
 | Outil | Rôle |
 |---|---|
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | moteur de téléchargement |
-| FFmpeg / ffprobe | fusion audio + vidéo, conversion audio |
+| FFmpeg / ffprobe 6.1.1 | fusion audio + vidéo, conversion audio (empreinte vérifiée) |
 | [Deno](https://deno.com) | environnement JavaScript requis par yt-dlp pour débloquer toutes les qualités YouTube |
 
 Si vous les avez déjà via Homebrew (`/opt/homebrew/bin`), ils sont réutilisés.
@@ -74,8 +74,9 @@ ajouter une section en haut de `RELEASE_NOTES.md`, puis pousser sur la branche
 
 - **Outils vérifiés** : yt-dlp et Deno sont téléchargés depuis leurs pages GitHub officielles et comparés à
   l'empreinte SHA-256 publiée avec la même release ; un fichier non conforme est refusé.
-  FFmpeg est vérifié si le site de build publie une empreinte (sinon : HTTPS seul — préférez `brew install ffmpeg`,
-  que l'app utilise en priorité).
+  FFmpeg 6.1.1 (builds evermeet.cx / osxexperts.net, miroir GitHub `eugeneware/ffmpeg-static`) est vérifié
+  contre une empreinte SHA-256 **inscrite dans le code de l'app** : tout fichier modifié est refusé.
+  Un FFmpeg installé via Homebrew est utilisé en priorité s'il existe.
 - **Contrôle d'intégrité** : l'empreinte de chaque outil est enregistrée (`manifest.json`) et recontrôlée à chaque
   lancement ; un fichier modifié est supprimé, réinstallé, et une alerte s'affiche.
 - **yt-dlp isolé** : `--ignore-config`, `--no-plugin-dirs`, environnement réduit (pas de `PYTHONPATH`, `DYLD_*`…),
