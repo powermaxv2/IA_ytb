@@ -14,7 +14,50 @@ MIN_MACOS="13.0"
 
 # Compiles with swiftc directly (no SwiftPM): works even when the
 # Command Line Tools' swift-package is broken (dyld "Symbol not found").
-SDK="$(xcrun --sdk macosx --show-sdk-path)"
+# Pick an SDK the installed compiler can actually use (some Command Line Tools
+# installs ship a newer SDK than their compiler: "this SDK is not supported").
+pick_sdk() {
+  local probe candidates=() seen="" sdk real
+  probe="$(mktemp -d)"
+  printf 'import SwiftUI\nimport AppKit\nimport UserNotifications\n' > "$probe/probe.swift"
+  candidates+=("${SDKROOT:-}")
+  candidates+=("$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)")
+  while IFS= read -r sdk; do candidates+=("$sdk"); done < <(
+    ls -d /Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk \
+          /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk 2>/dev/null \
+      | sort -r -V
+  )
+  for sdk in "${candidates[@]}"; do
+    [[ -n "$sdk" && -d "$sdk" ]] || continue
+    real="$(cd "$sdk" && pwd -P)"
+    [[ "$seen" == *"|$real|"* ]] && continue
+    seen="$seen|$real|"
+    if xcrun swiftc -typecheck -sdk "$sdk" -target "$(uname -m)-apple-macos${MIN_MACOS}" "$probe/probe.swift" >/dev/null 2>&1; then
+      rm -rf "$probe"
+      echo "$sdk"
+      return 0
+    fi
+    echo "  SDK incompatible avec ce compilateur : $(basename "$sdk")" >&2
+  done
+  rm -rf "$probe"
+  return 1
+}
+
+echo "▶︎ Recherche d'un SDK compatible…"
+if ! SDK="$(pick_sdk)"; then
+  cat >&2 <<'MSG'
+
+✖ Aucun SDK macOS n'est compatible avec le compilateur Swift installé.
+  Les « Command Line Tools » d'Apple sont dans un état incohérent. Réinstallez-les :
+
+    sudo rm -rf /Library/Developer/CommandLineTools
+    xcode-select --install
+
+  (cliquez « Installer », attendez la fin, puis relancez la commande d'installation)
+MSG
+  exit 1
+fi
+echo "  SDK utilisé : $SDK"
 SOURCES=()
 while IFS= read -r f; do SOURCES+=("$f"); done < <(find Sources/YTDownloader -name '*.swift' | sort)
 
