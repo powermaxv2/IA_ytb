@@ -36,6 +36,7 @@ struct YTDownloaderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var tools = ToolManager()
     @StateObject private var downloads = DownloadManager()
+    @StateObject private var updater = Updater()
 
     init() {
         Prefs.register()
@@ -46,19 +47,28 @@ struct YTDownloaderApp: App {
             ContentView()
                 .environmentObject(tools)
                 .environmentObject(downloads)
+                .environmentObject(updater)
                 .frame(minWidth: 760, minHeight: 640)
                 .task { await tools.bootstrap() }
+                .task { await updater.autoCheck() }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 900, height: 780)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .appInfo) {
+                Button("Rechercher des mises à jour…") {
+                    Task { await updater.check() }
+                }
+                .disabled(updater.isWorking)
+            }
         }
 
         Settings {
             SettingsView()
                 .environmentObject(tools)
                 .environmentObject(downloads)
+                .environmentObject(updater)
                 .preferredColorScheme(.dark)
         }
     }

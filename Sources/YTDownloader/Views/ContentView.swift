@@ -5,6 +5,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var tools: ToolManager
     @EnvironmentObject private var downloads: DownloadManager
+    @EnvironmentObject private var updater: Updater
     @StateObject private var analyzer = Analyzer()
     @State private var showSettings = false
     @State private var dropTargeted = false
@@ -15,6 +16,7 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     HeaderView(showSettings: $showSettings)
+                    UpdateBanner()
                     ToolsBanner()
                     URLBar(analyzer: analyzer)
                     if let suggestion = analyzer.clipboardSuggestion {
@@ -35,6 +37,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: updater.state)
         .preferredColorScheme(.dark)
         .overlay {
             if dropTargeted {
@@ -58,6 +61,7 @@ struct ContentView: View {
             SettingsView(showsDoneButton: true)
                 .environmentObject(tools)
                 .environmentObject(downloads)
+                .environmentObject(updater)
         }
     }
 

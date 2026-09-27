@@ -35,7 +35,7 @@ SRC="$(find "$WORK" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 
 say "Compilation (1 à 3 minutes)…"
 cd "$SRC"
-ARCHS=native ./scripts/build_app.sh
+ARCHS=native UPDATE_BRANCH="$BRANCH" ./scripts/build_app.sh
 
 say "Installation dans Applications…"
 DEST="/Applications"

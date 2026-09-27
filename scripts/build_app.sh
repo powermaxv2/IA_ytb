@@ -91,6 +91,17 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/$EXEC" "$APP/Contents/MacOS/$EXEC"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
+# Version (from ./VERSION) and update branch, read by the in-app updater.
+VERSION_STR="$(tr -d ' \n\r' < VERSION 2>/dev/null || true)"
+VERSION_STR="${VERSION_STR:-1.0.0}"
+UPDATE_BRANCH="${UPDATE_BRANCH:-claude/youtube-downloader-mac-51ojpa}"
+PLIST="$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION_STR" "$PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(date +%Y%m%d%H%M)" "$PLIST"
+/usr/libexec/PlistBuddy -c "Delete :YTDUpdateBranch" "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :YTDUpdateBranch string $UPDATE_BRANCH" "$PLIST"
+echo "  Version $VERSION_STR (mises à jour depuis la branche $UPDATE_BRANCH)"
+
 echo "▶︎ Icône…"
 ICON_WORK="$(mktemp -d)"
 if xcrun swiftc -sdk "$SDK" scripts/make_icon.swift -o "$ICON_WORK/make_icon" 2>/dev/null \
@@ -110,6 +121,11 @@ rm -rf "$ICON_WORK"
 
 echo "▶︎ Signature ad-hoc…"
 codesign --force --deep --sign - "$APP"
+
+if [[ "${SKIP_PACKAGES:-0}" == "1" ]]; then
+  echo "✅ $APP"
+  exit 0
+fi
 
 echo "▶︎ Archive zip…"
 rm -f "$DIST/YT-Downloader-macOS.zip"

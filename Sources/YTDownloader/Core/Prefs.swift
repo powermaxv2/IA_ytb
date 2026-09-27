@@ -12,6 +12,7 @@ enum Prefs {
     static let notify = "notifyOnFinish"
     static let maxConcurrent = "maxConcurrent"
     static let cookiesBrowser = "cookiesBrowser"
+    static let autoUpdateCheck = "autoUpdateCheck"
 
     static var defaultFolder: String {
         FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first?.path
@@ -31,6 +32,7 @@ enum Prefs {
             notify: true,
             maxConcurrent: 3,
             cookiesBrowser: "",
+            autoUpdateCheck: true,
         ])
     }
 

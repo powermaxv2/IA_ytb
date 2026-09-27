@@ -57,6 +57,19 @@ et dépose aussi `YT-Downloader.dmg` dans **Téléchargements** (pour l'installe
   (et en Release pour un tag `v*`). L'app téléchargée ainsi n'est pas notarisée :
   premier lancement par **clic droit → Ouvrir**, ou `xattr -cr "/Applications/YT Downloader.app"`.
 
+## Mises à jour automatiques
+
+À partir de la version 1.2.0, l'app vérifie GitHub à chaque lancement (désactivable dans les Réglages).
+Quand une nouvelle version est publiée, un bandeau propose **Mettre à jour** : l'app télécharge le code,
+le compile sur votre Mac (1 à 3 minutes), remplace `YT Downloader.app` et redémarre.
+En cas d'échec, l'ancienne version reste en place.
+
+Menu **YT Downloader → Rechercher des mises à jour…** pour vérifier à la main.
+
+**Publier une nouvelle version** : modifier le code, augmenter le numéro dans `VERSION`,
+ajouter une section en haut de `RELEASE_NOTES.md`, puis pousser sur la branche
+`claude/youtube-downloader-mac-51ojpa`.
+
 ## Utilisation
 
 1. Copiez un lien YouTube puis cliquez **Coller** (ou glissez le lien dans la fenêtre).
