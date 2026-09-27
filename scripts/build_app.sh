@@ -7,17 +7,40 @@ APP_NAME="YT Downloader"
 EXEC="YTDownloader"
 DIST="dist"
 APP="$DIST/$APP_NAME.app"
-# ARCHS="arm64 x86_64" (universal, needs Xcode) or ARCHS=native (this Mac only, Command Line Tools suffice)
+# ARCHS="arm64 x86_64" (universal) or ARCHS=native (this Mac only).
 ARCHS="${ARCHS:-arm64 x86_64}"
+[[ "$ARCHS" == "native" ]] && ARCHS="$(uname -m)"
+MIN_MACOS="13.0"
 
-ARCH_FLAGS=()
-if [[ "$ARCHS" != "native" ]]; then
-  for a in $ARCHS; do ARCH_FLAGS+=(--arch "$a"); done
+# Compiles with swiftc directly (no SwiftPM): works even when the
+# Command Line Tools' swift-package is broken (dyld "Symbol not found").
+SDK="$(xcrun --sdk macosx --show-sdk-path)"
+SOURCES=()
+while IFS= read -r f; do SOURCES+=("$f"); done < <(find Sources/YTDownloader -name '*.swift' | sort)
+
+BUILD=".build/app"
+rm -rf "$BUILD"
+mkdir -p "$BUILD"
+
+SLICES=()
+for arch in $ARCHS; do
+  echo "▶︎ Compilation ($arch)…"
+  xcrun swiftc -O -wmo -parse-as-library \
+    -swift-version 5 \
+    -module-name YTDownloader \
+    -sdk "$SDK" \
+    -target "${arch}-apple-macos${MIN_MACOS}" \
+    "${SOURCES[@]}" \
+    -o "$BUILD/YTDownloader-$arch"
+  SLICES+=("$BUILD/YTDownloader-$arch")
+done
+
+if (( ${#SLICES[@]} > 1 )); then
+  lipo -create "${SLICES[@]}" -output "$BUILD/$EXEC"
+else
+  cp "${SLICES[0]}" "$BUILD/$EXEC"
 fi
-
-echo "▶︎ Compilation (${ARCHS})…"
-swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
-BIN_DIR="$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
+BIN_DIR="$BUILD"
 
 echo "▶︎ Création du bundle…"
 rm -rf "$APP"
@@ -27,15 +50,19 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 
 echo "▶︎ Icône…"
 ICON_WORK="$(mktemp -d)"
-swift scripts/make_icon.swift "$ICON_WORK/icon_1024.png"
-ICONSET="$ICON_WORK/AppIcon.iconset"
-mkdir -p "$ICONSET"
-for s in 16 32 128 256 512; do
-  sips -z $s $s "$ICON_WORK/icon_1024.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
-  d=$((s * 2))
-  sips -z $d $d "$ICON_WORK/icon_1024.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
-done
-iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+if xcrun swiftc -sdk "$SDK" scripts/make_icon.swift -o "$ICON_WORK/make_icon" 2>/dev/null \
+   && "$ICON_WORK/make_icon" "$ICON_WORK/icon_1024.png" >/dev/null; then
+  ICONSET="$ICON_WORK/AppIcon.iconset"
+  mkdir -p "$ICONSET"
+  for s in 16 32 128 256 512; do
+    sips -z $s $s "$ICON_WORK/icon_1024.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+    d=$((s * 2))
+    sips -z $d $d "$ICON_WORK/icon_1024.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+  done
+  iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+else
+  echo "  (icône ignorée)"
+fi
 rm -rf "$ICON_WORK"
 
 echo "▶︎ Signature ad-hoc…"
