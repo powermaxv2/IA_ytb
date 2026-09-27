@@ -1,0 +1,47 @@
+name: Build macOS app
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build app bundle
+        run: ./scripts/build_app.sh
+
+      - name: Check tool download URLs
+        run: |
+          for u in \
+            https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos \
+            https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffmpeg.zip \
+            https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffprobe.zip \
+            https://ffmpeg.martin-riedl.de/redirect/latest/macos/amd64/release/ffmpeg.zip \
+            https://github.com/denoland/deno/releases/latest/download/deno-aarch64-apple-darwin.zip ; do
+            code=$(curl -sSL -o /dev/null -r 0-0 -w '%{http_code}' "$u")
+            echo "$code  $u"
+            case "$code" in 200|206) ;; *) exit 1 ;; esac
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YT-Downloader-macOS
+          path: dist/YT-Downloader-macOS.zip
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/YT-Downloader-macOS.zip
