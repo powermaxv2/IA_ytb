@@ -19,7 +19,7 @@ class App : Application() {
         private set
     lateinit var downloads: DownloadManager
         private set
-    val instagram = InstagramSession()
+    val instagram = InstagramSession(this)
 
     override fun onCreate() {
         super.onCreate()

@@ -13,8 +13,8 @@ import com.powermaxv2.ytdownloader.core.DirectItem
 import com.powermaxv2.ytdownloader.core.DownloadError
 import com.powermaxv2.ytdownloader.core.DownloadRequest
 import com.powermaxv2.ytdownloader.core.Errors
+import com.powermaxv2.ytdownloader.core.InstagramAccount
 import com.powermaxv2.ytdownloader.core.InstagramPost
-import com.powermaxv2.ytdownloader.core.InstagramSession
 import com.powermaxv2.ytdownloader.core.JobEvent
 import com.powermaxv2.ytdownloader.core.JobSpec
 import com.powermaxv2.ytdownloader.core.Links
@@ -44,13 +44,20 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 
-enum class Tab { HOME, DOWNLOADS, SETTINGS }
+enum class Tab { YOUTUBE, INSTAGRAM, DOWNLOADS, SETTINGS }
 
 sealed interface Phase {
     data object Idle : Phase
     data class Loading(val platform: Platform) : Phase
     data class Failed(val message: String) : Phase
     data class Ready(val media: MediaInfo) : Phase
+}
+
+/** Link field and analysis result of one platform tab (YouTube or Instagram). */
+class LinkPane(val platform: Platform) {
+    var urlText by mutableStateOf("")
+    var phase by mutableStateOf<Phase>(Phase.Idle)
+    internal var job: Job? = null
 }
 
 data class Toast(val message: String, val success: Boolean = true, val id: Long = System.nanoTime())
@@ -62,12 +69,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val instagram = app.instagram
     val prefs = app.prefs
 
-    var urlText by mutableStateOf("")
-    var phase by mutableStateOf<Phase>(Phase.Idle)
+    val youtube = LinkPane(Platform.YOUTUBE)
+    val insta = LinkPane(Platform.INSTAGRAM)
+
+    var tab by mutableStateOf(Tab.YOUTUBE)
         private set
-    var tab by mutableStateOf(Tab.HOME)
+
+    /** Platform whose colours the app wears: the current tab, or the last platform tab on Files / Settings. */
+    var accentPlatform by mutableStateOf(Platform.YOUTUBE)
         private set
     var showInstagramLogin by mutableStateOf(false)
+        private set
     var updateMessage by mutableStateOf<String?>(null)
         private set
 
@@ -78,10 +90,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _toasts = MutableSharedFlow<Toast>(extraBufferCapacity = 8)
     val toasts: SharedFlow<Toast> = _toasts.asSharedFlow()
 
-    private var analyzeJob: Job? = null
+    private var finishingLogin = false
 
     init {
-        viewModelScope.launch { instagram.refresh() }
+        viewModelScope.launch { if (instagram.refresh()) instagram.verify() }
         viewModelScope.launch {
             downloads.events.collect { event ->
                 when (event) {
@@ -94,6 +106,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectTab(value: Tab) {
         tab = value
+        when (value) {
+            Tab.YOUTUBE -> accentPlatform = Platform.YOUTUBE
+            Tab.INSTAGRAM -> accentPlatform = Platform.INSTAGRAM
+            else -> Unit
+        }
+    }
+
+    /** Back to the last platform tab (from the empty Files screen). */
+    fun openLinkTab() {
+        selectTab(if (accentPlatform == Platform.INSTAGRAM) Tab.INSTAGRAM else Tab.YOUTUBE)
     }
 
     fun toast(message: String, success: Boolean = true) {
@@ -102,40 +124,65 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // MARK: - Links
 
-    fun onSharedText(text: String) {
-        urlText = Links.extract(text) ?: text.trim()
-        tab = Tab.HOME
-        analyze()
+    /** Instagram links belong to the Instagram tab; YouTube and every other site to the YouTube tab. */
+    private fun paneFor(url: String): LinkPane = if (Links.platform(url) == Platform.INSTAGRAM) insta else youtube
+
+    private fun show(pane: LinkPane) {
+        selectTab(if (pane === insta) Tab.INSTAGRAM else Tab.YOUTUBE)
     }
 
-    fun paste(text: String?) {
+    fun onSharedText(text: String) {
+        val link = Links.extract(text) ?: text.trim()
+        val pane = Links.normalize(link)?.let(::paneFor) ?: youtube
+        pane.urlText = link
+        show(pane)
+        analyze(pane)
+    }
+
+    fun paste(pane: LinkPane, text: String?) {
         if (text.isNullOrBlank()) {
             toast("Le presse-papiers est vide", success = false)
             return
         }
-        urlText = Links.extract(text) ?: text.trim()
-        analyze()
+        pane.urlText = Links.extract(text) ?: text.trim()
+        analyze(pane)
     }
 
-    fun reset() {
-        analyzeJob?.cancel()
-        urlText = ""
-        phase = Phase.Idle
+    fun reset(pane: LinkPane) {
+        pane.job?.cancel()
+        pane.urlText = ""
+        pane.phase = Phase.Idle
     }
 
-    fun analyze() {
-        val url = Links.normalize(urlText)
+    fun analyze(pane: LinkPane) {
+        val url = Links.normalize(pane.urlText)
         if (url == null) {
-            phase = Phase.Failed("Collez un lien https:// valide (YouTube, Instagram…).")
+            pane.phase = Phase.Failed(
+                if (pane === insta) {
+                    "Collez un lien Instagram valide (https://www.instagram.com/…)."
+                } else {
+                    "Collez un lien https:// valide (YouTube…)."
+                },
+            )
             return
         }
-        urlText = url
-        analyzeJob?.cancel()
+        // A link pasted in the other platform's tab moves to the right tab.
+        val target = paneFor(url)
+        if (target !== pane) {
+            reset(pane)
+            target.urlText = url
+            show(target)
+            toast("Lien ${target.platform.label} : ouvert dans l'onglet ${target.platform.label}")
+            analyze(target)
+            return
+        }
+        pane.urlText = url
+        pane.job?.cancel()
         val platform = Links.platform(url)
-        phase = Phase.Loading(platform)
-        analyzeJob = viewModelScope.launch {
-            phase = try {
-                Phase.Ready(fetch(url, platform))
+        pane.phase = Phase.Loading(platform)
+        pane.job = viewModelScope.launch {
+            pane.phase = try {
+                Phase.Ready(if (platform == Platform.INSTAGRAM) fetchInstagram(pane, url) else ytdlpInfo(url, cookies = false))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -144,29 +191,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private suspend fun fetch(url: String, platform: Platform): MediaInfo {
-        val isInstagram = platform == Platform.INSTAGRAM
-        // Photos and carousels: Instagram's own API gives every image, yt-dlp only the videos.
-        if (isInstagram && InstagramSession.isPostLink(url) && instagram.refresh()) {
-            instagram.fetchPost(url)?.let { post -> if (post.photoCount > 0) return MediaInfo.Photos(post) }
-        }
+    private suspend fun fetchInstagram(pane: LinkPane, link: String): MediaInfo {
+        val url = instagram.resolveLink(link)
+        if (url != link) pane.urlText = url
+        val loggedIn = instagram.refresh()
+        // With the account, Instagram's own API lists every photo and video of a post, private ones included.
+        val post = if (loggedIn) instagram.fetchPost(url) else null
+        if (post != null && (post.isCarousel || post.photoCount > 0)) return MediaInfo.Photos(post)
         return try {
-            ytdlpInfo(url, isInstagram)
+            ytdlpInfo(url, cookies = loggedIn)
         } catch (e: DownloadError) {
-            if (isInstagram && instagram.refresh()) {
-                instagram.fetchPost(url)?.let { return MediaInfo.Photos(it) }
-            }
+            // Single video that yt-dlp could not read: download it straight from the API answer.
+            post?.let { return MediaInfo.Photos(it) }
+            if (loggedIn && instagram.account.value is InstagramAccount.Expired) throw DownloadError(SESSION_EXPIRED)
             throw e
         }
     }
 
-    private suspend fun ytdlpInfo(url: String, isInstagram: Boolean): MediaInfo = withContext(Dispatchers.IO) {
+    private suspend fun ytdlpInfo(url: String, cookies: Boolean): MediaInfo = withContext(Dispatchers.IO) {
         val workDir = File(app.cacheDir, "analyze/${UUID.randomUUID()}")
         try {
-            val cookies = if (isInstagram) instagram.writeCookiesFile(workDir) else null
+            val cookiesFile = if (cookies) instagram.writeCookiesFile(workDir) else null
             val args = commonArguments +
                 listOf("-J", "--no-playlist", "--flat-playlist", "--no-warnings") +
-                (cookies?.let { listOf("--cookies", it.absolutePath) } ?: emptyList()) +
+                (cookiesFile?.let { listOf("--cookies", it.absolutePath) } ?: emptyList()) +
                 listOf("--", url)
             val response = try {
                 engine.execute(args)
@@ -291,13 +339,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // MARK: - Instagram
 
-    fun onInstagramLoggedIn() {
+    fun openInstagramLogin() {
         viewModelScope.launch {
-            if (instagram.refresh()) {
-                showInstagramLogin = false
-                toast("Connecté à Instagram")
-            }
+            // Reconnecting: drop the old session first, otherwise the login page would take it for a new login.
+            if (instagram.refresh()) instagram.logout()
+            finishingLogin = false
+            showInstagramLogin = true
         }
+    }
+
+    /** Closing the page also checks the cookies: the login may have ended on a page the screen did not catch. */
+    fun closeInstagramLogin() {
+        if (!showInstagramLogin) return
+        viewModelScope.launch {
+            if (!onLoginFinished()) showInstagramLogin = false
+        }
+    }
+
+    fun onInstagramLoggedIn() {
+        viewModelScope.launch { onLoginFinished() }
+    }
+
+    private suspend fun onLoginFinished(): Boolean {
+        if (finishingLogin || !showInstagramLogin) return false
+        finishingLogin = true
+        if (!instagram.completeLogin()) {
+            finishingLogin = false
+            return false
+        }
+        showInstagramLogin = false
+        toast("Connecté à Instagram")
+        // The link that needed the account is analysed again.
+        if (insta.phase is Phase.Failed && insta.urlText.isNotBlank()) analyze(insta)
+        instagram.verify()
+        return true
     }
 
     fun logoutInstagram() {
@@ -328,5 +403,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val NO_MEDIA = "Aucune vidéo téléchargeable trouvée à ce lien (les directs en cours ne sont pas pris en charge)."
+        private const val SESSION_EXPIRED = "Session Instagram expirée : reconnectez votre compte en haut de l'onglet Instagram."
     }
 }

@@ -10,23 +10,49 @@ import java.security.MessageDigest
 object Http {
     const val USER_AGENT = "YTDownloader-Android"
 
-    private fun open(url: String, headers: Map<String, String>): HttpURLConnection {
+    private fun open(url: String, headers: Map<String, String>, followRedirects: Boolean = true): HttpURLConnection {
         if (!url.startsWith("https://")) throw IOException("Seuls les liens https:// sont acceptés.")
         val connection = URL(url).openConnection() as HttpURLConnection
         connection.connectTimeout = 15_000
         connection.readTimeout = 30_000
-        connection.instanceFollowRedirects = true
+        connection.instanceFollowRedirects = followRedirects
         connection.setRequestProperty("User-Agent", USER_AGENT)
         headers.forEach { (key, value) -> connection.setRequestProperty(key, value) }
         return connection
     }
 
-    fun getText(url: String, headers: Map<String, String> = emptyMap()): String {
-        val connection = open(url, headers)
+    data class Response(val code: Int, val body: String, val location: String? = null) {
+        val isSuccess: Boolean get() = code in 200..299
+    }
+
+    /**
+     * GET that also returns error responses and, with [followRedirects] off, redirections
+     * (Instagram answers a refused session with a redirect to its login page).
+     */
+    fun get(url: String, headers: Map<String, String> = emptyMap(), followRedirects: Boolean = true): Response {
+        val connection = open(url, headers, followRedirects)
         try {
             val code = connection.responseCode
-            if (code !in 200..299) throw IOException("HTTP $code")
-            return connection.inputStream.bufferedReader().use { it.readText() }
+            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+            val body = stream?.bufferedReader()?.use { it.readText() } ?: ""
+            return Response(code, body, connection.getHeaderField("Location"))
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    fun getText(url: String, headers: Map<String, String> = emptyMap()): String {
+        val response = get(url, headers)
+        if (!response.isSuccess) throw IOException("HTTP ${response.code}")
+        return response.body
+    }
+
+    /** Address reached after following the redirects of [url]. */
+    fun finalUrl(url: String, headers: Map<String, String> = emptyMap()): String {
+        val connection = open(url, headers)
+        try {
+            connection.responseCode
+            return connection.url.toString()
         } finally {
             connection.disconnect()
         }

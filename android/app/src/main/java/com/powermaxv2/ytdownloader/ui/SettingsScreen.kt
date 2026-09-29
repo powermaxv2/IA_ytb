@@ -1,13 +1,11 @@
 package com.powermaxv2.ytdownloader.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,8 +28,6 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Login
-import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
@@ -60,7 +56,6 @@ import com.powermaxv2.ytdownloader.core.VideoContainer
 @Composable
 fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
-    val loggedIn by vm.instagram.loggedIn.collectAsStateWithLifecycle()
     val version by vm.engine.version.collectAsStateWithLifecycle()
     val updating by vm.engine.updating.collectAsStateWithLifecycle()
     val accent = LocalAccent.current
@@ -75,40 +70,14 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
     ) {
         Text("Réglages", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-        Section("Instagram", null, index = 0, glyph = Platform.INSTAGRAM) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatusDot(loggedIn)
-                Text(
-                    if (loggedIn) "Compte connecté" else "Non connecté",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            Text(
-                "La connexion permet de télécharger les photos, les carrousels, les stories et les reels réservés aux " +
-                    "abonnés. Elle se fait sur instagram.com dans l'app : votre mot de passe n'est jamais lu, seuls les " +
-                    "cookies de session sont gardés, dans l'espace privé de l'app.",
-                color = Palette.TextSecondary,
-                fontSize = 12.5.sp,
-            )
-            if (loggedIn) {
-                SecondaryButton("Se déconnecter", Icons.Rounded.PowerSettingsNew, Modifier.fillMaxWidth()) { vm.logoutInstagram() }
-            } else {
-                GradientButton("Se connecter à Instagram", Modifier.fillMaxWidth(), icon = Icons.Rounded.Login) {
-                    vm.showInstagramLogin = true
-                }
-            }
-        }
-
-        Section("Formats par défaut", Icons.Rounded.Tune, index = 1) {
+        Section("Formats par défaut", Icons.Rounded.Tune, index = 0) {
             SectionLabel("Vidéo")
             ChipRow(VideoContainer.entries, settings.container, { it.title }, { c -> vm.prefs.update { it.copy(container = c) } })
             SectionLabel("Audio")
             ChipRow(AudioFormat.entries, settings.audioFormat, { it.title }, { f -> vm.prefs.update { it.copy(audioFormat = f) } })
         }
 
-        Section("Options", Icons.Rounded.CheckCircle, index = 2) {
+        Section("Options", Icons.Rounded.CheckCircle, index = 1) {
             ToggleRow("Miniature intégrée au fichier", settings.embedThumbnail) { v -> vm.prefs.update { it.copy(embedThumbnail = v) } }
             ToggleRow("Titre, artiste et date (métadonnées)", settings.embedMetadata) { v -> vm.prefs.update { it.copy(embedMetadata = v) } }
             ToggleRow("Chapitres YouTube", settings.embedChapters) { v -> vm.prefs.update { it.copy(embedChapters = v) } }
@@ -141,7 +110,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             ToggleRow("Vibrations", settings.haptics) { v -> vm.prefs.update { it.copy(haptics = v) } }
         }
 
-        Section("Moteur yt-dlp", Icons.Rounded.Bolt, index = 3) {
+        Section("Moteur yt-dlp", Icons.Rounded.Bolt, index = 2) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Version installée", color = Palette.TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
                 Text(version ?: "…", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -163,7 +132,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
 
-        Section("Sécurité", Icons.Rounded.Shield, index = 4) {
+        Section("Sécurité", Icons.Rounded.Shield, index = 3) {
             listOf(
                 "Mises à jour de yt-dlp téléchargées depuis sa page GitHub officielle et comparées à l'empreinte SHA-256 publiée : un fichier non conforme est refusé.",
                 "Contrôle d'intégrité à chaque lancement : un yt-dlp modifié est supprimé et remplacé par la version d'origine.",
@@ -173,7 +142,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             ).forEach { Bullet(it) }
         }
 
-        Section("Emplacement des fichiers", Icons.Rounded.FolderOpen, index = 5) {
+        Section("Emplacement des fichiers", Icons.Rounded.FolderOpen, index = 4) {
             Bullet("Vidéos : Films › YT Downloader")
             Bullet("Musique : Musique › YT Downloader")
             Bullet("Photos : Images › YT Downloader")
@@ -184,7 +153,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
 
-        Section("À propos", Icons.Rounded.Info, index = 6) {
+        Section("À propos", Icons.Rounded.Info, index = 5) {
             Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Color.White, fontSize = 13.sp)
             Text(
                 "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +
@@ -270,28 +239,5 @@ private fun Bullet(text: String) {
                 .background(LocalAccent.current.start),
         )
         Text(text, color = Palette.TextSecondary, fontSize = 12.5.sp, modifier = Modifier.weight(1f))
-    }
-}
-
-/** Green dot with a ripple ring when connected, grey when not. */
-@Composable
-private fun StatusDot(active: Boolean) {
-    val color by animateColorAsState(if (active) Palette.Success else Palette.TextTertiary, label = "dot")
-    Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-        if (active) {
-            Box(
-                Modifier
-                    .size(18.dp)
-                    .pulsing(0.5f, 1.2f, 1100)
-                    .clip(CircleShape)
-                    .border(1.5.dp, color.copy(alpha = 0.5f), CircleShape),
-            )
-        }
-        Box(
-            Modifier
-                .size(9.dp)
-                .clip(CircleShape)
-                .background(color),
-        )
     }
 }

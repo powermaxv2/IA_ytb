@@ -14,10 +14,15 @@ object Errors {
         val fromInstagram = "instagram" in raw.lowercase(Locale.ROOT)
         return when {
             "unsupported url" in lower || "is not a valid url" in lower -> "Ce lien n'est pas pris en charge."
-            fromInstagram && ("login" in lower || "rate-limit" in lower || "not available" in lower || "401" in lower) ->
-                "Instagram demande une connexion : Réglages → Connexion Instagram."
+            fromInstagram && ("private" in lower || "follow" in lower) ->
+                "Publication d'un compte privé : connectez un compte Instagram qui suit ce compte."
+            fromInstagram && (
+                "login" in lower || "logged" in lower || "cookies" in lower || "authentication" in lower ||
+                    "rate-limit" in lower || "not available" in lower || "401" in lower
+                ) ->
+                "Instagram demande une connexion : connectez votre compte en haut de l'onglet Instagram."
             "there is no video in this post" in lower || "no video formats found" in lower ->
-                "Cette publication ne contient pas de vidéo. Connectez-vous à Instagram (Réglages) pour télécharger les photos."
+                "Cette publication ne contient pas de vidéo. Connectez votre compte Instagram pour télécharger les photos."
             "private video" in lower -> "Cette vidéo est privée."
             "confirm your age" in lower -> "Vidéo soumise à une limite d'âge : elle ne peut pas être téléchargée sans compte."
             "not a bot" in lower -> "YouTube demande une vérification anti-robot : mettez à jour yt-dlp dans les réglages, ou réessayez plus tard."

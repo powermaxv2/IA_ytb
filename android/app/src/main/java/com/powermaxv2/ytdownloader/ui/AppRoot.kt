@@ -47,7 +47,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Tune
@@ -74,7 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.powermaxv2.ytdownloader.core.Links
+import com.powermaxv2.ytdownloader.core.Platform
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -82,10 +81,9 @@ import kotlinx.coroutines.flow.SharedFlow
 fun AppRoot(vm: MainViewModel) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val jobs by vm.downloads.jobs.collectAsStateWithLifecycle()
-    val platform = remember(vm.urlText) { Links.platformOfText(vm.urlText) }
     val gate = rememberDownloadGate()
 
-    AppTheme(platform) {
+    AppTheme(vm.accentPlatform) {
         CompositionLocalProvider(LocalHaptics provides settings.haptics, LocalDownloadGate provides gate) {
             Box(Modifier.fillMaxSize()) {
                 AnimatedBackground()
@@ -104,7 +102,8 @@ fun AppRoot(vm: MainViewModel) {
                     label = "tabs",
                 ) { tab ->
                     when (tab) {
-                        Tab.HOME -> HomeScreen(vm, contentPadding)
+                        Tab.YOUTUBE -> LinkScreen(vm, vm.youtube, contentPadding)
+                        Tab.INSTAGRAM -> LinkScreen(vm, vm.insta, contentPadding)
                         Tab.DOWNLOADS -> DownloadsScreen(vm, contentPadding)
                         Tab.SETTINGS -> SettingsScreen(vm, contentPadding)
                     }
@@ -130,7 +129,7 @@ fun AppRoot(vm: MainViewModel) {
                     exit = slideOutVertically(tween(260)) { it } + fadeOut(tween(260)),
                 ) {
                     InstagramLoginScreen(
-                        onClose = { vm.showInstagramLogin = false },
+                        onClose = vm::closeInstagramLogin,
                         onLoggedIn = vm::onInstagramLoggedIn,
                     )
                 }
@@ -166,10 +165,17 @@ private fun rememberDownloadGate(): (() -> Unit) -> Unit {
 
 // MARK: - Bottom navigation
 
-private data class NavItem(val tab: Tab, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+/** A tab shows either a platform logo ([platform]) or an [icon]. */
+private data class NavItem(
+    val tab: Tab,
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    val platform: Platform? = null,
+)
 
 private val navItems = listOf(
-    NavItem(Tab.HOME, "Télécharger", Icons.Rounded.Download),
+    NavItem(Tab.YOUTUBE, "YouTube", platform = Platform.YOUTUBE),
+    NavItem(Tab.INSTAGRAM, "Instagram", platform = Platform.INSTAGRAM),
     NavItem(Tab.DOWNLOADS, "Fichiers", Icons.Rounded.FolderOpen),
     NavItem(Tab.SETTINGS, "Réglages", Icons.Rounded.Tune),
 )
@@ -231,19 +237,20 @@ private fun BottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) ->
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Box {
-                        Icon(
-                            item.icon,
-                            contentDescription = item.label,
-                            tint = color,
-                            modifier = Modifier
-                                .size(23.dp)
-                                .graphicsLayer {
-                                    val b = bump.value
-                                    scaleX = scale + b * 0.45f
-                                    scaleY = scale + b * 0.45f
-                                    translationY = -b * 8.dp.toPx()
-                                },
-                        )
+                        val iconModifier = Modifier
+                            .size(23.dp)
+                            .graphicsLayer {
+                                val b = bump.value
+                                scaleX = scale + b * 0.45f
+                                scaleY = scale + b * 0.45f
+                                translationY = -b * 8.dp.toPx()
+                                alpha = if (item.platform != null && !selected) 0.55f else 1f
+                            }
+                        if (item.platform != null) {
+                            PlatformGlyph(item.platform, iconModifier)
+                        } else if (item.icon != null) {
+                            Icon(item.icon, contentDescription = item.label, tint = color, modifier = iconModifier)
+                        }
                         if (item.tab == Tab.DOWNLOADS) {
                             // Fully qualified: the outer Column/Row scopes must not be used implicitly here.
                             androidx.compose.animation.AnimatedVisibility(

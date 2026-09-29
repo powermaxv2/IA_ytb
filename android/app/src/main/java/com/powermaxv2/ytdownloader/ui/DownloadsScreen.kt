@@ -111,7 +111,7 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             modifier = Modifier.weight(1f),
         ) { empty ->
             if (empty) {
-                EmptyDownloads { vm.selectTab(Tab.HOME) }
+                EmptyDownloads(vm::openLinkTab)
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(top = 14.dp, bottom = contentPadding.calculateBottomPadding() + 8.dp),

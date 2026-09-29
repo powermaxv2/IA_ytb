@@ -2,6 +2,7 @@ package com.powermaxv2.ytdownloader.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -53,7 +54,10 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.HighQuality
-import androidx.compose.material.icons.rounded.Login
+import androidx.compose.material.icons.automirrored.rounded.Login
+import androidx.compose.material.icons.rounded.AmpStories
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -61,7 +65,9 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Subtitles
 import androidx.compose.material.icons.rounded.VideoLibrary
+import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -97,6 +103,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.core.EngineState
+import com.powermaxv2.ytdownloader.core.InstagramAccount
 import com.powermaxv2.ytdownloader.core.Links
 import com.powermaxv2.ytdownloader.core.MediaInfo
 import com.powermaxv2.ytdownloader.core.Platform
@@ -105,10 +112,13 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
+/** Content of the YouTube tab and of the Instagram tab: each has its own link field and result. */
 @Composable
-fun HomeScreen(vm: MainViewModel, contentPadding: PaddingValues) {
+fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues) {
     val engineState by vm.engine.state.collectAsStateWithLifecycle()
     val integrity by vm.engine.integrityAlert.collectAsStateWithLifecycle()
+    val account by vm.instagram.account.collectAsStateWithLifecycle()
+    val isInstagram = pane.platform == Platform.INSTAGRAM
     Column(
         Modifier
             .fillMaxSize()
@@ -118,7 +128,7 @@ fun HomeScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Header(vm.queuedPulse)
+        Header(pane.platform, vm.queuedPulse)
         AnimatedVisibility(
             visible = integrity != null,
             enter = expandVertically() + fadeIn(),
@@ -132,9 +142,10 @@ fun HomeScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
         EngineBanner(engineState)
-        UrlBar(vm, enabled = engineState !is EngineState.Failed)
+        if (isInstagram) InstagramAccountCard(account, onLogin = vm::openInstagramLogin, onLogout = vm::logoutInstagram)
+        UrlBar(vm, pane, enabled = engineState !is EngineState.Failed)
         AnimatedContent(
-            targetState = vm.phase,
+            targetState = pane.phase,
             transitionSpec = {
                 (
                     fadeIn(tween(350, delayMillis = 90)) +
@@ -145,13 +156,18 @@ fun HomeScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             label = "phase",
         ) { phase ->
             when (phase) {
-                Phase.Idle -> EmptyCard()
+                Phase.Idle -> EmptyCard(pane.platform)
                 is Phase.Loading -> LoadingCard(phase.platform)
-                is Phase.Failed -> ErrorCard(
-                    message = phase.message,
-                    onRetry = vm::analyze,
-                    onLogin = if (phase.message.contains("Instagram")) ({ vm.showInstagramLogin = true }) else null,
-                )
+                is Phase.Failed -> {
+                    val needsLogin = isInstagram &&
+                        (account !is InstagramAccount.LoggedIn || phase.message.contains("connect", ignoreCase = true))
+                    ErrorCard(
+                        message = phase.message,
+                        onRetry = { vm.analyze(pane) },
+                        loginLabel = if (account is InstagramAccount.LoggedOut) "Se connecter" else "Se reconnecter",
+                        onLogin = if (needsLogin) vm::openInstagramLogin else null,
+                    )
+                }
                 is Phase.Ready -> when (val media = phase.media) {
                     is MediaInfo.Video -> VideoCard(media.info, media.sourceUrl, vm)
                     is MediaInfo.Playlist -> PlaylistCard(media.info, vm)
@@ -165,20 +181,24 @@ fun HomeScreen(vm: MainViewModel, contentPadding: PaddingValues) {
 // MARK: - Header
 
 @Composable
-private fun Header(pulse: Int) {
+private fun Header(platform: Platform, pulse: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         AnimatedLogo(pulse, Modifier.size(56.dp))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                "YT Downloader",
+                platform.label,
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.staggeredEntrance(0),
             )
             Text(
-                "YouTube & Instagram · vidéos, musique, photos",
+                if (platform == Platform.INSTAGRAM) {
+                    "Reels, carrousels, photos et stories · YT Downloader"
+                } else {
+                    "Vidéos jusqu'en 8K, musique, playlists · YT Downloader"
+                },
                 color = Palette.TextSecondary,
                 fontSize = 12.5.sp,
                 modifier = Modifier.staggeredEntrance(1),
@@ -292,21 +312,120 @@ private fun EngineBanner(state: EngineState) {
     }
 }
 
+// MARK: - Instagram account
+
+/**
+ * Connection card at the top of the Instagram tab. The account is what gives access to carousels, photos, stories
+ * and the private posts of the accounts it follows.
+ */
+@Composable
+private fun InstagramAccountCard(account: InstagramAccount, onLogin: () -> Unit, onLogout: () -> Unit) {
+    AnimatedContent(
+        targetState = account,
+        transitionSpec = { (fadeIn(tween(300)) + expandVertically()) togetherWith (fadeOut(tween(200)) + shrinkVertically()) },
+        label = "instagramAccount",
+    ) { current ->
+        when (current) {
+            is InstagramAccount.LoggedIn -> Row(
+                Modifier
+                    .fillMaxWidth()
+                    .glass(RoundedCornerShape(18.dp))
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                StatusDot(Palette.Success, active = true)
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        current.username?.let { "@$it" } ?: "Compte connecté",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text("Publications privées suivies, carrousels et stories", color = Palette.TextSecondary, fontSize = 12.sp)
+                }
+                SecondaryButton("Déconnexion", Icons.Rounded.PowerSettingsNew, compact = true, onClick = onLogout)
+            }
+            else -> {
+                val expired = current is InstagramAccount.Expired
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .glass(tint = if (expired) Palette.Danger.copy(alpha = 0.09f) else Palette.Fill)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        StatusDot(if (expired) Palette.Danger else Palette.TextTertiary, active = false)
+                        Text(
+                            if (expired) "Session Instagram expirée" else "Compte Instagram non connecté",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Text(
+                        if (expired) {
+                            "Instagram a fermé la session de l'app : reconnectez-vous pour retrouver vos contenus privés."
+                        } else {
+                            "Connectez votre compte pour télécharger les carrousels, les photos, les stories et les " +
+                                "publications privées des comptes que vous suivez. La connexion se fait sur instagram.com : " +
+                                "votre mot de passe n'est jamais lu par l'app."
+                        },
+                        color = Palette.TextSecondary,
+                        fontSize = 12.5.sp,
+                    )
+                    GradientButton(
+                        if (expired) "Se reconnecter à Instagram" else "Se connecter à Instagram",
+                        Modifier.fillMaxWidth(),
+                        icon = Icons.AutoMirrored.Rounded.Login,
+                        onClick = onLogin,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Status dot, with a ripple ring when [active]. */
+@Composable
+private fun StatusDot(color: Color, active: Boolean) {
+    val animated by animateColorAsState(color, label = "dot")
+    Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
+        if (active) {
+            Box(
+                Modifier
+                    .size(18.dp)
+                    .pulsing(0.5f, 1.2f, 1100)
+                    .clip(CircleShape)
+                    .border(1.5.dp, animated.copy(alpha = 0.5f), CircleShape),
+            )
+        }
+        Box(
+            Modifier
+                .size(9.dp)
+                .clip(CircleShape)
+                .background(animated),
+        )
+    }
+}
+
 // MARK: - Link field
 
 @Composable
-private fun UrlBar(vm: MainViewModel, enabled: Boolean) {
+private fun UrlBar(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
     val accent = LocalAccent.current
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
     var focused by remember { mutableStateOf(false) }
-    val platform = remember(vm.urlText) { Links.platformOfText(vm.urlText) }
+    val detected = remember(pane.urlText) { Links.platformOfText(pane.urlText) }
+    val platform = if (pane.urlText.isBlank()) pane.platform else detected
     val transition = rememberInfiniteTransition(label = "border")
     val angle by transition.animateFloat(
         0f, (2 * PI).toFloat(), infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "angle",
     )
     val outline by animateFloatAsState(if (focused) 1f else 0f, tween(300), label = "outline")
-    val loading = vm.phase is Phase.Loading
+    val loading = pane.phase is Phase.Loading
     val shape = RoundedCornerShape(22.dp)
 
     Column(
@@ -339,51 +458,56 @@ private fun UrlBar(vm: MainViewModel, enabled: Boolean) {
             AnimatedPlatformGlyph(platform, Modifier.size(26.dp))
             Spacer(Modifier.width(10.dp))
             BasicTextField(
-                value = vm.urlText,
-                onValueChange = { vm.urlText = it },
+                value = pane.urlText,
+                onValueChange = { pane.urlText = it },
                 singleLine = true,
                 textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                 cursorBrush = SolidColor(accent.start),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(onGo = {
                     focus.clearFocus()
-                    vm.analyze()
+                    vm.analyze(pane)
                 }),
                 modifier = Modifier
                     .weight(1f)
                     .onFocusChanged { focused = it.isFocused },
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        if (vm.urlText.isEmpty()) {
-                            Text("Collez un lien YouTube ou Instagram…", color = Palette.TextTertiary, fontSize = 15.sp, maxLines = 1)
+                        if (pane.urlText.isEmpty()) {
+                            Text(
+                                if (pane.platform == Platform.INSTAGRAM) "Collez un lien Instagram…" else "Collez un lien YouTube…",
+                                color = Palette.TextTertiary,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                            )
                         }
                         inner()
                     }
                 },
             )
             AnimatedVisibility(
-                visible = vm.urlText.isNotEmpty(),
+                visible = pane.urlText.isNotEmpty(),
                 enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(),
                 exit = scaleOut() + fadeOut(),
             ) {
-                IconCircleButton(Icons.Rounded.Close, Modifier.padding(start = 8.dp), size = 28.dp) { vm.reset() }
+                IconCircleButton(Icons.Rounded.Close, Modifier.padding(start = 8.dp), size = 28.dp) { vm.reset(pane) }
             }
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SecondaryButton("Coller", Icons.Rounded.ContentPaste, Modifier.weight(1f)) {
                 focus.clearFocus()
-                vm.paste(clipboard.getText()?.text)
+                vm.paste(pane, clipboard.getText()?.text)
             }
             GradientButton(
                 "Analyser",
                 Modifier.weight(1.4f),
                 icon = Icons.Rounded.Search,
-                enabled = enabled && vm.urlText.isNotBlank(),
+                enabled = enabled && pane.urlText.isNotBlank(),
                 loading = loading,
             ) {
                 focus.clearFocus()
-                vm.analyze()
+                vm.analyze(pane)
             }
         }
     }
@@ -393,7 +517,7 @@ private fun UrlBar(vm: MainViewModel, enabled: Boolean) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EmptyCard() {
+private fun EmptyCard(platform: Platform) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -404,7 +528,7 @@ private fun EmptyCard() {
     ) {
         OrbitIcon()
         Text(
-            "Collez un lien, ou partagez-le depuis YouTube ou Instagram",
+            "Collez un lien, ou partagez-le depuis l'app ${platform.label}",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
@@ -428,13 +552,22 @@ private fun EmptyCard() {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 6.dp),
         ) {
-            val pills = listOf(
-                Icons.Rounded.HighQuality to "Jusqu'en 8K",
-                Icons.Rounded.MusicNote to "MP3 · M4A · FLAC",
-                Icons.Rounded.VideoLibrary to "Playlists",
-                Icons.Rounded.PlayArrow to "Reels",
-                Icons.Rounded.PhotoLibrary to "Photos Insta",
-            )
+            val pills = if (platform == Platform.INSTAGRAM) {
+                listOf(
+                    Icons.Rounded.PlayArrow to "Reels",
+                    Icons.Rounded.ViewCarousel to "Carrousels",
+                    Icons.Rounded.PhotoLibrary to "Photos",
+                    Icons.Rounded.AmpStories to "Stories",
+                    Icons.Rounded.Lock to "Comptes privés suivis",
+                )
+            } else {
+                listOf(
+                    Icons.Rounded.HighQuality to "Jusqu'en 8K",
+                    Icons.Rounded.MusicNote to "MP3 · M4A · FLAC",
+                    Icons.Rounded.VideoLibrary to "Playlists",
+                    Icons.Rounded.Subtitles to "Sous-titres",
+                )
+            }
             pills.forEachIndexed { index, (icon, text) ->
                 FeaturePill(icon, text, Modifier.staggeredEntrance(index, baseDelay = 260))
             }
@@ -532,7 +665,7 @@ private fun LoadingCard(platform: Platform) {
 }
 
 @Composable
-private fun ErrorCard(message: String, onRetry: () -> Unit, onLogin: (() -> Unit)?) {
+private fun ErrorCard(message: String, onRetry: () -> Unit, loginLabel: String, onLogin: (() -> Unit)?) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -553,7 +686,7 @@ private fun ErrorCard(message: String, onRetry: () -> Unit, onLogin: (() -> Unit
         Text(message, color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SecondaryButton("Réessayer", Icons.Rounded.Refresh, compact = true, onClick = onRetry)
-            onLogin?.let { SecondaryButton("Connexion Instagram", Icons.Rounded.Login, compact = true, onClick = it) }
+            onLogin?.let { SecondaryButton(loginLabel, Icons.AutoMirrored.Rounded.Login, compact = true, onClick = it) }
         }
     }
 }

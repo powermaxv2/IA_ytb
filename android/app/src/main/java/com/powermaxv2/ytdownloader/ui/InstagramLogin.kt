@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +44,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.powermaxv2.ytdownloader.core.InstagramSession
 import com.powermaxv2.ytdownloader.core.Platform
+import kotlinx.coroutines.delay
 
-/** Hosts allowed to be opened inside the login page (Instagram, and Facebook for "Log in with Facebook"). */
-private val allowedHosts = listOf("instagram.com", "facebook.com", "fbcdn.net", "cdninstagram.com", "accountscenter.instagram.com")
+/**
+ * Hosts the login page may navigate to: Instagram, Meta's account and security-check pages, and Facebook for
+ * "Log in with Facebook". Frames inside the page (captchas…) are not restricted.
+ */
+private val allowedHosts = listOf(
+    "instagram.com", "cdninstagram.com", "facebook.com", "facebook.net", "fbcdn.net", "fbsbx.com", "meta.com",
+)
+
+private fun hasSessionCookie(): Boolean =
+    runCatching { CookieManager.getInstance().getCookie(InstagramSession.HOME) }.getOrNull()?.contains("sessionid=") == true
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -53,6 +63,13 @@ fun InstagramLoginScreen(onClose: () -> Unit, onLoggedIn: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     val currentOnLoggedIn by rememberUpdatedState(onLoggedIn)
     BackHandler(onBack = onClose)
+    // Instagram often finishes the login without loading a new page (it is a web app): watch the cookies instead.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(700)
+            if (hasSessionCookie()) currentOnLoggedIn()
+        }
+    }
 
     Column(
         Modifier
@@ -90,11 +107,13 @@ fun InstagramLoginScreen(onClose: () -> Unit, onLoggedIn: () -> Unit) {
                 WebView(context).apply {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    settings.userAgentString = InstagramSession.browserUserAgent(settings.userAgentString)
                     val cookies = CookieManager.getInstance()
                     cookies.setAcceptCookie(true)
                     cookies.setAcceptThirdPartyCookies(this, true)
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                            if (!request.isForMainFrame) return false
                             val url = request.url
                             val host = url.host?.lowercase() ?: return true
                             val allowed = url.scheme == "https" && allowedHosts.any { host == it || host.endsWith(".$it") }
@@ -107,11 +126,11 @@ fun InstagramLoginScreen(onClose: () -> Unit, onLoggedIn: () -> Unit) {
 
                         override fun onPageFinished(view: WebView, url: String?) {
                             loading = false
-                            val manager = CookieManager.getInstance()
-                            if (manager.getCookie(InstagramSession.HOME)?.contains("sessionid=") == true) {
-                                manager.flush()
-                                currentOnLoggedIn()
-                            }
+                            if (hasSessionCookie()) currentOnLoggedIn()
+                        }
+
+                        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                            if (hasSessionCookie()) currentOnLoggedIn()
                         }
                     }
                     loadUrl(InstagramSession.LOGIN_URL)

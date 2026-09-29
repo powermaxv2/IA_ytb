@@ -5,13 +5,16 @@ dans la qualité de votre choix. Elle vit dans ce dossier `android/` et ne touch
 
 ## Fonctionnalités
 
+- Deux onglets séparés, **YouTube** et **Instagram**, chacun avec son champ de lien (un lien collé dans le
+  mauvais onglet est ouvert dans le bon)
 - **Partager → YT Downloader** depuis l'app YouTube ou Instagram (ou coller un lien)
 - **YouTube** : vidéos jusqu'en 4K / 8K / HDR / 60 fps, audio seul (M4A, MP3, Opus, FLAC), playlists
-- **Instagram** : reels, vidéos, carrousels ; **photos** et stories avec un compte connecté
+- **Instagram** : reels, vidéos, carrousels ; **photos**, stories et publications privées des comptes suivis
+  avec un compte connecté
 - Choix de la qualité en tuiles (la meilleure est marquée **MAX**), formats MP4, MP4 · H.264 (lisible partout) ou MKV
 - File d'attente en arrière-plan avec notification de progression, annulation, nouvelle tentative
 - Fichiers enregistrés dans la Galerie : **Films / Musique / Images › YT Downloader**
-- Interface animée : fond vivant, accent rouge (YouTube) ou violet-rose (Instagram) selon le lien,
+- Interface animée : fond vivant, accent rouge (YouTube) ou violet-rose (Instagram) selon l'onglet,
   tuiles en cascade, barre de progression animée, effet de réussite, vibrations légères
 
 ## Installer l'APK
@@ -52,10 +55,14 @@ ls app/build/outputs/apk/release/
 
 ## Instagram
 
-La connexion (Réglages → **Se connecter à Instagram**) se fait sur instagram.com dans l'app : le mot de passe
-n'est jamais lu, seuls les cookies de session sont gardés dans l'espace privé de l'app. Elle est nécessaire pour
-les photos, les carrousels complets, les stories et les contenus réservés. Les reels publics fonctionnent
-souvent sans connexion.
+La connexion (onglet **Instagram** → **Se connecter à Instagram**) se fait sur instagram.com dans l'app : le mot
+de passe n'est jamais lu, seuls les cookies de session sont gardés dans l'espace privé de l'app. Elle est nécessaire
+pour les photos, les carrousels complets, les stories et les publications privées des comptes que vous suivez.
+Les reels publics fonctionnent souvent sans connexion.
+
+Avec un compte connecté, les publications (y compris privées) sont lues via l'API web d'Instagram : un carrousel
+affiche toutes ses photos et vidéos, à cocher avant le téléchargement. L'onglet indique le compte connecté
+(@nom) et signale une session expirée ; les liens `instagram.com/share/…` sont suivis jusqu'à la publication.
 
 ## Sécurité
 
