@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -82,6 +83,13 @@ fun AppRoot(vm: MainViewModel) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val jobs by vm.downloads.jobs.collectAsStateWithLifecycle()
     val gate = rememberDownloadGate()
+    val context = LocalContext.current
+    val login = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        vm.onInstagramLoginClosed()
+    }
+    LaunchedEffect(vm) {
+        vm.loginRequests.collect { login.launch(Intent(context, InstagramLoginActivity::class.java)) }
+    }
 
     AppTheme(vm.accentPlatform) {
         CompositionLocalProvider(LocalHaptics provides settings.haptics, LocalDownloadGate provides gate) {
@@ -123,16 +131,6 @@ fun AppRoot(vm: MainViewModel) {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = insets.calculateBottomPadding() + 12.dp),
                 )
-                AnimatedVisibility(
-                    visible = vm.showInstagramLogin,
-                    enter = slideInVertically(spring(dampingRatio = 0.86f, stiffness = 300f)) { it } + fadeIn(),
-                    exit = slideOutVertically(tween(260)) { it } + fadeOut(tween(260)),
-                ) {
-                    InstagramLoginScreen(
-                        onClose = vm::closeInstagramLogin,
-                        onLoggedIn = vm::onInstagramLoggedIn,
-                    )
-                }
             }
         }
     }

@@ -78,8 +78,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Platform whose colours the app wears: the current tab, or the last platform tab on Files / Settings. */
     var accentPlatform by mutableStateOf(Platform.YOUTUBE)
         private set
-    var showInstagramLogin by mutableStateOf(false)
-        private set
     var updateMessage by mutableStateOf<String?>(null)
         private set
 
@@ -90,7 +88,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _toasts = MutableSharedFlow<Toast>(extraBufferCapacity = 8)
     val toasts: SharedFlow<Toast> = _toasts.asSharedFlow()
 
-    private var finishingLogin = false
+    /** Each emission opens the Instagram login screen. */
+    private val _loginRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val loginRequests: SharedFlow<Unit> = _loginRequests.asSharedFlow()
 
     init {
         viewModelScope.launch { if (instagram.refresh()) instagram.verify() }
@@ -341,38 +341,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openInstagramLogin() {
         viewModelScope.launch {
-            // Reconnecting: drop the old session first, otherwise the login page would take it for a new login.
+            // Reconnecting: drop the old session first, otherwise it would be taken for the new login.
             if (instagram.refresh()) instagram.logout()
-            finishingLogin = false
-            showInstagramLogin = true
+            _loginRequests.emit(Unit)
         }
     }
 
-    /** Closing the page also checks the cookies: the login may have ended on a page the screen did not catch. */
-    fun closeInstagramLogin() {
-        if (!showInstagramLogin) return
+    /** The login screen closed: a session cookie there means a new login (the old one was dropped before). */
+    fun onInstagramLoginClosed() {
         viewModelScope.launch {
-            if (!onLoginFinished()) showInstagramLogin = false
+            if (!instagram.completeLogin()) return@launch
+            toast("Connecté à Instagram")
+            // The link that needed the account is analysed again.
+            if (insta.phase is Phase.Failed && insta.urlText.isNotBlank()) analyze(insta)
+            instagram.verify()
         }
-    }
-
-    fun onInstagramLoggedIn() {
-        viewModelScope.launch { onLoginFinished() }
-    }
-
-    private suspend fun onLoginFinished(): Boolean {
-        if (finishingLogin || !showInstagramLogin) return false
-        finishingLogin = true
-        if (!instagram.completeLogin()) {
-            finishingLogin = false
-            return false
-        }
-        showInstagramLogin = false
-        toast("Connecté à Instagram")
-        // The link that needed the account is analysed again.
-        if (insta.phase is Phase.Failed && insta.urlText.isNotBlank()) analyze(insta)
-        instagram.verify()
-        return true
     }
 
     fun logoutInstagram() {
