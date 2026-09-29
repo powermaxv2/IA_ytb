@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">YT Downloader</string>
+    <string name="share_label">Télécharger avec YT Downloader</string>
+    <string name="channel_progress">Téléchargements en cours</string>
+    <string name="channel_done">Téléchargements terminés</string>
+</resources>

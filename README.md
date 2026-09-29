@@ -2,6 +2,9 @@
 
 Application macOS native (SwiftUI) pour télécharger des vidéos YouTube **avec le son**, dans la qualité de votre choix — de 144p jusqu'au **maximum disponible (4K, 8K, HDR, 60 fps)** — ou seulement l'audio.
 
+> **Android** : une version APK (YouTube + Instagram) se trouve dans [`android/`](android/README.md).
+> Elle est indépendante de l'app macOS.
+
 ## Fonctionnalités
 
 - **Coller / glisser-déposer** un lien → analyse automatique des qualités disponibles
