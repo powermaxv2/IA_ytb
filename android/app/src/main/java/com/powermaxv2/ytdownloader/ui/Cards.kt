@@ -406,6 +406,7 @@ fun PhotosCard(post: InstagramPost, vm: MainViewModel) {
             Column(Modifier.weight(1f)) {
                 Text(post.owner?.let { "@$it" } ?: "Instagram", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 val counts = listOfNotNull(
+                    "Story".takeIf { post.isStory },
                     post.photoCount.takeIf { it > 0 }?.let { if (it > 1) "$it photos" else "1 photo" },
                     post.videoCount.takeIf { it > 0 }?.let { if (it > 1) "$it vidéos" else "1 vidéo" },
                 ).joinToString(" · ")

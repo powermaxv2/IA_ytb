@@ -15,6 +15,7 @@ import com.powermaxv2.ytdownloader.core.DownloadRequest
 import com.powermaxv2.ytdownloader.core.Errors
 import com.powermaxv2.ytdownloader.core.InstagramAccount
 import com.powermaxv2.ytdownloader.core.InstagramPost
+import com.powermaxv2.ytdownloader.core.InstagramSession
 import com.powermaxv2.ytdownloader.core.JobEvent
 import com.powermaxv2.ytdownloader.core.JobSpec
 import com.powermaxv2.ytdownloader.core.Links
@@ -25,6 +26,7 @@ import com.powermaxv2.ytdownloader.core.PlaylistEntry
 import com.powermaxv2.ytdownloader.core.PlaylistInfo
 import com.powermaxv2.ytdownloader.core.PlaylistQuality
 import com.powermaxv2.ytdownloader.core.QualityOption
+import com.powermaxv2.ytdownloader.core.StoryResult
 import com.powermaxv2.ytdownloader.core.UpdateResult
 import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
@@ -195,6 +197,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val url = instagram.resolveLink(link)
         if (url != link) pane.urlText = url
         val loggedIn = instagram.refresh()
+        if (InstagramSession.isStory(url)) return fetchStory(url, loggedIn)
         // With the account, Instagram's own API lists every photo and video of a post, private ones included.
         val post = if (loggedIn) instagram.fetchPost(url) else null
         if (post != null && (post.isCarousel || post.photoCount > 0)) return MediaInfo.Photos(post)
@@ -205,6 +208,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             post?.let { return MediaInfo.Photos(it) }
             if (loggedIn && instagram.account.value is InstagramAccount.Expired) throw DownloadError(SESSION_EXPIRED)
             throw e
+        }
+    }
+
+    /** Stories only exist behind a login and yt-dlp cannot read them reliably: ask Instagram's API directly. */
+    private suspend fun fetchStory(url: String, loggedIn: Boolean): MediaInfo {
+        if (!loggedIn) throw DownloadError(STORY_LOGIN)
+        return when (val result = instagram.fetchStory(url)) {
+            is StoryResult.Found -> MediaInfo.Photos(result.post)
+            StoryResult.SessionExpired -> throw DownloadError(SESSION_EXPIRED)
+            is StoryResult.Unavailable -> throw DownloadError("$STORY_UNAVAILABLE\nDétail : ${result.trace}")
         }
     }
 
@@ -222,7 +235,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 throw DownloadError(Errors.friendly((e.message ?: "").lines()))
             }
             val json = runCatching { JSONObject(response.out.trim()) }.getOrElse {
-                throw DownloadError("Réponse inattendue de yt-dlp. Mettez à jour yt-dlp dans les réglages.")
+                // Keep yt-dlp's own explanation when it gave one instead of blaming an out-of-date yt-dlp.
+                val reason = response.err.lines().map { it.trim().take(300) }.filter { it.isNotEmpty() }
+                throw DownloadError(if (reason.isEmpty()) UNREADABLE else Errors.friendly(reason.takeLast(5)))
             }
             if (json.str("_type") == "playlist") {
                 val playlist = PlaylistInfo.from(json, url)
@@ -387,5 +402,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         private const val NO_MEDIA = "Aucune vidéo téléchargeable trouvée à ce lien (les directs en cours ne sont pas pris en charge)."
         private const val SESSION_EXPIRED = "Session Instagram expirée : reconnectez votre compte en haut de l'onglet Instagram."
+        private const val STORY_LOGIN = "Les stories Instagram ne sont visibles qu'avec un compte : connectez le vôtre en haut de l'onglet Instagram."
+        private const val STORY_UNAVAILABLE = "Story introuvable : elle a expiré (24 h), a été supprimée ou n'est pas visible avec ce compte."
+        private const val UNREADABLE =
+            "yt-dlp n'a rien pu lire à ce lien. Vérifiez-le et réessayez ; si cela persiste, mettez yt-dlp à jour dans les réglages."
     }
 }
