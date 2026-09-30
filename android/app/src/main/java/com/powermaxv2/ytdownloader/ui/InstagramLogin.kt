@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import com.powermaxv2.ytdownloader.core.InstagramSession
 import com.powermaxv2.ytdownloader.core.Platform
 
@@ -178,6 +180,12 @@ class InstagramLoginActivity : ComponentActivity() {
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
         defaultAgent = settings.userAgentString
+        // WebView adds an "X-Requested-With: <package name>" header to every request. Instagram's CDN
+        // rejects it in its CORS check, so the login page's scripts never load and the page stays stuck on
+        // the Instagram splash. An empty allow-list stops WebView from sending that header to any site.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
+            WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
+        }
         val cookies = CookieManager.getInstance()
         cookies.setAcceptCookie(true)
         cookies.setAcceptThirdPartyCookies(this, true)
