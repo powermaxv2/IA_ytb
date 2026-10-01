@@ -157,6 +157,12 @@ class DownloadService : Service() {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
+    /** Android 15+ allows "dataSync" services 6 h a day: one still running when told to stop makes the app crash. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()

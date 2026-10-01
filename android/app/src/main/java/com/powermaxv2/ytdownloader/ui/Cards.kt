@@ -330,8 +330,13 @@ fun PlaylistCard(playlist: PlaylistInfo, vm: MainViewModel) {
             }
         }
         val count = selected.size
+        val what = when {
+            mode == MediaMode.AUDIO -> if (count > 1) "pistes audio" else "piste audio"
+            count > 1 -> "vidéos"
+            else -> "vidéo"
+        }
         GradientButton(
-            if (count > 1) "Télécharger $count vidéos" else "Télécharger $count vidéo",
+            "Télécharger $count $what",
             Modifier.fillMaxWidth(),
             icon = Icons.Rounded.Download,
             enabled = count > 0,

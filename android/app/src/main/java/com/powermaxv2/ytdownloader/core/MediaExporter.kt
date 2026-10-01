@@ -31,6 +31,9 @@ object MediaExporter {
         VIDEO(Environment.DIRECTORY_MOVIES),
         AUDIO(Environment.DIRECTORY_MUSIC),
         IMAGE(Environment.DIRECTORY_PICTURES),
+
+        /** Unknown type (".unknown_video"…): the media collections refuse it, the Download folder takes anything. */
+        OTHER(Environment.DIRECTORY_DOWNLOADS),
     }
 
     private val fallbackMimes = mapOf(
@@ -46,9 +49,10 @@ object MediaExporter {
     }
 
     private fun kindOf(mime: String): Kind = when {
+        mime.startsWith("video/") -> Kind.VIDEO
         mime.startsWith("audio/") -> Kind.AUDIO
         mime.startsWith("image/") -> Kind.IMAGE
-        else -> Kind.VIDEO
+        else -> Kind.OTHER
     }
 
     /** Characters refused by the shared storage file system. */
@@ -75,6 +79,7 @@ object MediaExporter {
             Kind.VIDEO -> MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
             Kind.AUDIO -> MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
             Kind.IMAGE -> MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            Kind.OTHER -> MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         }
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)

@@ -70,19 +70,25 @@ affiche toutes ses photos et vidéos, à cocher avant le téléchargement. L'ong
 ## Autres réseaux et liens de vidéos
 
 L'onglet **Autres** accepte les liens `x.com` / `twitter.com`, `tiktok.com` (y compris `vm.tiktok.com`),
-`snapchat.com/spotlight/…`, `facebook.com` et tout autre lien `https://` : yt-dlp cherche la vidéo dans la page (des centaines de
-sites) ou télécharge directement un fichier `.mp4`, `.webm`… Aucun compte n'est demandé.
+`snapchat.com/spotlight/…`, `facebook.com` (vidéos, reels, liens de partage `facebook.com/share/…` et `fb.watch`) et
+tout autre lien `https://` : yt-dlp cherche la vidéo dans la page (des centaines de sites) ou télécharge directement
+un fichier `.mp4`, `.webm`… Aucun compte n'est demandé.
+
+Seules les qualités qui ont du son sont proposées : sur Facebook, les flux vidéo sans son sont écartés et la vidéo est
+téléchargée en **Max** (souvent 720p ou 1080p). Les compteurs que Facebook ajoute devant les titres
+(« 9.8K views · 341 reactions | … ») sont retirés du titre et du nom du fichier.
 
 Limites :
 
 - **BeReal** : l'app ne publie aucun lien public vers une publication (`bere.al/<nom>` ne mène qu'à un profil) et
   yt-dlp n'a pas d'extracteur BeReal. Un lien BeReal affiche donc une explication au lieu de télécharger.
-- **Facebook** : les contenus en direct, protégés ou dans des groupes privés ne sont pas lus. Pas de choix de qualité
-  sur certaines vidéos (téléchargement en **Max** automatique).
+- **Facebook** : seules les vidéos publiques sont lues ; celles réservées aux amis ou à un groupe privé, et celles que
+  Facebook ne montre qu'aux personnes connectées, affichent une explication (pas de connexion Facebook dans l'app).
 - **X** : seules les vidéos (et GIF) sont téléchargées, pas les photos ; les posts protégés ou réservés aux adultes
   demandent un compte, non pris en charge.
 - **TikTok** : les diaporamas de photos ne sont pas pris en charge.
-- **Snapchat** : seuls les liens Spotlight publics fonctionnent (pas les Stories ni les Snaps privés).
+- **Snapchat** : seuls les liens Spotlight publics fonctionnent (pas les Stories ni les Snaps privés) ; la miniature
+  n'est pas intégrée au fichier (yt-dlp refuse l'extension de l'image Snapchat, l'app relance donc sans elle).
 - Un lien direct vers un fichier ne donne pas de choix de qualité : le fichier est téléchargé tel quel (option
   **Max**).
 

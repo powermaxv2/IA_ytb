@@ -179,6 +179,7 @@ class DownloadManager(
                 if (line.isEmpty()) return@execute
                 when {
                     line.startsWith("[FILE]") -> synchronized(produced) { produced += File(line.removePrefix("[FILE]").trim()) }
+                    line.startsWith("[FMT]") -> tracker.onFormats(line.removePrefix("[FMT]"))
                     line.startsWith("[PROG]") -> {
                         val progress = tracker.onProgress(line.removePrefix("[PROG]")) ?: return@execute
                         val now = SystemClock.elapsedRealtime()
@@ -204,18 +205,31 @@ class DownloadManager(
                 }
             }
         } catch (e: YoutubeDLException) {
-            val lines = synchronized(tail) { tail.toList() }
-            throw DownloadError(Errors.friendly(lines + listOfNotNull(e.message)))
+            val lines = synchronized(tail) { tail.toList() } + listOfNotNull(e.message)
+            // Snapchat covers end in ".IRZXSOY": yt-dlp refuses that extension before downloading anything.
+            if (request.embedThumbnail && lines.any { it.contains("is unusual and will be skipped") }) {
+                outDir.deleteRecursively()
+                return runYtDlp(id, request.copy(embedThumbnail = false), workDir)
+            }
+            // The file is complete when only the cover could not be embedded (e.g. .webm or .flv from some sites).
+            val coverOnly = lines.any { it.contains("Postprocessing:") && it.contains("embed", ignoreCase = true) }
+            if (coverOnly) leftovers(outDir, withImages = false).takeIf { it.isNotEmpty() }?.let { return it }
+            throw DownloadError(Errors.friendly(lines))
         }
 
         val files = synchronized(produced) { produced.toList() }.filter { it.isFile }
         if (files.isNotEmpty()) return files
-        // Fallback: whatever media yt-dlp left in the output folder.
-        return outDir.walkTopDown()
-            .filter { it.isFile && !it.name.endsWith(".part") && !it.name.endsWith(".ytdl") }
-            .filter { MediaExporter.mimeOf(it.name).let { m -> m.startsWith("video/") || m.startsWith("audio/") || m.startsWith("image/") } }
-            .toList()
+        return leftovers(outDir, withImages = true)
     }
+
+    /** Media yt-dlp left in [dir], without partial downloads or post-processing temporary files. */
+    private fun leftovers(dir: File, withImages: Boolean): List<File> = dir.walkTopDown()
+        .filter { it.isFile && !it.name.endsWith(".part") && !it.name.endsWith(".ytdl") && !it.name.contains(".temp.") }
+        .filter {
+            val mime = MediaExporter.mimeOf(it.name)
+            mime.startsWith("video/") || mime.startsWith("audio/") || (withImages && mime.startsWith("image/"))
+        }
+        .toList()
 
     private suspend fun runDirect(id: String, items: List<DirectItem>, workDir: File): List<File> = withContext(Dispatchers.IO) {
         val files = mutableListOf<File>()
@@ -273,6 +287,12 @@ private class ProgressTracker(private val mode: MediaMode) {
     private var currentFormat: String? = null
     private var phaseIndex = 0
     private var progress = 0.0
+    private var plannedParts: Int? = null
+
+    /** yt-dlp's choice, printed before downloading: "137+140" means a video file then an audio file. */
+    fun onFormats(formatIds: String) {
+        plannedParts = formatIds.split('+').count { it.isNotBlank() }.takeIf { it > 0 }
+    }
 
     fun onProgress(payload: String): Snapshot? {
         val parts = payload.split("|")
@@ -292,7 +312,8 @@ private class ProgressTracker(private val mode: MediaMode) {
         currentFormat?.let { if (it != formatId) phaseIndex++ }
         currentFormat = formatId
 
-        val expected = if (mode == MediaMode.AUDIO || codecsUnknown || (hasVideo && hasAudio)) 1 else 2
+        val expected = plannedParts
+            ?: if (mode == MediaMode.AUDIO || codecsUnknown || (hasVideo && hasAudio)) 1 else 2
         val fraction = total?.let { if (it > 0) minOf(1.0, downloaded / it) else 0.0 } ?: 0.0
         val phase = minOf(phaseIndex, expected - 1)
         progress = maxOf(progress, minOf(1.0, (phase + fraction) / expected))

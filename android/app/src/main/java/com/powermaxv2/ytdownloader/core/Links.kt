@@ -16,8 +16,9 @@ enum class Platform(val label: String) {
 object Links {
     private val urlRegex = Regex("""https?://[^\s<>"']+""", RegexOption.IGNORE_CASE)
     private val bareLinkRegex = Regex(
-        """^(www\.|m\.|mobile\.|music\.|vm\.|vt\.)?""" +
-            """(youtube\.com|youtu\.be|instagram\.com|x\.com|twitter\.com|tiktok\.com|snapchat\.com|facebook\.com|bereal\.com|bere\.al)/\S+$""",
+        """^(www\.|m\.|mobile\.|music\.|vm\.|vt\.|web\.)?""" +
+            """(youtube\.com|youtu\.be|instagram\.com|x\.com|twitter\.com|tiktok\.com|snapchat\.com|facebook\.com|fb\.watch|""" +
+            """bereal\.com|bere\.al)/\S+$""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -47,7 +48,7 @@ object Links {
             isHost("x.com") || isHost("twitter.com") -> Platform.TWITTER
             isHost("tiktok.com") -> Platform.TIKTOK
             isHost("snapchat.com") -> Platform.SNAPCHAT
-            isHost("facebook.com") -> Platform.FACEBOOK
+            host == "fb.watch" || isHost("facebook.com") -> Platform.FACEBOOK
             host == "bere.al" || isHost("bereal.com") -> Platform.BEREAL
             else -> Platform.OTHER
         }

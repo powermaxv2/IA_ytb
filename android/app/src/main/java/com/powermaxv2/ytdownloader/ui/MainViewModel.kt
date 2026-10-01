@@ -146,7 +146,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // MARK: - Links
 
-    /** YouTube and Instagram links go to their own tab; X, TikTok, Snapchat, BeReal and any other site to Autres. */
+    /** YouTube and Instagram links go to their own tab; X, TikTok, Facebook, Snapchat, BeReal and any other site to Autres. */
     private fun paneFor(url: String): LinkPane = when (Links.platform(url)) {
         Platform.YOUTUBE -> youtube
         Platform.INSTAGRAM -> insta
@@ -186,7 +186,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             pane.phase = Phase.Failed(
                 when (pane.platform) {
                     Platform.INSTAGRAM -> "Collez un lien Instagram valide (https://www.instagram.com/…)."
-                    Platform.OTHER -> "Collez un lien https:// valide (X, TikTok, Snapchat ou un site de vidéos)."
+                    Platform.OTHER -> "Collez un lien https:// valide (X, TikTok, Facebook, Snapchat ou un site de vidéos)."
                     else -> "Collez un lien https:// valide (YouTube…)."
                 },
             )
@@ -351,7 +351,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             downloads.enqueue(entry.title, entry.thumbnail, req.summary, platform, JobSpec.YtDlp(req))
         }
-        queued(if (entries.size == 1) "1 vidéo ajoutée" else "${entries.size} vidéos ajoutées")
+        val n = entries.size
+        queued(
+            when {
+                mode == MediaMode.AUDIO -> if (n > 1) "$n pistes audio ajoutées" else "1 piste audio ajoutée"
+                n > 1 -> "$n vidéos ajoutées"
+                else -> "1 vidéo ajoutée"
+            },
+        )
     }
 
     fun downloadPhotos(post: InstagramPost, indexes: List<Int>) {

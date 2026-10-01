@@ -12,11 +12,16 @@ object Errors {
         val message = raw.removePrefix("ERROR:").trim().replace(extractorPrefix, "")
         val lower = message.lowercase(Locale.ROOT)
         val fromInstagram = "instagram" in raw.lowercase(Locale.ROOT)
+        val fromFacebook = "[facebook" in raw.lowercase(Locale.ROOT)
         return when {
             "unsupported url" in lower ->
                 "Aucune vidéo détectée à ce lien : le site n'est pas pris en charge, ou la page ne contient pas de vidéo."
-            "cannot parse data" in lower -> "Facebook n'a pas pu lire cette vidéo : elle est en direct, supprimée ou privée."
             "is not a valid url" in lower -> "Ce lien n'est pas valide."
+            // Facebook gives logged-out visitors a page without the video: not public (friends, group), or removed.
+            "cannot parse data" in lower || (fromFacebook && "only available for registered users" in lower) ->
+                "Facebook ne montre pas cette vidéo sans compte : elle n'est pas publique (amis, groupe privé) " +
+                    "ou a été supprimée. Si elle est bien publique, mettez yt-dlp à jour dans les réglages."
+            fromFacebook && "facebook said" in lower -> "Facebook indique que cette vidéo n'est plus disponible."
             fromInstagram && ("private" in lower || "follow" in lower) ->
                 "Publication d'un compte privé : connectez un compte Instagram qui suit ce compte."
             fromInstagram && (
@@ -24,8 +29,14 @@ object Errors {
                     "rate-limit" in lower || "not available" in lower || "401" in lower
                 ) ->
                 "Instagram demande une connexion : connectez votre compte en haut de l'onglet Instagram."
+            "only available for registered users" in lower ->
+                "Ce site ne montre cette vidéo qu'avec un compte : elle ne peut pas être téléchargée."
             "there is no video in this post" in lower || "no video formats found" in lower ->
-                "Cette publication ne contient pas de vidéo. Connectez votre compte Instagram pour télécharger les photos."
+                if (fromInstagram) {
+                    "Cette publication ne contient pas de vidéo. Connectez votre compte Instagram pour télécharger les photos."
+                } else {
+                    "Aucune vidéo à ce lien : la publication ne contient que des photos ou du texte."
+                }
             "no video could be found in this tweet" in lower ->
                 "Ce post X ne contient pas de vidéo (les photos ne sont pas prises en charge)."
             "protected tweet" in lower || "nsfw tweet" in lower ->
@@ -40,6 +51,10 @@ object Errors {
             "do not have permission to view this post" in lower ->
                 "Cette vidéo TikTok est privée : il faudrait un compte, non pris en charge."
             "drm" in lower && "protected" in lower -> "Cette vidéo est protégée (DRM) : elle ne peut pas être téléchargée."
+            "unable to obtain file audio codec" in lower ->
+                "Cette vidéo n'a pas de son : rien à extraire en audio. Choisissez « Vidéo + son »."
+            "is unusual and will be skipped" in lower ->
+                "Ce site propose un fichier au format inhabituel, refusé par sécurité : il ne peut pas être téléchargé."
             "geo restrict" in lower || "not available in your country" in lower -> "Vidéo indisponible dans votre pays."
             "private video" in lower -> "Cette vidéo est privée."
             "confirm your age" in lower -> "Vidéo soumise à une limite d'âge : elle ne peut pas être téléchargée sans compte."

@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -632,18 +633,30 @@ fun PlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
             drawPath(ghost, Color(0xFF1A1A1A), style = Stroke(s * 0.05f, join = StrokeJoin.Round))
         }
         Platform.FACEBOOK -> Canvas(modifier) {
-            val s = size.minDimension
-            drawRoundRect(Color(0xFF1877F2), cornerRadius = CornerRadius(s * 0.16f))
-            val stroke = Stroke(s * 0.095f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            // Blue disc with the white "f" running off its bottom edge, drawn on a 24-unit grid.
+            val k = size.minDimension / 24f
+            val disc = Path().apply { addOval(Rect(Offset(12f * k, 12f * k), 12f * k)) }
+            drawPath(disc, Color(0xFF0866FF))
             val f = Path().apply {
-                moveTo(s * 0.42f, s * 0.22f)
-                lineTo(s * 0.42f, s * 0.78f)
-                moveTo(s * 0.58f, s * 0.38f)
-                lineTo(s * 0.30f, s * 0.38f)
-                moveTo(s * 0.50f, s * 0.52f)
-                lineTo(s * 0.30f, s * 0.52f)
+                moveTo(9.1f * k, 25f * k)
+                lineTo(9.1f * k, 15.71f * k)
+                lineTo(6.63f * k, 15.71f * k)
+                lineTo(6.63f * k, 12.04f * k)
+                lineTo(9.1f * k, 12.04f * k)
+                lineTo(9.1f * k, 10.46f * k)
+                cubicTo(9.1f * k, 6.38f * k, 10.95f * k, 4.49f * k, 14.96f * k, 4.49f * k)
+                cubicTo(15.6f * k, 4.49f * k, 16.9f * k, 4.6f * k, 17.57f * k, 4.78f * k)
+                lineTo(17.57f * k, 8.11f * k)
+                cubicTo(17.2f * k, 8.07f * k, 16.6f * k, 8.06f * k, 16.18f * k, 8.06f * k)
+                cubicTo(14.37f * k, 8.06f * k, 13.45f * k, 8.75f * k, 13.45f * k, 10.75f * k)
+                lineTo(13.45f * k, 12.04f * k)
+                lineTo(17.37f * k, 12.04f * k)
+                lineTo(16.7f * k, 15.71f * k)
+                lineTo(13.45f * k, 15.71f * k)
+                lineTo(13.45f * k, 25f * k)
+                close()
             }
-            drawPath(f, Color.White, style = stroke)
+            clipPath(disc) { drawPath(f, Color.White) }
         }
         Platform.BEREAL -> BoxWithConstraints(
             modifier

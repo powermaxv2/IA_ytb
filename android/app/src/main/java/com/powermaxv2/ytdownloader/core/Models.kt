@@ -36,6 +36,11 @@ internal inline fun JSONArray.forEachObject(action: (index: Int, JSONObject) -> 
 
 // MARK: - yt-dlp info
 
+/** Counters Facebook puts before its titles ("9.8K views · 341 reactions | Title"); valid for Kotlin and yt-dlp (Python). */
+internal const val FACEBOOK_COUNTERS =
+    """(?i)^(?:[\d.,]+\s?[KMB]?\s(?:views?|reactions?|comments?|shares?|plays?)\s*·?\s*)+\|\s*(?=\S)"""
+private val facebookCounters = Regex(FACEBOOK_COUNTERS)
+
 data class VideoFormat(
     val formatId: String,
     val ext: String?,
@@ -58,6 +63,10 @@ data class VideoFormat(
 
     val hasAudio: Boolean
         get() = acodec?.let { it != "none" } ?: false
+
+    /** False only when the format is known to be silent: progressive files that list no codec usually carry sound. */
+    val mayHaveAudio: Boolean
+        get() = acodec != "none"
 
     val isHdr: Boolean
         get() = dynamicRange?.let { !it.equals("SDR", ignoreCase = true) } ?: false
@@ -105,10 +114,18 @@ data class VideoInfo(
 
     val audioEstimatedSize: Double? get() = bestAudio?.let { estimatedSize(it) }
 
-    /** One option per available video height, best first; a single "Max" option when the video does not tell its height. */
+    /** One option per video height that comes with sound, best first; a single "Max" option when no height is known. */
     val qualityOptions: List<QualityOption> by lazy {
         val audioSize = audioEstimatedSize ?: 0.0
-        val byHeight = formats.filter { it.hasVideo && it.height != null }
+        val sized = formats.filter { it.hasVideo && it.height != null }
+        // Facebook lists silent video-only heights next to its sound files, which have no height.
+        val withSound = if (bestAudio != null) sized else sized.filter { it.mayHaveAudio }
+        val offered = when {
+            withSound.isNotEmpty() -> withSound
+            formats.any { it.hasVideo && it.height == null && it.mayHaveAudio } -> emptyList()
+            else -> sized
+        }
+        val byHeight = offered
             .groupBy { it.height ?: 0 }
             .map { (height, group) ->
                 val best = group.maxByOrNull { it.tbr ?: 0.0 }
@@ -125,7 +142,7 @@ data class VideoInfo(
             }
             .sortedByDescending { it.height }
         if (byHeight.isNotEmpty()) return@lazy byHeight
-        val unsized = formats.filter { it.hasVideo }
+        val unsized = formats.filter { it.hasVideo && it.mayHaveAudio }.ifEmpty { formats.filter { it.hasVideo } }
         if (unsized.isEmpty()) return@lazy emptyList()
         val best = unsized.maxByOrNull { it.tbr ?: 0.0 }
         val size = best?.let { b -> estimatedSize(b)?.let { it + if (b.hasAudio) 0.0 else audioSize } }
@@ -140,9 +157,11 @@ data class VideoInfo(
             if (formats.isEmpty() && o.str("url") != null && o.str("ext") !in VideoFormat.imageExtensions) {
                 formats += VideoFormat.from(o)
             }
+            val title = o.str("title") ?: o.str("fulltitle") ?: "Sans titre"
+            val fromFacebook = o.str("extractor_key")?.startsWith("Facebook") == true
             return VideoInfo(
                 id = o.str("id") ?: "",
-                title = o.str("title") ?: o.str("fulltitle") ?: "Sans titre",
+                title = if (fromFacebook) title.replaceFirst(facebookCounters, "") else title,
                 uploader = o.str("channel") ?: o.str("uploader"),
                 duration = o.num("duration"),
                 thumbnail = o.str("thumbnail") ?: lastThumbnail(o),
@@ -348,6 +367,8 @@ data class DownloadRequest(
             "download:[PROG]%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|%(info.format_id)s|%(info.vcodec)s|%(info.acodec)s",
             "--progress-template",
             "postprocess:[POST]%(progress.postprocessor)s|%(progress.status)s",
+            // Chosen formats ("137+140" = video then audio): tells the progress bar how many files to expect.
+            "--print", "video:[FMT]%(format_id)s",
             "--print", "after_move:[FILE]%(filepath)s",
         )
 
@@ -376,6 +397,7 @@ data class DownloadRequest(
             }
         }
 
+        if (Links.platform(url) == Platform.FACEBOOK) args += listOf("--replace-in-metadata", "title", FACEBOOK_COUNTERS, "")
         if (embedMetadata) args += "--embed-metadata"
         if (embedThumbnail) args += "--embed-thumbnail"
         if (cookies != null) args += listOf("--cookies", cookies.absolutePath)

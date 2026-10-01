@@ -593,11 +593,12 @@ private fun EmptyCard(platform: Platform) {
         }
         if (platform == Platform.OTHER) {
             Text(
-                "Snapchat : liens Spotlight uniquement. Facebook : certains contenus (en direct, protégés) ne sont pas lus. BeReal : aucun lien public, donc rien à télécharger pour l'instant. Les photos de X et les diaporamas TikTok ne sont pas pris en charge.",
+                "Vidéos publiques uniquement : pas de vidéos d'amis ou de groupes privés sur Facebook, pas de photos " +
+                    "sur X ni de diaporamas TikTok. Snapchat : liens Spotlight. BeReal : aucun lien public, rien à télécharger.",
                 color = Palette.TextTertiary,
                 fontSize = 11.5.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.staggeredEntrance(5, baseDelay = 260),
+                modifier = Modifier.staggeredEntrance(7, baseDelay = 260),
             )
         }
     }

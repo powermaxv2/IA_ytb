@@ -85,11 +85,12 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             Column(Modifier.weight(1f)) {
                 Text("Téléchargements", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 AnimatedContent(targetState = active to done, label = "summary") { (running, finished) ->
+                    val finishedText = if (finished > 1) "$finished terminés" else "$finished terminé"
                     Text(
                         when {
-                            running > 0 && finished > 0 -> "$running en cours · $finished terminés"
+                            running > 0 && finished > 0 -> "$running en cours · $finishedText"
                             running > 0 -> "$running en cours"
-                            finished > 0 -> "$finished terminés · Films, Musique et Images › ${MediaExporter.FOLDER}"
+                            finished > 0 -> "$finishedText · Films, Musique et Images › ${MediaExporter.FOLDER}"
                             else -> "Rien pour l'instant"
                         },
                         color = Palette.TextSecondary,
