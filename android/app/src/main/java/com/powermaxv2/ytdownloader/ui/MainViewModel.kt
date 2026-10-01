@@ -13,9 +13,8 @@ import com.powermaxv2.ytdownloader.core.DirectItem
 import com.powermaxv2.ytdownloader.core.DownloadError
 import com.powermaxv2.ytdownloader.core.DownloadRequest
 import com.powermaxv2.ytdownloader.core.Errors
-import com.powermaxv2.ytdownloader.core.InstagramAccount
+import com.powermaxv2.ytdownloader.core.Instagram
 import com.powermaxv2.ytdownloader.core.InstagramPost
-import com.powermaxv2.ytdownloader.core.InstagramSession
 import com.powermaxv2.ytdownloader.core.JobEvent
 import com.powermaxv2.ytdownloader.core.JobSpec
 import com.powermaxv2.ytdownloader.core.Links
@@ -27,7 +26,6 @@ import com.powermaxv2.ytdownloader.core.PlaylistEntry
 import com.powermaxv2.ytdownloader.core.PlaylistInfo
 import com.powermaxv2.ytdownloader.core.PlaylistQuality
 import com.powermaxv2.ytdownloader.core.QualityOption
-import com.powermaxv2.ytdownloader.core.StoryResult
 import com.powermaxv2.ytdownloader.core.UpdateCheckJob
 import com.powermaxv2.ytdownloader.core.UpdateResult
 import com.powermaxv2.ytdownloader.core.VideoContainer
@@ -44,9 +42,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.io.File
 import java.util.Locale
-import java.util.UUID
 
 /** Settings is not in the bottom bar: it opens from the gear in each screen header. */
 enum class Tab { YOUTUBE, INSTAGRAM, OTHER, DOWNLOADS, SETTINGS }
@@ -71,7 +67,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as App
     val engine = app.engine
     val downloads = app.downloads
-    val instagram = app.instagram
     val prefs = app.prefs
     val updater = app.updater
 
@@ -105,12 +100,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _toasts = MutableSharedFlow<Toast>(extraBufferCapacity = 8)
     val toasts: SharedFlow<Toast> = _toasts.asSharedFlow()
 
-    /** Each emission opens the Instagram login screen. */
-    private val _loginRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val loginRequests: SharedFlow<Unit> = _loginRequests.asSharedFlow()
-
     init {
-        viewModelScope.launch { if (instagram.refresh()) instagram.verify() }
         viewModelScope.launch {
             downloads.events.collect { event ->
                 when (event) {
@@ -224,7 +214,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         pane.phase = Phase.Loading(platform)
         pane.job = viewModelScope.launch {
             pane.phase = try {
-                Phase.Ready(if (platform == Platform.INSTAGRAM) fetchInstagram(pane, url) else ytdlpInfo(url, cookies = false))
+                Phase.Ready(if (platform == Platform.INSTAGRAM) fetchInstagram(pane, url) else mediaInfo(ytdlpJson(url), url))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -233,65 +223,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Public posts only, read without any account: the app no longer logs in to Instagram. */
     private suspend fun fetchInstagram(pane: LinkPane, link: String): MediaInfo {
-        val url = instagram.resolveLink(link)
+        val url = Instagram.resolveLink(link)
         if (url != link) pane.urlText = url
-        val loggedIn = instagram.refresh()
-        if (InstagramSession.isStory(url)) return fetchStory(url, loggedIn)
-        // With the account, Instagram's own API lists every photo and video of a post, private ones included.
-        val post = if (loggedIn) instagram.fetchPost(url) else null
-        if (post != null && (post.isCarousel || post.photoCount > 0)) return MediaInfo.Photos(post)
-        return try {
-            ytdlpInfo(url, cookies = loggedIn)
-        } catch (e: DownloadError) {
-            // Single video that yt-dlp could not read: download it straight from the API answer.
-            post?.let { return MediaInfo.Photos(it) }
-            if (loggedIn && instagram.account.value is InstagramAccount.Expired) throw DownloadError(SESSION_EXPIRED)
-            throw e
+        if (Instagram.isStory(url)) throw DownloadError(STORY_NO_ACCOUNT)
+        // Photos have no video format: yt-dlp must describe them instead of stopping with an error.
+        val json = ytdlpJson(url, listOf("--ignore-no-formats-error"))
+        Instagram.photoPost(json, url)?.let { return MediaInfo.Photos(it) }
+        return mediaInfo(json, url)
+    }
+
+    private suspend fun ytdlpJson(url: String, extraArgs: List<String> = emptyList()): JSONObject = withContext(Dispatchers.IO) {
+        val args = commonArguments + listOf("-J", "--no-playlist", "--flat-playlist", "--no-warnings") + extraArgs + listOf("--", url)
+        val response = try {
+            engine.execute(args)
+        } catch (e: YoutubeDLException) {
+            throw DownloadError(Errors.friendly((e.message ?: "").lines()))
+        }
+        runCatching { JSONObject(response.out.trim()) }.getOrElse {
+            // Keep yt-dlp's own explanation when it gave one instead of blaming an out-of-date yt-dlp.
+            val reason = response.err.lines().map { it.trim().take(300) }.filter { it.isNotEmpty() }
+            throw DownloadError(if (reason.isEmpty()) UNREADABLE else Errors.friendly(reason.takeLast(5)))
         }
     }
 
-    /** Stories only exist behind a login and yt-dlp cannot read them reliably: ask Instagram's API directly. */
-    private suspend fun fetchStory(url: String, loggedIn: Boolean): MediaInfo {
-        if (!loggedIn) throw DownloadError(STORY_LOGIN)
-        return when (val result = instagram.fetchStory(url)) {
-            is StoryResult.Found -> MediaInfo.Photos(result.post)
-            StoryResult.SessionExpired -> throw DownloadError(SESSION_EXPIRED)
-            is StoryResult.Unavailable -> throw DownloadError("$STORY_UNAVAILABLE\nDétail : ${result.trace}")
+    private fun mediaInfo(json: JSONObject, url: String): MediaInfo =
+        if (json.str("_type") == "playlist") {
+            val playlist = PlaylistInfo.from(json, url)
+            if (playlist.entries.isEmpty()) throw DownloadError(NO_MEDIA)
+            MediaInfo.Playlist(playlist)
+        } else {
+            val info = VideoInfo.from(json)
+            if (info.formats.isEmpty()) throw DownloadError(NO_MEDIA)
+            MediaInfo.Video(info, url)
         }
-    }
-
-    private suspend fun ytdlpInfo(url: String, cookies: Boolean): MediaInfo = withContext(Dispatchers.IO) {
-        val workDir = File(app.cacheDir, "analyze/${UUID.randomUUID()}")
-        try {
-            val cookiesFile = if (cookies) instagram.writeCookiesFile(workDir) else null
-            val args = commonArguments +
-                listOf("-J", "--no-playlist", "--flat-playlist", "--no-warnings") +
-                (cookiesFile?.let { listOf("--cookies", it.absolutePath) } ?: emptyList()) +
-                listOf("--", url)
-            val response = try {
-                engine.execute(args)
-            } catch (e: YoutubeDLException) {
-                throw DownloadError(Errors.friendly((e.message ?: "").lines()))
-            }
-            val json = runCatching { JSONObject(response.out.trim()) }.getOrElse {
-                // Keep yt-dlp's own explanation when it gave one instead of blaming an out-of-date yt-dlp.
-                val reason = response.err.lines().map { it.trim().take(300) }.filter { it.isNotEmpty() }
-                throw DownloadError(if (reason.isEmpty()) UNREADABLE else Errors.friendly(reason.takeLast(5)))
-            }
-            if (json.str("_type") == "playlist") {
-                val playlist = PlaylistInfo.from(json, url)
-                if (playlist.entries.isEmpty()) throw DownloadError(NO_MEDIA)
-                MediaInfo.Playlist(playlist)
-            } else {
-                val info = VideoInfo.from(json)
-                if (info.formats.isEmpty()) throw DownloadError(NO_MEDIA)
-                MediaInfo.Video(info, url)
-            }
-        } finally {
-            workDir.deleteRecursively()
-        }
-    }
 
     // MARK: - Downloads
 
@@ -399,34 +365,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         toast(message)
     }
 
-    // MARK: - Instagram
-
-    fun openInstagramLogin() {
-        viewModelScope.launch {
-            // Reconnecting: drop the old session first, otherwise it would be taken for the new login.
-            if (instagram.refresh()) instagram.logout()
-            _loginRequests.emit(Unit)
-        }
-    }
-
-    /** The login screen closed: a session cookie there means a new login (the old one was dropped before). */
-    fun onInstagramLoginClosed() {
-        viewModelScope.launch {
-            if (!instagram.completeLogin()) return@launch
-            toast("Connecté à Instagram")
-            // The link that needed the account is analysed again.
-            if (insta.phase is Phase.Failed && insta.urlText.isNotBlank()) analyze(insta)
-            instagram.verify()
-        }
-    }
-
-    fun logoutInstagram() {
-        viewModelScope.launch {
-            instagram.logout()
-            toast("Déconnecté d'Instagram")
-        }
-    }
-
     // MARK: - App updates
 
     fun startAppUpdate() {
@@ -488,9 +426,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val NO_MEDIA = "Aucune vidéo téléchargeable trouvée à ce lien (les directs en cours ne sont pas pris en charge)."
-        private const val SESSION_EXPIRED = "Session Instagram expirée : reconnectez votre compte en haut de l'onglet Instagram."
-        private const val STORY_LOGIN = "Les stories Instagram ne sont visibles qu'avec un compte : connectez le vôtre en haut de l'onglet Instagram."
-        private const val STORY_UNAVAILABLE = "Story introuvable : elle a expiré (24 h), a été supprimée ou n'est pas visible avec ce compte."
+        private const val STORY_NO_ACCOUNT =
+            "Les stories Instagram ne se voient qu'avec un compte connecté, et l'app ne se connecte plus à Instagram " +
+                "(pour protéger votre compte) : elles ne peuvent pas être téléchargées."
         private const val BEREAL_NO_LINKS =
             "BeReal ne donne aucun lien vers une publication : les BeReal ne se voient que dans l'application, " +
                 "et les liens bere.al ne mènent qu'à un profil. Il n'y a rien à télécharger depuis ce lien."

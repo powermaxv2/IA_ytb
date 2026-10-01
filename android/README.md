@@ -10,8 +10,8 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
   de chaque écran
 - **Partager → YT Downloader** depuis l'app YouTube, Instagram, X, TikTok… (ou coller un lien)
 - **YouTube** : vidéos jusqu'en 4K / 8K / HDR / 60 fps, audio seul (M4A, MP3, Opus, FLAC), playlists
-- **Instagram** : reels, vidéos, carrousels ; **photos**, stories et publications privées des comptes suivis
-  avec un compte connecté
+- **Instagram** : reels, vidéos, carrousels et **photos** des comptes publics, sans compte (l'app ne se connecte
+  pas à Instagram)
 - **Autres** : vidéos publiques de **X**, **TikTok**, **Snapchat** (Spotlight) et **Facebook**, et tout lien de vidéo d'un site
   pris en charge par yt-dlp ou d'un fichier vidéo direct (voir ci-dessous)
 - Choix de la qualité en tuiles (la meilleure est marquée **MAX**), formats MP4, MP4 · H.264 (lisible partout) ou MKV
@@ -79,14 +79,14 @@ ls app/build/outputs/apk/release/
 
 ## Instagram
 
-La connexion (onglet **Instagram** → **Se connecter à Instagram**) se fait sur instagram.com dans l'app : le mot
-de passe n'est jamais lu, seuls les cookies de session sont gardés dans l'espace privé de l'app. Elle est nécessaire
-pour les photos, les carrousels complets, les stories et les publications privées des comptes que vous suivez.
-Les reels publics fonctionnent souvent sans connexion.
+Depuis la 1.4.0, l'app **ne se connecte plus à Instagram** : Instagram a verrouillé un compte dont l'app utilisait la
+session. Les publications publiques sont lues comme par un visiteur non connecté, via yt-dlp : reels, vidéos, photos
+et carrousels (photos et vidéos à cocher avant le téléchargement). Les stories et les publications des comptes privés
+ne sont pas accessibles. La session enregistrée par l'écran de connexion des versions précédentes (cookies du
+navigateur intégré) est effacée du téléphone au premier lancement de la 1.4.0.
 
-Avec un compte connecté, les publications (y compris privées) sont lues via l'API web d'Instagram : un carrousel
-affiche toutes ses photos et vidéos, à cocher avant le téléchargement. L'onglet indique le compte connecté
-(@nom) et signale une session expirée ; les liens `instagram.com/share/…` sont suivis jusqu'à la publication.
+Instagram limite parfois les visiteurs non connectés : en cas d'erreur, mettre yt-dlp à jour (Réglages) puis
+réessayer plus tard. Les liens `instagram.com/share/…` sont suivis jusqu'à la publication.
 
 ## Autres réseaux et liens de vidéos
 
@@ -119,6 +119,7 @@ Limites :
 - Mises à jour de yt-dlp depuis sa page GitHub officielle, **vérifiées par SHA-256** (`SHA2-256SUMS`) ;
   empreinte recontrôlée à chaque lancement, un fichier modifié est supprimé.
 - yt-dlp isolé : `--ignore-config`, `--no-plugin-dirs` ; seuls les liens `https://` sont acceptés.
+- Aucune connexion à un compte (Instagram ou autre) : seuls les contenus publics sont lus.
 - Pas de sauvegarde Android des données de l'app (`allowBackup=false`).
 
 ## Structure
@@ -126,7 +127,7 @@ Limites :
 ```
 android/app/src/main/java/com/powermaxv2/ytdownloader/
 ├── App.kt, MainActivity.kt   démarrage, liens partagés
-├── core/                     moteur yt-dlp, file de téléchargements, Instagram, export Galerie
+├── core/                     moteur yt-dlp, file de téléchargements, Instagram, mises à jour, export Galerie
 └── ui/                       écrans Compose et composants animés
 ```
 

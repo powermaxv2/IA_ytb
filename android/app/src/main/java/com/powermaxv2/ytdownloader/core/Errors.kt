@@ -23,17 +23,18 @@ object Errors {
                     "ou a été supprimée. Si elle est bien publique, mettez yt-dlp à jour dans les réglages."
             fromFacebook && "facebook said" in lower -> "Facebook indique que cette vidéo n'est plus disponible."
             fromInstagram && ("private" in lower || "follow" in lower) ->
-                "Publication d'un compte privé : connectez un compte Instagram qui suit ce compte."
+                "Publication d'un compte privé : l'app ne se connecte à aucun compte Instagram, elle ne peut pas la lire."
             fromInstagram && (
                 "login" in lower || "logged" in lower || "cookies" in lower || "authentication" in lower ||
                     "rate-limit" in lower || "not available" in lower || "401" in lower
                 ) ->
-                "Instagram demande une connexion : connectez votre compte en haut de l'onglet Instagram."
+                "Instagram ne montre pas cette publication sans compte : elle est privée ou supprimée, ou Instagram " +
+                    "limite l'accès un moment. Si elle est publique, mettez yt-dlp à jour dans les réglages, puis réessayez."
             "only available for registered users" in lower ->
                 "Ce site ne montre cette vidéo qu'avec un compte : elle ne peut pas être téléchargée."
             "there is no video in this post" in lower || "no video formats found" in lower ->
                 if (fromInstagram) {
-                    "Cette publication ne contient pas de vidéo. Connectez votre compte Instagram pour télécharger les photos."
+                    "Cette publication Instagram ne contient pas de vidéo."
                 } else {
                     "Aucune vidéo à ce lien : la publication ne contient que des photos ou du texte."
                 }

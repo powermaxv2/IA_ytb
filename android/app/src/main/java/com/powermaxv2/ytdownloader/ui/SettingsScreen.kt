@@ -169,7 +169,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
                 "Contrôle d'intégrité à chaque lancement : un yt-dlp modifié est supprimé et remplacé par la version d'origine.",
                 "yt-dlp isolé : aucun fichier de configuration ni plugin externe (--ignore-config, --no-plugin-dirs).",
                 "Seuls les liens https:// sont acceptés ; aucune donnée n'est envoyée ailleurs qu'au site du lien.",
-                "Cookies Instagram gardés dans l'espace privé de l'app, jamais sauvegardés ni partagés.",
+                "Aucune connexion à un compte (Instagram ou autre) : l'app ne lit que les contenus publics.",
                 "Mises à jour de l'app refusées si leur empreinte SHA-256 ou leur signature ne correspond pas.",
             ).forEach { Bullet(it) }
         }

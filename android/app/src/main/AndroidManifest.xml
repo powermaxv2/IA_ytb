@@ -46,12 +46,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.InstagramLoginActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
         <service
             android:name=".core.DownloadService"
             android:exported="false"

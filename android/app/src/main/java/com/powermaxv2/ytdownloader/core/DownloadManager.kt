@@ -60,7 +60,6 @@ class DownloadManager(
     private val scope: CoroutineScope,
     private val engine: Engine,
     private val prefs: Prefs,
-    private val instagram: InstagramSession,
 ) {
     private val _jobs = MutableStateFlow<List<DownloadJob>>(emptyList())
     val jobs: StateFlow<List<DownloadJob>> = _jobs.asStateFlow()
@@ -166,7 +165,6 @@ class DownloadManager(
     }
 
     private suspend fun runYtDlp(id: String, request: DownloadRequest, workDir: File): List<File> {
-        val cookies = if (Links.platform(request.url) == Platform.INSTAGRAM) instagram.writeCookiesFile(workDir) else null
         val outDir = File(workDir, "out").apply { mkdirs() }
         val tracker = ProgressTracker(request.mode)
         val tail = ArrayDeque<String>()
@@ -174,7 +172,7 @@ class DownloadManager(
         var lastUpdate = 0L
 
         try {
-            engine.execute(request.arguments(outDir, cookies), processId = id, mergeStderr = true) { raw ->
+            engine.execute(request.arguments(outDir), processId = id, mergeStderr = true) { raw ->
                 val line = raw.trim()
                 if (line.isEmpty()) return@execute
                 when {

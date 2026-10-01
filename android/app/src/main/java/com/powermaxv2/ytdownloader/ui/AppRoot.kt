@@ -1,7 +1,6 @@
 package com.powermaxv2.ytdownloader.ui
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
@@ -85,13 +84,6 @@ fun AppRoot(vm: MainViewModel) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val jobs by vm.downloads.jobs.collectAsStateWithLifecycle()
     val gate = rememberDownloadGate()
-    val context = LocalContext.current
-    val login = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        vm.onInstagramLoginClosed()
-    }
-    LaunchedEffect(vm) {
-        vm.loginRequests.collect { login.launch(Intent(context, InstagramLoginActivity::class.java)) }
-    }
     BackHandler(enabled = vm.tab == Tab.SETTINGS) { vm.closeSettings() }
 
     AppTheme(vm.accentPlatform) {

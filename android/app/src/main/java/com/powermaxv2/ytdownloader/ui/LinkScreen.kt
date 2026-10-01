@@ -2,7 +2,6 @@ package com.powermaxv2.ytdownloader.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -54,10 +53,6 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.HighQuality
-import androidx.compose.material.icons.automirrored.rounded.Login
-import androidx.compose.material.icons.rounded.AmpStories
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -105,7 +100,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.core.EngineState
-import com.powermaxv2.ytdownloader.core.InstagramAccount
 import com.powermaxv2.ytdownloader.core.Links
 import com.powermaxv2.ytdownloader.core.MediaInfo
 import com.powermaxv2.ytdownloader.core.Platform
@@ -119,8 +113,6 @@ import kotlin.math.sin
 fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues) {
     val engineState by vm.engine.state.collectAsStateWithLifecycle()
     val integrity by vm.engine.integrityAlert.collectAsStateWithLifecycle()
-    val account by vm.instagram.account.collectAsStateWithLifecycle()
-    val isInstagram = pane.platform == Platform.INSTAGRAM
     Column(
         Modifier
             .fillMaxSize()
@@ -145,7 +137,6 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
             )
         }
         EngineBanner(engineState)
-        if (isInstagram) InstagramAccountCard(account, onLogin = vm::openInstagramLogin, onLogout = vm::logoutInstagram)
         UrlBar(vm, pane, enabled = engineState !is EngineState.Failed)
         AnimatedContent(
             targetState = pane.phase,
@@ -161,16 +152,7 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
             when (phase) {
                 Phase.Idle -> EmptyCard(pane.platform)
                 is Phase.Loading -> LoadingCard(phase.platform)
-                is Phase.Failed -> {
-                    val needsLogin = isInstagram &&
-                        (account !is InstagramAccount.LoggedIn || phase.message.contains("connect", ignoreCase = true))
-                    ErrorCard(
-                        message = phase.message,
-                        onRetry = { vm.analyze(pane) },
-                        loginLabel = if (account is InstagramAccount.LoggedOut) "Se connecter" else "Se reconnecter",
-                        onLogin = if (needsLogin) vm::openInstagramLogin else null,
-                    )
-                }
+                is Phase.Failed -> ErrorCard(phase.message, onRetry = { vm.analyze(pane) })
                 is Phase.Ready -> when (val media = phase.media) {
                     is MediaInfo.Video -> VideoCard(media.info, media.sourceUrl, vm)
                     is MediaInfo.Playlist -> PlaylistCard(media.info, vm)
@@ -198,7 +180,7 @@ private fun Header(pane: LinkPane, pulse: Int, onSettings: () -> Unit) {
             )
             Text(
                 when (pane.platform) {
-                    Platform.INSTAGRAM -> "Reels, carrousels, photos et stories · YT Downloader"
+                    Platform.INSTAGRAM -> "Reels, carrousels et photos publics · YT Downloader"
                     Platform.OTHER -> "X, TikTok, Facebook, Snapchat et tout lien vidéo · YT Downloader"
                     else -> "Vidéos jusqu'en 4K/8K, musique, playlists · YT Downloader"
                 },
@@ -314,104 +296,6 @@ private fun EngineBanner(state: EngineState) {
             )
             EngineState.Ready -> Spacer(Modifier.height(0.dp))
         }
-    }
-}
-
-// MARK: - Instagram account
-
-/**
- * Connection card at the top of the Instagram tab. The account is what gives access to carousels, photos, stories
- * and the private posts of the accounts it follows.
- */
-@Composable
-private fun InstagramAccountCard(account: InstagramAccount, onLogin: () -> Unit, onLogout: () -> Unit) {
-    AnimatedContent(
-        targetState = account,
-        transitionSpec = { (fadeIn(tween(300)) + expandVertically()) togetherWith (fadeOut(tween(200)) + shrinkVertically()) },
-        label = "instagramAccount",
-    ) { current ->
-        when (current) {
-            is InstagramAccount.LoggedIn -> Row(
-                Modifier
-                    .fillMaxWidth()
-                    .glass(RoundedCornerShape(18.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                StatusDot(Palette.Success, active = true)
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        current.username?.let { "@$it" } ?: "Compte connecté",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text("Publications privées suivies, carrousels et stories", color = Palette.TextSecondary, fontSize = 12.sp)
-                }
-                SecondaryButton("Déconnexion", Icons.Rounded.PowerSettingsNew, compact = true, onClick = onLogout)
-            }
-            else -> {
-                val expired = current is InstagramAccount.Expired
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .glass(tint = if (expired) Palette.Danger.copy(alpha = 0.09f) else Palette.Fill)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        StatusDot(if (expired) Palette.Danger else Palette.TextTertiary, active = false)
-                        Text(
-                            if (expired) "Session Instagram expirée" else "Compte Instagram non connecté",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                    Text(
-                        if (expired) {
-                            "Instagram a fermé la session de l'app : reconnectez-vous pour retrouver vos contenus privés."
-                        } else {
-                            "Connectez votre compte pour télécharger les carrousels, les photos, les stories et les " +
-                                "publications privées des comptes que vous suivez. La connexion se fait sur instagram.com : " +
-                                "votre mot de passe n'est jamais lu par l'app."
-                        },
-                        color = Palette.TextSecondary,
-                        fontSize = 12.5.sp,
-                    )
-                    GradientButton(
-                        if (expired) "Se reconnecter à Instagram" else "Se connecter à Instagram",
-                        Modifier.fillMaxWidth(),
-                        icon = Icons.AutoMirrored.Rounded.Login,
-                        onClick = onLogin,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** Status dot, with a ripple ring when [active]. */
-@Composable
-private fun StatusDot(color: Color, active: Boolean) {
-    val animated by animateColorAsState(color, label = "dot")
-    Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-        if (active) {
-            Box(
-                Modifier
-                    .size(18.dp)
-                    .pulsing(0.5f, 1.2f, 1100)
-                    .clip(CircleShape)
-                    .border(1.5.dp, animated.copy(alpha = 0.5f), CircleShape),
-            )
-        }
-        Box(
-            Modifier
-                .size(9.dp)
-                .clip(CircleShape)
-                .background(animated),
-        )
     }
 }
 
@@ -570,8 +454,7 @@ private fun EmptyCard(platform: Platform) {
                     Pill("Reels", Icons.Rounded.PlayArrow),
                     Pill("Carrousels", Icons.Rounded.ViewCarousel),
                     Pill("Photos", Icons.Rounded.PhotoLibrary),
-                    Pill("Stories", Icons.Rounded.AmpStories),
-                    Pill("Comptes privés suivis", Icons.Rounded.Lock),
+                    Pill("Sans compte", Icons.Rounded.Shield),
                 )
                 Platform.OTHER -> listOf(
                     Pill("X", platform = Platform.TWITTER),
@@ -592,10 +475,18 @@ private fun EmptyCard(platform: Platform) {
                 FeaturePill(pill, Modifier.staggeredEntrance(index, baseDelay = 260))
             }
         }
-        if (platform == Platform.OTHER) {
-            Text(
+        val footnote = when (platform) {
+            Platform.INSTAGRAM ->
+                "Publications publiques uniquement : l'app ne se connecte à aucun compte Instagram, pour protéger le vôtre. " +
+                    "Pas de stories ni de comptes privés."
+            Platform.OTHER ->
                 "Vidéos publiques uniquement : pas de vidéos d'amis ou de groupes privés sur Facebook, pas de photos " +
-                    "sur X ni de diaporamas TikTok. Snapchat : liens Spotlight. BeReal : aucun lien public, rien à télécharger.",
+                    "sur X ni de diaporamas TikTok. Snapchat : liens Spotlight. BeReal : aucun lien public, rien à télécharger."
+            else -> null
+        }
+        footnote?.let {
+            Text(
+                it,
                 color = Palette.TextTertiary,
                 fontSize = 11.5.sp,
                 textAlign = TextAlign.Center,
@@ -708,7 +599,7 @@ private fun LoadingCard(platform: Platform) {
 }
 
 @Composable
-private fun ErrorCard(message: String, onRetry: () -> Unit, loginLabel: String, onLogin: (() -> Unit)?) {
+private fun ErrorCard(message: String, onRetry: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -727,9 +618,6 @@ private fun ErrorCard(message: String, onRetry: () -> Unit, loginLabel: String, 
                 .pulsing(0.96f, 1.08f, 900),
         )
         Text(message, color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SecondaryButton("Réessayer", Icons.Rounded.Refresh, compact = true, onClick = onRetry)
-            onLogin?.let { SecondaryButton(loginLabel, Icons.AutoMirrored.Rounded.Login, compact = true, onClick = it) }
-        }
+        SecondaryButton("Réessayer", Icons.Rounded.Refresh, compact = true, onClick = onRetry)
     }
 }

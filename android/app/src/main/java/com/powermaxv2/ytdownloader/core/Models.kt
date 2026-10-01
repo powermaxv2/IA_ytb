@@ -353,7 +353,7 @@ data class DownloadRequest(
             MediaMode.AUDIO -> "Audio · ${audioFormat.title}"
         }
 
-    fun arguments(outputDir: File, cookies: File?): List<String> {
+    fun arguments(outputDir: File): List<String> {
         val args = commonArguments.toMutableList()
         args += listOf("--newline", "--progress", "--no-colors", "--no-mtime", "--no-simulate")
         args += if (playlistItem != null) {
@@ -400,7 +400,6 @@ data class DownloadRequest(
         if (Links.platform(url) == Platform.FACEBOOK) args += listOf("--replace-in-metadata", "title", FACEBOOK_COUNTERS, "")
         if (embedMetadata) args += "--embed-metadata"
         if (embedThumbnail) args += "--embed-thumbnail"
-        if (cookies != null) args += listOf("--cookies", cookies.absolutePath)
         args += listOf("-P", outputDir.absolutePath, "--", url)
         return args
     }

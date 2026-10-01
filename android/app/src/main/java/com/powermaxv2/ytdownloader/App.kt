@@ -4,7 +4,7 @@ import android.app.Application
 import com.powermaxv2.ytdownloader.core.AppUpdater
 import com.powermaxv2.ytdownloader.core.DownloadManager
 import com.powermaxv2.ytdownloader.core.Engine
-import com.powermaxv2.ytdownloader.core.InstagramSession
+import com.powermaxv2.ytdownloader.core.Instagram
 import com.powermaxv2.ytdownloader.core.Notifications
 import com.powermaxv2.ytdownloader.core.Prefs
 import com.powermaxv2.ytdownloader.core.UpdateCheckJob
@@ -23,7 +23,6 @@ class App : Application() {
         private set
     lateinit var updater: AppUpdater
         private set
-    val instagram = InstagramSession(this)
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile
@@ -35,10 +34,12 @@ class App : Application() {
         // Leftovers of downloads interrupted by a crash or a force-stop.
         File(cacheDir, "jobs").deleteRecursively()
         File(cacheDir, "analyze").deleteRecursively()
+        // The Instagram login is gone (1.4.0): the session it stored on the phone is deleted.
+        Instagram.purgeAccountData(this)
 
         prefs = Prefs(this)
         engine = Engine(this, prefs, scope)
-        downloads = DownloadManager(this, scope, engine, prefs, instagram)
+        downloads = DownloadManager(this, scope, engine, prefs)
         updater = AppUpdater(this, prefs, scope)
         Notifications.createChannels(this)
         UpdateCheckJob.schedule(this, prefs.settings.value.autoCheckAppUpdates)
