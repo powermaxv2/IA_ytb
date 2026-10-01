@@ -321,8 +321,8 @@ class AppUpdater(private val context: Context, private val prefs: Prefs, private
         private const val DOWNLOAD_PREFIX = "https://github.com/powermaxv2/IA_ytb/releases/download/"
         private const val UPDATE_DIR = "update"
 
-        /** At most one check every 20 min when the app is opened (the background job runs every 6 h). */
-        private const val FOREGROUND_INTERVAL = 20 * 60 * 1000L
+        /** At most one check every 5 min when the app comes to the screen (the background job runs every 6 h). */
+        private const val FOREGROUND_INTERVAL = 5 * 60 * 1000L
         private val tagRegex = Regex("""android-v(\d+\.\d+\.\d+)""")
     }
 }

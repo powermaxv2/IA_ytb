@@ -11,6 +11,7 @@ import androidx.activity.viewModels
 import com.powermaxv2.ytdownloader.ui.AppRoot
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Tab
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -37,8 +38,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        val updater = App.instance.updater
         // Back from "Installer des applis inconnues": the waiting update installs if it is now allowed.
-        App.instance.updater.resumeInstall()
+        updater.resumeInstall()
+        App.instance.scope.launch { runCatching { updater.check(force = false) } }
     }
 
     override fun onStop() {

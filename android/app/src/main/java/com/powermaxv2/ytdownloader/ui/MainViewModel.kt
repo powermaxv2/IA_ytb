@@ -111,7 +111,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { if (instagram.refresh()) instagram.verify() }
-        viewModelScope.launch { runCatching { updater.check(force = false) } }
         viewModelScope.launch {
             downloads.events.collect { event ->
                 when (event) {
@@ -460,7 +459,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                "Vérification impossible : ${e.message?.takeIf { it.isNotBlank() } ?: "pas de réseau"}"
+                when (e.message) {
+                    "HTTP 403", "HTTP 429" -> "GitHub limite les vérifications pour le moment : réessayez dans une heure."
+                    else -> "Vérification impossible : ${e.message?.takeIf { it.isNotBlank() } ?: "pas de réseau"}"
+                }
             }
         }
     }

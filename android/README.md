@@ -49,7 +49,7 @@ désinstallez l'ancienne version puis installez la nouvelle.
 ## Mises à jour automatiques (depuis 1.3.0)
 
 L'app cherche les nouvelles versions dans les **Releases** GitHub nommées `android-vX.Y.Z` : à l'ouverture
-(au plus toutes les 20 min) et toutes les 6 h en arrière-plan. Une nouvelle version s'annonce par une notification
+(au plus toutes les 5 min) et toutes les 6 h en arrière-plan. Une nouvelle version s'annonce par une notification
 et par un bandeau en haut des écrans ; **Mettre à jour** télécharge l'APK du téléphone
 (`YT-Downloader-X.Y.Z-<abi>.apk`, sinon `-universal`), vérifie son empreinte SHA-256 et qu'il est signé avec la même
 clé que l'app installée, puis l'installe avec l'installateur d'Android. La première fois, Android demande d'autoriser
