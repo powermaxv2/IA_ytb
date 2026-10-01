@@ -633,40 +633,32 @@ fun PlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
         }
         Platform.FACEBOOK -> Canvas(modifier) {
             val s = size.minDimension
-            drawRoundRect(Color(0xFF1877F2), cornerRadius = CornerRadius(s * 0.20f))
+            drawRoundRect(Color(0xFF1877F2), cornerRadius = CornerRadius(s * 0.16f))
+            val stroke = Stroke(s * 0.095f, cap = StrokeCap.Round, join = StrokeJoin.Round)
             val f = Path().apply {
-                moveTo(s * 0.38f, s * 0.26f)
-                lineTo(s * 0.38f, s * 0.50f)
-                lineTo(s * 0.52f, s * 0.50f)
-                lineTo(s * 0.52f, s * 0.60f)
-                lineTo(s * 0.38f, s * 0.60f)
-                lineTo(s * 0.38f, s * 0.78f)
-                lineTo(s * 0.28f, s * 0.78f)
-                lineTo(s * 0.28f, s * 0.60f)
-                lineTo(s * 0.18f, s * 0.60f)
-                lineTo(s * 0.18f, s * 0.50f)
-                lineTo(s * 0.28f, s * 0.50f)
-                lineTo(s * 0.28f, s * 0.42f)
-                cubicTo(s * 0.28f, s * 0.32f, s * 0.32f, s * 0.26f, s * 0.40f, s * 0.26f)
-                lineTo(s * 0.38f, s * 0.26f)
-                close()
+                moveTo(s * 0.42f, s * 0.22f)
+                lineTo(s * 0.42f, s * 0.78f)
+                moveTo(s * 0.58f, s * 0.38f)
+                lineTo(s * 0.30f, s * 0.38f)
+                moveTo(s * 0.50f, s * 0.52f)
+                lineTo(s * 0.30f, s * 0.52f)
             }
-            drawPath(f, Color.White)
+            drawPath(f, Color.White, style = stroke)
         }
         Platform.BEREAL -> BoxWithConstraints(
             modifier
-                .clip(RoundedCornerShape(24))
+                .clip(RoundedCornerShape(20))
                 .background(Color(0xFF0B0B0F))
-                .border(0.8.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(24)),
+                .border(0.7.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20)),
             contentAlignment = Alignment.Center,
         ) {
             val side = minOf(maxWidth, maxHeight)
             Text(
                 "Be",
                 color = Color.White,
-                fontSize = with(LocalDensity.current) { (side * 0.5f).toSp() },
+                fontSize = with(LocalDensity.current) { (side * 0.48f).toSp() },
                 fontWeight = FontWeight.Black,
-                letterSpacing = (-0.5).sp,
+                letterSpacing = (-0.4).sp,
                 maxLines = 1,
                 softWrap = false,
             )

@@ -198,8 +198,8 @@ private fun Header(pane: LinkPane, pulse: Int, onSettings: () -> Unit) {
             Text(
                 when (pane.platform) {
                     Platform.INSTAGRAM -> "Reels, carrousels, photos et stories · YT Downloader"
-                    Platform.OTHER -> "X, TikTok, Snapchat et tout lien vidéo · YT Downloader"
-                    else -> "Vidéos jusqu'en 8K, musique, playlists · YT Downloader"
+                    Platform.OTHER -> "X, TikTok, Facebook, Snapchat et tout lien vidéo · YT Downloader"
+                    else -> "Vidéos jusqu'en 4K/8K, musique, playlists · YT Downloader"
                 },
                 color = Palette.TextSecondary,
                 fontSize = 12.5.sp,
