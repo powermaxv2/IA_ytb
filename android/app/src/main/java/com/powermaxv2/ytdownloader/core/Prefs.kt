@@ -16,6 +16,7 @@ data class Settings(
     val notify: Boolean = true,
     val autoUpdateYtDlp: Boolean = true,
     val haptics: Boolean = true,
+    val autoCheckAppUpdates: Boolean = true,
 )
 
 class Prefs(context: Context) {
@@ -37,6 +38,7 @@ class Prefs(context: Context) {
             .putBoolean("notify", next.notify)
             .putBoolean("autoUpdateYtDlp", next.autoUpdateYtDlp)
             .putBoolean("haptics", next.haptics)
+            .putBoolean("autoCheckAppUpdates", next.autoCheckAppUpdates)
             .apply()
     }
 
@@ -53,6 +55,7 @@ class Prefs(context: Context) {
             notify = sp.getBoolean("notify", d.notify),
             autoUpdateYtDlp = sp.getBoolean("autoUpdateYtDlp", d.autoUpdateYtDlp),
             haptics = sp.getBoolean("haptics", d.haptics),
+            autoCheckAppUpdates = sp.getBoolean("autoCheckAppUpdates", d.autoCheckAppUpdates),
         )
     }
 
@@ -67,4 +70,13 @@ class Prefs(context: Context) {
     var lastYtdlpCheck: Long
         get() = sp.getLong("lastYtdlpCheck", 0)
         set(value) = sp.edit().putLong("lastYtdlpCheck", value).apply()
+
+    var lastAppUpdateCheck: Long
+        get() = sp.getLong("lastAppUpdateCheck", 0)
+        set(value) = sp.edit().putLong("lastAppUpdateCheck", value).apply()
+
+    /** Last version announced by a notification, so that each version is announced once. */
+    var notifiedAppVersion: String?
+        get() = sp.getString("notifiedAppVersion", null)
+        set(value) = sp.edit().putString("notifiedAppVersion", value).apply()
 }

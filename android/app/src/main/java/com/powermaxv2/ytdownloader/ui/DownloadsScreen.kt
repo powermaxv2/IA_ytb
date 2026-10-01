@@ -101,6 +101,7 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             Spacer(Modifier.width(10.dp))
             IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = vm::openSettings)
         }
+        UpdateBanner(vm, Modifier.padding(top = 12.dp))
         AnimatedVisibility(
             visible = jobs.any { it.isFinished },
             enter = expandVertically() + fadeIn(),

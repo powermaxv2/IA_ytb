@@ -46,6 +46,27 @@ Créer une clé : `keytool -genkeypair -v -keystore release.jks -alias ytd -keya
 Sans ces secrets, la clé de debug du CI est utilisée (gardée en cache) : si l'installation par-dessus échoue,
 désinstallez l'ancienne version puis installez la nouvelle.
 
+## Mises à jour automatiques (depuis 1.3.0)
+
+L'app cherche les nouvelles versions dans les **Releases** GitHub nommées `android-vX.Y.Z` : à l'ouverture
+(au plus toutes les 20 min) et toutes les 6 h en arrière-plan. Une nouvelle version s'annonce par une notification
+et par un bandeau en haut des écrans ; **Mettre à jour** télécharge l'APK du téléphone
+(`YT-Downloader-X.Y.Z-<abi>.apk`, sinon `-universal`), vérifie son empreinte SHA-256 et qu'il est signé avec la même
+clé que l'app installée, puis l'installe avec l'installateur d'Android. La première fois, Android demande d'autoriser
+YT Downloader à installer des applis ; à partir d'Android 12, les mises à jour suivantes n'ont souvent plus besoin
+de confirmation. Réglages → **Mises à jour de l'app** : recherche manuelle et notification activable.
+
+Publier une version : augmenter `android/VERSION`, compiler, commiter, puis
+
+```bash
+cd android
+./scripts/publish-release.sh notes.md   # notes de version en français, affichées dans l'app
+```
+
+Le script vérifie la version et la signature des APK, pousse la branche et crée la release avec `gh`. Les APK
+publiés ainsi sont signés avec la clé des APK déjà installés ; ceux du workflow GitHub Actions (noms
+`YT-Downloader-Android-*.apk`) ne sont pas proposés par l'app, car leur clé peut être différente.
+
 ## Compiler soi-même
 
 JDK 17 et SDK Android (API 35) requis :

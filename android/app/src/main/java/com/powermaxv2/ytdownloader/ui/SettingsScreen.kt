@@ -29,6 +29,8 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
@@ -73,6 +75,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             Text("Réglages", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             IconCircleButton(Icons.Rounded.Close, contentDescription = "Fermer", onClick = vm::closeSettings)
         }
+        UpdateBanner(vm)
 
         Section("Formats par défaut", Icons.Rounded.Tune, index = 0) {
             SectionLabel("Vidéo")
@@ -136,17 +139,42 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
 
-        Section("Sécurité", Icons.Rounded.Shield, index = 3) {
+        Section("Mises à jour de l'app", Icons.Rounded.NewReleases, index = 3) {
+            val checking by vm.updater.checking.collectAsStateWithLifecycle()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Version installée", color = Palette.TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Text(BuildConfig.VERSION_NAME, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+            ToggleRow("Chercher les nouvelles versions (notification)", settings.autoCheckAppUpdates, vm::setAutoCheckAppUpdates)
+            GradientButton(
+                "Rechercher une mise à jour",
+                Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Refresh,
+                loading = checking,
+            ) { vm.checkAppUpdate() }
+            AnimatedVisibility(visible = vm.appUpdateMessage != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                Text(vm.appUpdateMessage ?: "", color = Palette.TextSecondary, fontSize = 12.5.sp)
+            }
+            Text(
+                "Les nouvelles versions viennent du projet GitHub de l'app. Chaque fichier est vérifié (empreinte et " +
+                    "signature) avant l'installation.",
+                color = Palette.TextTertiary,
+                fontSize = 12.sp,
+            )
+        }
+
+        Section("Sécurité", Icons.Rounded.Shield, index = 4) {
             listOf(
                 "Mises à jour de yt-dlp téléchargées depuis sa page GitHub officielle et comparées à l'empreinte SHA-256 publiée : un fichier non conforme est refusé.",
                 "Contrôle d'intégrité à chaque lancement : un yt-dlp modifié est supprimé et remplacé par la version d'origine.",
                 "yt-dlp isolé : aucun fichier de configuration ni plugin externe (--ignore-config, --no-plugin-dirs).",
                 "Seuls les liens https:// sont acceptés ; aucune donnée n'est envoyée ailleurs qu'au site du lien.",
                 "Cookies Instagram gardés dans l'espace privé de l'app, jamais sauvegardés ni partagés.",
+                "Mises à jour de l'app refusées si leur empreinte SHA-256 ou leur signature ne correspond pas.",
             ).forEach { Bullet(it) }
         }
 
-        Section("Emplacement des fichiers", Icons.Rounded.FolderOpen, index = 4) {
+        Section("Emplacement des fichiers", Icons.Rounded.FolderOpen, index = 5) {
             Bullet("Vidéos : Films › YT Downloader")
             Bullet("Musique : Musique › YT Downloader")
             Bullet("Photos : Images › YT Downloader")
@@ -157,7 +185,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
 
-        Section("À propos", Icons.Rounded.Info, index = 5) {
+        Section("À propos", Icons.Rounded.Info, index = 6) {
             Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Color.White, fontSize = 13.sp)
             Text(
                 "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +

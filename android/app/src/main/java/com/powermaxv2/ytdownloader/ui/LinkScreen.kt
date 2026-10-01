@@ -131,6 +131,7 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Header(pane, vm.queuedPulse, onSettings = vm::openSettings)
+        UpdateBanner(vm)
         AnimatedVisibility(
             visible = integrity != null,
             enter = expandVertically() + fadeIn(),

@@ -21,12 +21,14 @@ import com.powermaxv2.ytdownloader.core.JobSpec
 import com.powermaxv2.ytdownloader.core.Links
 import com.powermaxv2.ytdownloader.core.MediaInfo
 import com.powermaxv2.ytdownloader.core.MediaMode
+import com.powermaxv2.ytdownloader.core.Notifications
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.core.PlaylistEntry
 import com.powermaxv2.ytdownloader.core.PlaylistInfo
 import com.powermaxv2.ytdownloader.core.PlaylistQuality
 import com.powermaxv2.ytdownloader.core.QualityOption
 import com.powermaxv2.ytdownloader.core.StoryResult
+import com.powermaxv2.ytdownloader.core.UpdateCheckJob
 import com.powermaxv2.ytdownloader.core.UpdateResult
 import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
@@ -71,6 +73,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val downloads = app.downloads
     val instagram = app.instagram
     val prefs = app.prefs
+    val updater = app.updater
+
+    /** Result of "Rechercher une mise à jour" in the settings. */
+    var appUpdateMessage by mutableStateOf<String?>(null)
+        private set
+
+    /** Version whose banner was closed with ✕ (shown again on the next launch). */
+    var dismissedUpdate by mutableStateOf<String?>(null)
+        private set
 
     val youtube = LinkPane(Platform.YOUTUBE, Tab.YOUTUBE, "YouTube")
     val insta = LinkPane(Platform.INSTAGRAM, Tab.INSTAGRAM, "Instagram")
@@ -100,6 +111,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { if (instagram.refresh()) instagram.verify() }
+        viewModelScope.launch { runCatching { updater.check(force = false) } }
         viewModelScope.launch {
             downloads.events.collect { event ->
                 when (event) {
@@ -413,6 +425,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             instagram.logout()
             toast("Déconnecté d'Instagram")
+        }
+    }
+
+    // MARK: - App updates
+
+    fun startAppUpdate() {
+        dismissedUpdate = null
+        Notifications.cancelUpdate(app)
+        updater.startUpdate()
+    }
+
+    fun dismissAppUpdate(version: String) {
+        dismissedUpdate = version
+    }
+
+    fun setAutoCheckAppUpdates(enabled: Boolean) {
+        prefs.update { it.copy(autoCheckAppUpdates = enabled) }
+        UpdateCheckJob.schedule(app, enabled)
+    }
+
+    fun checkAppUpdate() {
+        if (updater.checking.value) return
+        appUpdateMessage = null
+        viewModelScope.launch {
+            appUpdateMessage = try {
+                val release = updater.check(force = true)
+                if (release == null) {
+                    "YT Downloader est à jour (version ${updater.currentVersion})."
+                } else {
+                    dismissedUpdate = null
+                    "Version ${release.version} disponible : touchez « Mettre à jour » en haut de l'écran."
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                "Vérification impossible : ${e.message?.takeIf { it.isNotBlank() } ?: "pas de réseau"}"
+            }
         }
     }
 

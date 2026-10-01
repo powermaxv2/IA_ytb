@@ -30,14 +30,32 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
+    override fun onStart() {
+        super.onStart()
+        App.instance.inForeground = true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Back from "Installer des applis inconnues": the waiting update installs if it is now allowed.
+        App.instance.updater.resumeInstall()
+    }
+
+    override fun onStop() {
+        App.instance.inForeground = false
+        super.onStop()
+    }
+
     private fun handleIntent(intent: Intent?) {
         when (intent?.action) {
             Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let(viewModel::onSharedText)
             ACTION_SHOW_DOWNLOADS -> viewModel.selectTab(Tab.DOWNLOADS)
+            ACTION_APP_UPDATE -> viewModel.startAppUpdate()
         }
     }
 
     companion object {
         const val ACTION_SHOW_DOWNLOADS = "com.powermaxv2.ytdownloader.SHOW_DOWNLOADS"
+        const val ACTION_APP_UPDATE = "com.powermaxv2.ytdownloader.APP_UPDATE"
     }
 }

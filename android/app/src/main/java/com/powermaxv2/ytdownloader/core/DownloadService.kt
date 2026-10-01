@@ -32,7 +32,9 @@ import kotlinx.coroutines.launch
 object Notifications {
     const val CHANNEL_PROGRESS = "progress"
     const val CHANNEL_DONE = "done"
+    const val CHANNEL_UPDATES = "updates"
     const val PROGRESS_ID = 1
+    private const val UPDATE_ID = 2
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -44,6 +46,67 @@ object Notifications {
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_DONE, context.getString(R.string.channel_done), NotificationManager.IMPORTANCE_DEFAULT),
         )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_UPDATES, context.getString(R.string.channel_updates), NotificationManager.IMPORTANCE_DEFAULT),
+        )
+    }
+
+    /** A new version is on GitHub: tapping the notification opens the app, which downloads and installs it. */
+    fun updateAvailable(context: Context, release: AppRelease) {
+        if (!canPost(context)) return
+        val open = PendingIntent.getActivity(
+            context,
+            UPDATE_ID,
+            Intent(context, MainActivity::class.java)
+                .setAction(MainActivity.ACTION_APP_UPDATE)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notes = UpdateNotes.preview(release.notes, maxLines = 6)
+        val notification = NotificationCompat.Builder(context, CHANNEL_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_download)
+            .setContentTitle("Mise à jour disponible : ${release.version}")
+            .setContentText("Touchez pour mettre à jour YT Downloader")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(listOf("Touchez pour mettre à jour YT Downloader.", notes).filter { it.isNotBlank() }.joinToString("\n")))
+            .setAutoCancel(true)
+            .setContentIntent(open)
+            .build()
+        runCatching { NotificationManagerCompat.from(context).notify(UPDATE_ID, notification) }
+    }
+
+    /** Android's install confirmation, when it could not be shown on screen right away. */
+    fun installReady(context: Context, confirm: Intent, version: String?) {
+        if (!canPost(context)) return
+        val pending = PendingIntent.getActivity(
+            context,
+            UPDATE_ID + 1,
+            confirm,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_download)
+            .setContentTitle("Mise à jour prête" + (version?.let { " : $it" } ?: ""))
+            .setContentText("Touchez pour installer la nouvelle version")
+            .setAutoCancel(true)
+            .setContentIntent(pending)
+            .build()
+        runCatching { NotificationManagerCompat.from(context).notify(UPDATE_ID, notification) }
+    }
+
+    fun updated(context: Context, version: String) {
+        if (!canPost(context)) return
+        val notification = NotificationCompat.Builder(context, CHANNEL_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_download)
+            .setContentTitle("YT Downloader est à jour")
+            .setContentText("Version $version installée")
+            .setAutoCancel(true)
+            .setContentIntent(openAppIntent(context))
+            .build()
+        runCatching { NotificationManagerCompat.from(context).notify(UPDATE_ID, notification) }
+    }
+
+    fun cancelUpdate(context: Context) {
+        runCatching { NotificationManagerCompat.from(context).cancel(UPDATE_ID) }
     }
 
     private fun canPost(context: Context): Boolean =
