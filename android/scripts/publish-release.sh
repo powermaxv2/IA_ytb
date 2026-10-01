@@ -35,10 +35,11 @@ trap 'rm -rf "$dist"' EXIT
 for abi in arm64-v8a armeabi-v7a universal; do
   apk="$apks/app-$abi-release.apk"
   [ -f "$apk" ] || { echo "APK absent : $apk (lancez ./gradlew assembleRelease)" >&2; exit 1; }
-  "$apksigner" verify --print-certs "$apk" | grep -q "SHA-256 digest: $signer" \
-    || { echo "Signature inattendue : $apk" >&2; exit 1; }
-  "$aapt2" dump badging "$apk" | grep -q "versionName='$version'" \
-    || { echo "Ce n'est pas la version $version : $apk (recompilez)" >&2; exit 1; }
+  # Outputs are captured first: "grep -q" closing the pipe early would fail the check under pipefail.
+  certs=$("$apksigner" verify --print-certs "$apk")
+  grep -q "SHA-256 digest: $signer" <<< "$certs" || { echo "Signature inattendue : $apk" >&2; exit 1; }
+  badging=$("$aapt2" dump badging "$apk")
+  grep -q "versionName='$version'" <<< "$badging" || { echo "Ce n'est pas la version $version : $apk (recompilez)" >&2; exit 1; }
   cp "$apk" "$dist/YT-Downloader-$version-$abi.apk"
 done
 (cd "$dist" && sha256sum -- *.apk > SHA256SUMS.txt)
