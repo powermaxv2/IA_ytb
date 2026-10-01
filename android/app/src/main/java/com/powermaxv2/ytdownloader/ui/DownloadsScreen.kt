@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.Inbox
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -96,11 +97,15 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
                     )
                 }
             }
-            AnimatedVisibility(
-                visible = jobs.any { it.isFinished },
-                enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(),
-                exit = scaleOut() + fadeOut(),
-            ) {
+            Spacer(Modifier.width(10.dp))
+            IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = vm::openSettings)
+        }
+        AnimatedVisibility(
+            visible = jobs.any { it.isFinished },
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.End) {
                 SecondaryButton("Effacer", Icons.Rounded.DeleteOutline, compact = true) { vm.downloads.clearFinished() }
             }
         }

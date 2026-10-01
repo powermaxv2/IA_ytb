@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -50,13 +51,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -90,6 +92,7 @@ fun AppRoot(vm: MainViewModel) {
     LaunchedEffect(vm) {
         vm.loginRequests.collect { login.launch(Intent(context, InstagramLoginActivity::class.java)) }
     }
+    BackHandler(enabled = vm.tab == Tab.SETTINGS) { vm.closeSettings() }
 
     AppTheme(vm.accentPlatform) {
         CompositionLocalProvider(LocalHaptics provides settings.haptics, LocalDownloadGate provides gate) {
@@ -112,6 +115,7 @@ fun AppRoot(vm: MainViewModel) {
                     when (tab) {
                         Tab.YOUTUBE -> LinkScreen(vm, vm.youtube, contentPadding)
                         Tab.INSTAGRAM -> LinkScreen(vm, vm.insta, contentPadding)
+                        Tab.OTHER -> LinkScreen(vm, vm.other, contentPadding)
                         Tab.DOWNLOADS -> DownloadsScreen(vm, contentPadding)
                         Tab.SETTINGS -> SettingsScreen(vm, contentPadding)
                     }
@@ -174,11 +178,14 @@ private data class NavItem(
 private val navItems = listOf(
     NavItem(Tab.YOUTUBE, "YouTube", platform = Platform.YOUTUBE),
     NavItem(Tab.INSTAGRAM, "Instagram", platform = Platform.INSTAGRAM),
+    NavItem(Tab.OTHER, "Autres", Icons.Rounded.Public),
     NavItem(Tab.DOWNLOADS, "Fichiers", Icons.Rounded.FolderOpen),
-    NavItem(Tab.SETTINGS, "Réglages", Icons.Rounded.Tune),
 )
 
-/** Floating glass bar; the highlight pill glides to the selected tab, the Files icon jumps when something is queued. */
+/**
+ * Floating glass bar; the highlight pill glides to the selected tab, the Files icon jumps when something is queued.
+ * Settings has no tab here: while it is open the pill fades out.
+ */
 @Composable
 private fun BottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val accent = LocalAccent.current
@@ -197,13 +204,17 @@ private fun BottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) ->
             .padding(6.dp),
     ) {
         val width = maxWidth / navItems.size
-        val index = navItems.indexOfFirst { it.tab == tab }.coerceAtLeast(0)
-        val x by animateDpAsState(width * index, spring(dampingRatio = 0.68f, stiffness = 320f), label = "navPill")
+        val selectedIndex = navItems.indexOfFirst { it.tab == tab }
+        var pillIndex by remember { mutableIntStateOf(0) }
+        LaunchedEffect(selectedIndex) { if (selectedIndex >= 0) pillIndex = selectedIndex }
+        val x by animateDpAsState(width * pillIndex, spring(dampingRatio = 0.68f, stiffness = 320f), label = "navPill")
+        val pillAlpha by animateFloatAsState(if (selectedIndex >= 0) 1f else 0f, tween(200), label = "navPillAlpha")
         Box(
             Modifier
                 .offset(x = x)
                 .width(width)
                 .fillMaxHeight()
+                .graphicsLayer { alpha = pillAlpha }
                 .clip(RoundedCornerShape(20.dp))
                 .background(accent.start.copy(alpha = 0.16f))
                 .border(1.dp, accent.start.copy(alpha = 0.35f), RoundedCornerShape(20.dp)),

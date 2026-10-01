@@ -21,6 +21,8 @@ object Palette {
     val InstaPurple = Color(0xFF9B3FD6)
     val InstaPink = Color(0xFFE1306C)
     val InstaOrange = Color(0xFFF77737)
+    val WebCyan = Color(0xFF0891B2)
+    val WebIndigo = Color(0xFF4F46E5)
     val Purple = Color(0xFF8A5CF6)
     val Stroke = Color.White.copy(alpha = 0.09f)
     val Fill = Color.White.copy(alpha = 0.05f)
@@ -30,7 +32,7 @@ object Palette {
     val Danger = Color(0xFFFF6B6B)
 }
 
-/** The app accent follows the detected platform: red → orange for YouTube, purple → pink for Instagram. */
+/** The app accent follows the tab: red → orange for YouTube, purple → pink for Instagram, cyan → indigo for the other sites. */
 @Immutable
 data class Accent(val start: Color, val end: Color) {
     val brush: Brush get() = Brush.linearGradient(listOf(start, end))
@@ -40,8 +42,13 @@ data class Accent(val start: Color, val end: Color) {
     companion object {
         val YouTube = Accent(Palette.Accent, Palette.Accent2)
         val Instagram = Accent(Palette.InstaPurple, Palette.InstaPink)
+        val Web = Accent(Palette.WebCyan, Palette.WebIndigo)
 
-        fun of(platform: Platform) = if (platform == Platform.INSTAGRAM) Instagram else YouTube
+        fun of(platform: Platform) = when (platform) {
+            Platform.YOUTUBE -> YouTube
+            Platform.INSTAGRAM -> Instagram
+            else -> Web
+        }
     }
 }
 

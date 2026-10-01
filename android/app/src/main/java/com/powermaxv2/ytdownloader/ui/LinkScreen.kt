@@ -61,8 +61,10 @@ import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Subtitles
@@ -112,7 +114,7 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Content of the YouTube tab and of the Instagram tab: each has its own link field and result. */
+/** Content of the YouTube, Instagram and Autres tabs: each has its own link field and result. */
 @Composable
 fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues) {
     val engineState by vm.engine.state.collectAsStateWithLifecycle()
@@ -128,7 +130,7 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Header(pane.platform, vm.queuedPulse)
+        Header(pane, vm.queuedPulse, onSettings = vm::openSettings)
         AnimatedVisibility(
             visible = integrity != null,
             enter = expandVertically() + fadeIn(),
@@ -181,29 +183,31 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
 // MARK: - Header
 
 @Composable
-private fun Header(platform: Platform, pulse: Int) {
+private fun Header(pane: LinkPane, pulse: Int, onSettings: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         AnimatedLogo(pulse, Modifier.size(56.dp))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                platform.label,
+                if (pane.platform == Platform.OTHER) "Autres réseaux" else pane.name,
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.staggeredEntrance(0),
             )
             Text(
-                if (platform == Platform.INSTAGRAM) {
-                    "Reels, carrousels, photos et stories · YT Downloader"
-                } else {
-                    "Vidéos jusqu'en 8K, musique, playlists · YT Downloader"
+                when (pane.platform) {
+                    Platform.INSTAGRAM -> "Reels, carrousels, photos et stories · YT Downloader"
+                    Platform.OTHER -> "X, TikTok, Snapchat et tout lien vidéo · YT Downloader"
+                    else -> "Vidéos jusqu'en 8K, musique, playlists · YT Downloader"
                 },
                 color = Palette.TextSecondary,
                 fontSize = 12.5.sp,
                 modifier = Modifier.staggeredEntrance(1),
             )
         }
+        Spacer(Modifier.width(10.dp))
+        IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = onSettings)
     }
 }
 
@@ -475,7 +479,11 @@ private fun UrlBar(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (pane.urlText.isEmpty()) {
                             Text(
-                                if (pane.platform == Platform.INSTAGRAM) "Collez un lien Instagram…" else "Collez un lien YouTube…",
+                                when (pane.platform) {
+                                    Platform.INSTAGRAM -> "Collez un lien Instagram…"
+                                    Platform.OTHER -> "Collez un lien vidéo…"
+                                    else -> "Collez un lien YouTube…"
+                                },
                                 color = Palette.TextTertiary,
                                 fontSize = 15.sp,
                                 maxLines = 1,
@@ -528,7 +536,11 @@ private fun EmptyCard(platform: Platform) {
     ) {
         OrbitIcon()
         Text(
-            "Collez un lien, ou partagez-le depuis l'app ${platform.label}",
+            if (platform == Platform.OTHER) {
+                "Collez un lien de vidéo, ou partagez-le depuis une app"
+            } else {
+                "Collez un lien, ou partagez-le depuis l'app ${platform.label}"
+            },
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
@@ -552,33 +564,58 @@ private fun EmptyCard(platform: Platform) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 6.dp),
         ) {
-            val pills = if (platform == Platform.INSTAGRAM) {
-                listOf(
-                    Icons.Rounded.PlayArrow to "Reels",
-                    Icons.Rounded.ViewCarousel to "Carrousels",
-                    Icons.Rounded.PhotoLibrary to "Photos",
-                    Icons.Rounded.AmpStories to "Stories",
-                    Icons.Rounded.Lock to "Comptes privés suivis",
+            val pills = when (platform) {
+                Platform.INSTAGRAM -> listOf(
+                    Pill("Reels", Icons.Rounded.PlayArrow),
+                    Pill("Carrousels", Icons.Rounded.ViewCarousel),
+                    Pill("Photos", Icons.Rounded.PhotoLibrary),
+                    Pill("Stories", Icons.Rounded.AmpStories),
+                    Pill("Comptes privés suivis", Icons.Rounded.Lock),
                 )
-            } else {
-                listOf(
-                    Icons.Rounded.HighQuality to "Jusqu'en 8K",
-                    Icons.Rounded.MusicNote to "MP3 · M4A · FLAC",
-                    Icons.Rounded.VideoLibrary to "Playlists",
-                    Icons.Rounded.Subtitles to "Sous-titres",
+                Platform.OTHER -> listOf(
+                    Pill("X", platform = Platform.TWITTER),
+                    Pill("TikTok", platform = Platform.TIKTOK),
+                    Pill("Snapchat", platform = Platform.SNAPCHAT),
+                    Pill("BeReal", platform = Platform.BEREAL, dimmed = true),
+                    Pill("Tout lien vidéo", Icons.Rounded.Public),
+                )
+                else -> listOf(
+                    Pill("Jusqu'en 8K", Icons.Rounded.HighQuality),
+                    Pill("MP3 · M4A · FLAC", Icons.Rounded.MusicNote),
+                    Pill("Playlists", Icons.Rounded.VideoLibrary),
+                    Pill("Sous-titres", Icons.Rounded.Subtitles),
                 )
             }
-            pills.forEachIndexed { index, (icon, text) ->
-                FeaturePill(icon, text, Modifier.staggeredEntrance(index, baseDelay = 260))
+            pills.forEachIndexed { index, pill ->
+                FeaturePill(pill, Modifier.staggeredEntrance(index, baseDelay = 260))
             }
+        }
+        if (platform == Platform.OTHER) {
+            Text(
+                "Snapchat : liens Spotlight uniquement. BeReal : aucun lien public, donc rien à télécharger pour " +
+                    "l'instant. Les photos de X et les diaporamas TikTok ne sont pas pris en charge.",
+                color = Palette.TextTertiary,
+                fontSize = 11.5.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.staggeredEntrance(5, baseDelay = 260),
+            )
         }
     }
 }
 
+/** A feature chip: a Material [icon] or a [platform] logo; [dimmed] marks something limited. */
+private data class Pill(
+    val text: String,
+    val icon: ImageVector? = null,
+    val platform: Platform? = null,
+    val dimmed: Boolean = false,
+)
+
 @Composable
-private fun FeaturePill(icon: ImageVector, text: String, modifier: Modifier = Modifier) {
+private fun FeaturePill(pill: Pill, modifier: Modifier = Modifier) {
     Row(
         modifier
+            .graphicsLayer { alpha = if (pill.dimmed) 0.55f else 1f }
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.06f))
             .border(1.dp, Palette.Stroke, CircleShape)
@@ -586,8 +623,12 @@ private fun FeaturePill(icon: ImageVector, text: String, modifier: Modifier = Mo
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(15.dp))
-        Text(text, color = Palette.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        if (pill.platform != null) {
+            PlatformGlyph(pill.platform, Modifier.size(18.dp))
+        } else if (pill.icon != null) {
+            Icon(pill.icon, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(15.dp))
+        }
+        Text(pill.text, color = Palette.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 

@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Shield
@@ -68,7 +69,10 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text("Réglages", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Réglages", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            IconCircleButton(Icons.Rounded.Close, contentDescription = "Fermer", onClick = vm::closeSettings)
+        }
 
         Section("Formats par défaut", Icons.Rounded.Tune, index = 0) {
             SectionLabel("Vidéo")
@@ -157,7 +161,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Color.White, fontSize = 13.sp)
             Text(
                 "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +
-                    "et respectez les conditions d'utilisation de YouTube et d'Instagram.",
+                    "et respectez les conditions d'utilisation de YouTube, d'Instagram et des autres sites.",
                 color = Palette.TextTertiary,
                 fontSize = 12.sp,
             )

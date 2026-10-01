@@ -5,13 +5,18 @@ import android.net.Uri
 enum class Platform(val label: String) {
     YOUTUBE("YouTube"),
     INSTAGRAM("Instagram"),
+    TWITTER("X"),
+    TIKTOK("TikTok"),
+    SNAPCHAT("Snapchat"),
+    BEREAL("BeReal"),
     OTHER("Lien"),
 }
 
 object Links {
     private val urlRegex = Regex("""https?://[^\s<>"']+""", RegexOption.IGNORE_CASE)
     private val bareLinkRegex = Regex(
-        """^(www\.|m\.|music\.)?(youtube\.com|youtu\.be|instagram\.com)/\S+$""",
+        """^(www\.|m\.|mobile\.|music\.|vm\.|vt\.)?""" +
+            """(youtube\.com|youtu\.be|instagram\.com|x\.com|twitter\.com|tiktok\.com|snapchat\.com|bereal\.com|bere\.al)/\S+$""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -34,9 +39,14 @@ object Links {
 
     fun platform(url: String?): Platform {
         val host = url?.let { runCatching { Uri.parse(it).host }.getOrNull() }?.lowercase() ?: return Platform.OTHER
+        fun isHost(domain: String) = host == domain || host.endsWith(".$domain")
         return when {
-            host == "youtu.be" || host == "youtube.com" || host.endsWith(".youtube.com") -> Platform.YOUTUBE
-            host == "instagr.am" || host == "instagram.com" || host.endsWith(".instagram.com") -> Platform.INSTAGRAM
+            host == "youtu.be" || isHost("youtube.com") -> Platform.YOUTUBE
+            host == "instagr.am" || isHost("instagram.com") -> Platform.INSTAGRAM
+            isHost("x.com") || isHost("twitter.com") -> Platform.TWITTER
+            isHost("tiktok.com") -> Platform.TIKTOK
+            isHost("snapchat.com") -> Platform.SNAPCHAT
+            host == "bere.al" || isHost("bereal.com") -> Platform.BEREAL
             else -> Platform.OTHER
         }
     }

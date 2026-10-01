@@ -60,6 +60,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -68,9 +69,12 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -203,7 +207,14 @@ fun SecondaryButton(
 }
 
 @Composable
-fun IconCircleButton(icon: ImageVector, modifier: Modifier = Modifier, size: Dp = 36.dp, tint: Color = Color.White, onClick: () -> Unit) {
+fun IconCircleButton(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    size: Dp = 36.dp,
+    tint: Color = Color.White,
+    contentDescription: String? = null,
+    onClick: () -> Unit,
+) {
     Box(
         modifier
             .bounceClick(pressedScale = 0.88f, onClick = onClick)
@@ -213,7 +224,7 @@ fun IconCircleButton(icon: ImageVector, modifier: Modifier = Modifier, size: Dp 
             .border(1.dp, Palette.Stroke, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.5f))
+        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(size * 0.5f))
     }
 }
 
@@ -580,6 +591,64 @@ fun PlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
             drawCircle(brush, radius = size.minDimension * 0.2f, style = Stroke(stroke))
             drawCircle(brush, radius = stroke * 0.7f, center = Offset(size.width * 0.74f, size.height * 0.26f))
         }
+        Platform.TWITTER -> Canvas(modifier) {
+            blackTile()
+            val s = size.minDimension
+            val near = s * 0.29f
+            val far = s * 0.71f
+            drawLine(Color.White, Offset(near, near), Offset(far, far), strokeWidth = s * 0.11f, cap = StrokeCap.Round)
+            drawLine(Color.White, Offset(far, near), Offset(near, far), strokeWidth = s * 0.075f, cap = StrokeCap.Round)
+        }
+        Platform.TIKTOK -> Canvas(modifier) {
+            blackTile()
+            val s = size.minDimension
+            val note = Path().apply {
+                moveTo(s * 0.57f, s * 0.20f)
+                lineTo(s * 0.57f, s * 0.62f)
+                moveTo(s * 0.57f, s * 0.20f)
+                cubicTo(s * 0.57f, s * 0.34f, s * 0.66f, s * 0.40f, s * 0.78f, s * 0.40f)
+                addOval(Rect(Offset(s * 0.44f, s * 0.64f), s * 0.115f))
+            }
+            val stroke = Stroke(s * 0.085f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            translate(-s * 0.03f, -s * 0.025f) { drawPath(note, Color(0xFF25F4EE), style = stroke) }
+            translate(s * 0.03f, s * 0.025f) { drawPath(note, Color(0xFFFE2C55), style = stroke) }
+            drawPath(note, Color.White, style = stroke)
+        }
+        Platform.SNAPCHAT -> Canvas(modifier) {
+            val s = size.minDimension
+            drawRoundRect(Color(0xFFFFFC00), cornerRadius = CornerRadius(s * 0.24f))
+            val ghost = Path().apply {
+                moveTo(s * 0.28f, s * 0.74f)
+                lineTo(s * 0.28f, s * 0.44f)
+                cubicTo(s * 0.28f, s * 0.26f, s * 0.38f, s * 0.16f, s * 0.50f, s * 0.16f)
+                cubicTo(s * 0.62f, s * 0.16f, s * 0.72f, s * 0.26f, s * 0.72f, s * 0.44f)
+                lineTo(s * 0.72f, s * 0.74f)
+                quadraticTo(s * 0.647f, s * 0.80f, s * 0.573f, s * 0.74f)
+                quadraticTo(s * 0.50f, s * 0.68f, s * 0.427f, s * 0.74f)
+                quadraticTo(s * 0.353f, s * 0.80f, s * 0.28f, s * 0.74f)
+                close()
+            }
+            drawPath(ghost, Color.White)
+            drawPath(ghost, Color(0xFF1A1A1A), style = Stroke(s * 0.05f, join = StrokeJoin.Round))
+        }
+        Platform.BEREAL -> BoxWithConstraints(
+            modifier
+                .clip(RoundedCornerShape(24))
+                .background(Color(0xFF0B0B0F))
+                .border(0.8.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(24)),
+            contentAlignment = Alignment.Center,
+        ) {
+            val side = minOf(maxWidth, maxHeight)
+            Text(
+                "Be",
+                color = Color.White,
+                fontSize = with(LocalDensity.current) { (side * 0.5f).toSp() },
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-0.5).sp,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
         Platform.OTHER -> Icon(
             Icons.Rounded.Link,
             contentDescription = null,
@@ -587,6 +656,21 @@ fun PlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
             tint = Color.White,
         )
     }
+}
+
+/** Near-black rounded square with a faint outline, the backdrop of the X and TikTok logos. */
+private fun DrawScope.blackTile() {
+    val s = size.minDimension
+    val corner = CornerRadius(s * 0.24f)
+    drawRoundRect(Color(0xFF0B0B0F), cornerRadius = corner)
+    val stroke = s * 0.05f
+    drawRoundRect(
+        Color.White.copy(alpha = 0.32f),
+        topLeft = Offset(stroke / 2, stroke / 2),
+        size = Size(s - stroke, s - stroke),
+        cornerRadius = corner,
+        style = Stroke(stroke),
+    )
 }
 
 /** Glyph that pops (overshooting spring) whenever the detected platform changes. */

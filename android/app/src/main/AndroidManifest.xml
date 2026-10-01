@@ -33,7 +33,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Partager" from the YouTube / Instagram apps. -->
+            <!-- "Partager" from the YouTube, Instagram, X, TikTok… apps. -->
             <intent-filter android:label="@string/share_label">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

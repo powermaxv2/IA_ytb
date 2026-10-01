@@ -286,11 +286,13 @@ private class ProgressTracker(private val mode: MediaMode) {
         val formatId = parts[5]
         val hasVideo = parts[6].trim() !in setOf("none", "NA", "")
         val hasAudio = parts[7].trim() !in setOf("none", "NA", "")
+        // Direct links, Snapchat and X progressive files declare no codec at all: one complete file, not video + audio.
+        val codecsUnknown = parts[6].trim() in setOf("NA", "") && parts[7].trim() in setOf("NA", "")
 
         currentFormat?.let { if (it != formatId) phaseIndex++ }
         currentFormat = formatId
 
-        val expected = if (mode == MediaMode.AUDIO || (hasVideo && hasAudio)) 1 else 2
+        val expected = if (mode == MediaMode.AUDIO || codecsUnknown || (hasVideo && hasAudio)) 1 else 2
         val fraction = total?.let { if (it > 0) minOf(1.0, downloaded / it) else 0.0 } ?: 0.0
         val phase = minOf(phaseIndex, expected - 1)
         progress = maxOf(progress, minOf(1.0, (phase + fraction) / expected))

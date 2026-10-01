@@ -48,8 +48,13 @@ data class VideoFormat(
     val filesize: Double?,
     val dynamicRange: String?,
 ) {
+    /** Direct links often carry no codec or height: the file extension then tells whether it is a video. */
     val hasVideo: Boolean
-        get() = if (ext == "mhtml") false else vcodec?.let { it != "none" } ?: (height != null)
+        get() = when {
+            ext == "mhtml" -> false
+            vcodec != null -> vcodec != "none"
+            else -> height != null || ext in videoExtensions
+        }
 
     val hasAudio: Boolean
         get() = acodec?.let { it != "none" } ?: false
@@ -58,6 +63,11 @@ data class VideoFormat(
         get() = dynamicRange?.let { !it.equals("SDR", ignoreCase = true) } ?: false
 
     companion object {
+        private val videoExtensions = setOf(
+            "mp4", "m4v", "mov", "webm", "mkv", "flv", "avi", "ts", "3gp", "mpg", "mpeg", "ogv", "wmv", "unknown_video",
+        )
+        internal val imageExtensions = setOf("jpg", "jpeg", "png", "gif", "webp", "heic", "avif", "bmp", "svg")
+
         fun from(o: JSONObject) = VideoFormat(
             formatId = o.str("format_id") ?: UUID.randomUUID().toString(),
             ext = o.str("ext"),
@@ -95,10 +105,10 @@ data class VideoInfo(
 
     val audioEstimatedSize: Double? get() = bestAudio?.let { estimatedSize(it) }
 
-    /** One option per available video height, best first. */
+    /** One option per available video height, best first; a single "Max" option when the video does not tell its height. */
     val qualityOptions: List<QualityOption> by lazy {
         val audioSize = audioEstimatedSize ?: 0.0
-        formats.filter { it.hasVideo && it.height != null }
+        val byHeight = formats.filter { it.hasVideo && it.height != null }
             .groupBy { it.height ?: 0 }
             .map { (height, group) ->
                 val best = group.maxByOrNull { it.tbr ?: 0.0 }
@@ -114,12 +124,22 @@ data class VideoInfo(
                 )
             }
             .sortedByDescending { it.height }
+        if (byHeight.isNotEmpty()) return@lazy byHeight
+        val unsized = formats.filter { it.hasVideo }
+        if (unsized.isEmpty()) return@lazy emptyList()
+        val best = unsized.maxByOrNull { it.tbr ?: 0.0 }
+        val size = best?.let { b -> estimatedSize(b)?.let { it + if (b.hasAudio) 0.0 else audioSize } }
+        listOf(QualityOption(height = null, displayP = 0, maxFps = 0, hdr = false, estimatedSize = size))
     }
 
     companion object {
         fun from(o: JSONObject): VideoInfo {
             val formats = mutableListOf<VideoFormat>()
             o.optJSONArray("formats")?.forEachObject { _, f -> formats += VideoFormat.from(f) }
+            // Single-file sources (Snapchat, direct links) have no format list: the file is described at the top level.
+            if (formats.isEmpty() && o.str("url") != null && o.str("ext") !in VideoFormat.imageExtensions) {
+                formats += VideoFormat.from(o)
+            }
             return VideoInfo(
                 id = o.str("id") ?: "",
                 title = o.str("title") ?: o.str("fulltitle") ?: "Sans titre",
@@ -241,18 +261,19 @@ data class PlaylistQuality(val height: Int?) {
 }
 
 data class QualityOption(
-    /** Value used in the yt-dlp `height<=` filter. */
-    val height: Int,
+    /** Value used in the yt-dlp `height<=` filter; null when the source does not tell its height. */
+    val height: Int?,
     /** Short side of the frame — what people call "1080p" (handles vertical videos like Reels). */
     val displayP: Int,
     val maxFps: Int,
     val hdr: Boolean,
     val estimatedSize: Double?,
 ) {
-    val label: String get() = "${displayP}p"
+    val label: String get() = if (height == null) "Max" else "${displayP}p"
 
     val badge: String
         get() = when {
+            height == null -> "Original"
             displayP >= 4320 -> "8K"
             displayP >= 2160 -> "4K"
             displayP >= 1440 -> "2K"
@@ -345,7 +366,8 @@ data class DownloadRequest(
                         "bv*[vcodec^=avc]$h+ba[ext=m4a]/b[ext=mp4]$h/bv*$h+ba[ext=m4a]/bv*$h+ba/b$h/bv*+ba/b"
                 }
                 args += listOf("-f", selector, "--merge-output-format", container.fileExtension)
-                args += listOf("-o", "%(title).150B [%(height)sp].%(ext)s")
+                // " [1080p]" only when the height is known: direct links and Snapchat do not tell it.
+                args += listOf("-o", "%(title).150B%(height& [{}p]|)s.%(ext)s")
                 if (embedChapters) args += "--embed-chapters"
                 if (subtitles) {
                     val langs = subtitleLangs.trim().ifEmpty { "fr,en" }

@@ -46,7 +46,8 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 
-enum class Tab { YOUTUBE, INSTAGRAM, DOWNLOADS, SETTINGS }
+/** Settings is not in the bottom bar: it opens from the gear in each screen header. */
+enum class Tab { YOUTUBE, INSTAGRAM, OTHER, DOWNLOADS, SETTINGS }
 
 sealed interface Phase {
     data object Idle : Phase
@@ -55,8 +56,8 @@ sealed interface Phase {
     data class Ready(val media: MediaInfo) : Phase
 }
 
-/** Link field and analysis result of one platform tab (YouTube or Instagram). */
-class LinkPane(val platform: Platform) {
+/** Link field and analysis result of one link tab (YouTube, Instagram, or Autres for every other site). */
+class LinkPane(val platform: Platform, val tab: Tab, val name: String) {
     var urlText by mutableStateOf("")
     var phase by mutableStateOf<Phase>(Phase.Idle)
     internal var job: Job? = null
@@ -71,15 +72,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val instagram = app.instagram
     val prefs = app.prefs
 
-    val youtube = LinkPane(Platform.YOUTUBE)
-    val insta = LinkPane(Platform.INSTAGRAM)
+    val youtube = LinkPane(Platform.YOUTUBE, Tab.YOUTUBE, "YouTube")
+    val insta = LinkPane(Platform.INSTAGRAM, Tab.INSTAGRAM, "Instagram")
+    val other = LinkPane(Platform.OTHER, Tab.OTHER, "Autres")
 
     var tab by mutableStateOf(Tab.YOUTUBE)
         private set
 
-    /** Platform whose colours the app wears: the current tab, or the last platform tab on Files / Settings. */
+    /** Platform whose colours the app wears: the current link tab, or the last one on Files / Settings. */
     var accentPlatform by mutableStateOf(Platform.YOUTUBE)
         private set
+
+    private var tabBeforeSettings = Tab.YOUTUBE
     var updateMessage by mutableStateOf<String?>(null)
         private set
 
@@ -111,13 +115,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         when (value) {
             Tab.YOUTUBE -> accentPlatform = Platform.YOUTUBE
             Tab.INSTAGRAM -> accentPlatform = Platform.INSTAGRAM
+            Tab.OTHER -> accentPlatform = Platform.OTHER
             else -> Unit
         }
     }
 
-    /** Back to the last platform tab (from the empty Files screen). */
+    fun openSettings() {
+        if (tab != Tab.SETTINGS) tabBeforeSettings = tab
+        tab = Tab.SETTINGS
+    }
+
+    fun closeSettings() {
+        selectTab(tabBeforeSettings)
+    }
+
+    /** Back to the last link tab (from the empty Files screen). */
     fun openLinkTab() {
-        selectTab(if (accentPlatform == Platform.INSTAGRAM) Tab.INSTAGRAM else Tab.YOUTUBE)
+        selectTab(
+            when (accentPlatform) {
+                Platform.INSTAGRAM -> Tab.INSTAGRAM
+                Platform.OTHER -> Tab.OTHER
+                else -> Tab.YOUTUBE
+            },
+        )
     }
 
     fun toast(message: String, success: Boolean = true) {
@@ -126,11 +146,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // MARK: - Links
 
-    /** Instagram links belong to the Instagram tab; YouTube and every other site to the YouTube tab. */
-    private fun paneFor(url: String): LinkPane = if (Links.platform(url) == Platform.INSTAGRAM) insta else youtube
+    /** YouTube and Instagram links go to their own tab; X, TikTok, Snapchat, BeReal and any other site to Autres. */
+    private fun paneFor(url: String): LinkPane = when (Links.platform(url)) {
+        Platform.YOUTUBE -> youtube
+        Platform.INSTAGRAM -> insta
+        else -> other
+    }
 
     private fun show(pane: LinkPane) {
-        selectTab(if (pane === insta) Tab.INSTAGRAM else Tab.YOUTUBE)
+        selectTab(pane.tab)
     }
 
     fun onSharedText(text: String) {
@@ -160,27 +184,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val url = Links.normalize(pane.urlText)
         if (url == null) {
             pane.phase = Phase.Failed(
-                if (pane === insta) {
-                    "Collez un lien Instagram valide (https://www.instagram.com/…)."
-                } else {
-                    "Collez un lien https:// valide (YouTube…)."
+                when (pane.platform) {
+                    Platform.INSTAGRAM -> "Collez un lien Instagram valide (https://www.instagram.com/…)."
+                    Platform.OTHER -> "Collez un lien https:// valide (X, TikTok, Snapchat ou un site de vidéos)."
+                    else -> "Collez un lien https:// valide (YouTube…)."
                 },
             )
             return
         }
-        // A link pasted in the other platform's tab moves to the right tab.
+        val platform = Links.platform(url)
+        // A link pasted in the wrong tab moves to the right tab.
         val target = paneFor(url)
         if (target !== pane) {
             reset(pane)
             target.urlText = url
             show(target)
-            toast("Lien ${target.platform.label} : ouvert dans l'onglet ${target.platform.label}")
+            val what = if (platform == Platform.OTHER) "Lien" else "Lien ${platform.label}"
+            toast("$what : ouvert dans l'onglet ${target.name}")
             analyze(target)
             return
         }
         pane.urlText = url
         pane.job?.cancel()
-        val platform = Links.platform(url)
+        if (platform == Platform.BEREAL) {
+            pane.phase = Phase.Failed(BEREAL_NO_LINKS)
+            return
+        }
         pane.phase = Phase.Loading(platform)
         pane.job = viewModelScope.launch {
             pane.phase = try {
@@ -404,6 +433,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val SESSION_EXPIRED = "Session Instagram expirée : reconnectez votre compte en haut de l'onglet Instagram."
         private const val STORY_LOGIN = "Les stories Instagram ne sont visibles qu'avec un compte : connectez le vôtre en haut de l'onglet Instagram."
         private const val STORY_UNAVAILABLE = "Story introuvable : elle a expiré (24 h), a été supprimée ou n'est pas visible avec ce compte."
+        private const val BEREAL_NO_LINKS =
+            "BeReal ne donne aucun lien vers une publication : les BeReal ne se voient que dans l'application, " +
+                "et les liens bere.al ne mènent qu'à un profil. Il n'y a rien à télécharger depuis ce lien."
         private const val UNREADABLE =
             "yt-dlp n'a rien pu lire à ce lien. Vérifiez-le et réessayez ; si cela persiste, mettez yt-dlp à jour dans les réglages."
     }

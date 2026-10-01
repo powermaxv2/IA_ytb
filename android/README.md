@@ -1,20 +1,23 @@
 # YT Downloader pour Android
 
-Version Android (APK) de YT Downloader : télécharge depuis **YouTube** et **Instagram**, avec le son,
-dans la qualité de votre choix. Elle vit dans ce dossier `android/` et ne touche pas à l'app macOS.
+Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Instagram**, **X**, **TikTok**,
+**Snapchat** et n'importe quel lien de vidéo, avec le son, dans la qualité de votre choix. Elle vit dans ce dossier `android/` et ne touche pas à l'app macOS.
 
 ## Fonctionnalités
 
-- Deux onglets séparés, **YouTube** et **Instagram**, chacun avec son champ de lien (un lien collé dans le
-  mauvais onglet est ouvert dans le bon)
-- **Partager → YT Downloader** depuis l'app YouTube ou Instagram (ou coller un lien)
+- Trois onglets séparés, **YouTube**, **Instagram** et **Autres**, chacun avec son champ de lien (un lien collé
+  dans le mauvais onglet est ouvert dans le bon) ; les **Réglages** s'ouvrent avec la roue crantée en haut à droite
+  de chaque écran
+- **Partager → YT Downloader** depuis l'app YouTube, Instagram, X, TikTok… (ou coller un lien)
 - **YouTube** : vidéos jusqu'en 4K / 8K / HDR / 60 fps, audio seul (M4A, MP3, Opus, FLAC), playlists
 - **Instagram** : reels, vidéos, carrousels ; **photos**, stories et publications privées des comptes suivis
   avec un compte connecté
+- **Autres** : vidéos publiques de **X**, **TikTok** et **Snapchat** (Spotlight), et tout lien de vidéo d'un site
+  pris en charge par yt-dlp ou d'un fichier vidéo direct (voir ci-dessous)
 - Choix de la qualité en tuiles (la meilleure est marquée **MAX**), formats MP4, MP4 · H.264 (lisible partout) ou MKV
 - File d'attente en arrière-plan avec notification de progression, annulation, nouvelle tentative
 - Fichiers enregistrés dans la Galerie : **Films / Musique / Images › YT Downloader**
-- Interface animée : fond vivant, accent rouge (YouTube) ou violet-rose (Instagram) selon l'onglet,
+- Interface animée : fond vivant, accent rouge (YouTube), violet-rose (Instagram) ou cyan-indigo (Autres) selon l'onglet,
   tuiles en cascade, barre de progression animée, effet de réussite, vibrations légères
 
 ## Installer l'APK
@@ -64,6 +67,23 @@ Avec un compte connecté, les publications (y compris privées) sont lues via l'
 affiche toutes ses photos et vidéos, à cocher avant le téléchargement. L'onglet indique le compte connecté
 (@nom) et signale une session expirée ; les liens `instagram.com/share/…` sont suivis jusqu'à la publication.
 
+## Autres réseaux et liens de vidéos
+
+L'onglet **Autres** accepte les liens `x.com` / `twitter.com`, `tiktok.com` (y compris `vm.tiktok.com`),
+`snapchat.com/spotlight/…` et tout autre lien `https://` : yt-dlp cherche la vidéo dans la page (des centaines de
+sites) ou télécharge directement un fichier `.mp4`, `.webm`… Aucun compte n'est demandé.
+
+Limites :
+
+- **BeReal** : l'app ne publie aucun lien public vers une publication (`bere.al/<nom>` ne mène qu'à un profil) et
+  yt-dlp n'a pas d'extracteur BeReal. Un lien BeReal affiche donc une explication au lieu de télécharger.
+- **X** : seules les vidéos (et GIF) sont téléchargées, pas les photos ; les posts protégés ou réservés aux adultes
+  demandent un compte, non pris en charge.
+- **TikTok** : les diaporamas de photos ne sont pas pris en charge.
+- **Snapchat** : seuls les liens Spotlight publics fonctionnent (pas les Stories ni les Snaps privés).
+- Un lien direct vers un fichier ne donne pas de choix de qualité : le fichier est téléchargé tel quel (option
+  **Max**).
+
 ## Sécurité
 
 - yt-dlp, Python, FFmpeg et QuickJS sont intégrés à l'APK ([youtubedl-android](https://github.com/JunkFood02/youtubedl-android)).
@@ -86,4 +106,4 @@ Version Android : fichier `android/VERSION` (indépendant du `VERSION` de l'app 
 ## Avertissement
 
 Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé,
-et respectez les conditions d'utilisation de YouTube et d'Instagram.
+et respectez les conditions d'utilisation de YouTube, d'Instagram et des autres sites.
