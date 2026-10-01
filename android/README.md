@@ -1,7 +1,7 @@
 # YT Downloader pour Android
 
 Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Instagram**, **X**, **TikTok**,
-**Snapchat** et n'importe quel lien de vidéo, avec le son, dans la qualité de votre choix. Elle vit dans ce dossier `android/` et ne touche pas à l'app macOS.
+**Snapchat**, **Facebook** et n'importe quel lien de vidéo, avec le son, dans la qualité de votre choix. Elle vit dans ce dossier `android/` et ne touche pas à l'app macOS.
 
 ## Fonctionnalités
 
@@ -12,7 +12,7 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 - **YouTube** : vidéos jusqu'en 4K / 8K / HDR / 60 fps, audio seul (M4A, MP3, Opus, FLAC), playlists
 - **Instagram** : reels, vidéos, carrousels ; **photos**, stories et publications privées des comptes suivis
   avec un compte connecté
-- **Autres** : vidéos publiques de **X**, **TikTok** et **Snapchat** (Spotlight), et tout lien de vidéo d'un site
+- **Autres** : vidéos publiques de **X**, **TikTok**, **Snapchat** (Spotlight) et **Facebook**, et tout lien de vidéo d'un site
   pris en charge par yt-dlp ou d'un fichier vidéo direct (voir ci-dessous)
 - Choix de la qualité en tuiles (la meilleure est marquée **MAX**), formats MP4, MP4 · H.264 (lisible partout) ou MKV
 - File d'attente en arrière-plan avec notification de progression, annulation, nouvelle tentative
@@ -70,13 +70,15 @@ affiche toutes ses photos et vidéos, à cocher avant le téléchargement. L'ong
 ## Autres réseaux et liens de vidéos
 
 L'onglet **Autres** accepte les liens `x.com` / `twitter.com`, `tiktok.com` (y compris `vm.tiktok.com`),
-`snapchat.com/spotlight/…` et tout autre lien `https://` : yt-dlp cherche la vidéo dans la page (des centaines de
+`snapchat.com/spotlight/…`, `facebook.com` et tout autre lien `https://` : yt-dlp cherche la vidéo dans la page (des centaines de
 sites) ou télécharge directement un fichier `.mp4`, `.webm`… Aucun compte n'est demandé.
 
 Limites :
 
 - **BeReal** : l'app ne publie aucun lien public vers une publication (`bere.al/<nom>` ne mène qu'à un profil) et
   yt-dlp n'a pas d'extracteur BeReal. Un lien BeReal affiche donc une explication au lieu de télécharger.
+- **Facebook** : les contenus en direct, protégés ou dans des groupes privés ne sont pas lus. Pas de choix de qualité
+  sur certaines vidéos (téléchargement en **Max** automatique).
 - **X** : seules les vidéos (et GIF) sont téléchargées, pas les photos ; les posts protégés ou réservés aux adultes
   demandent un compte, non pris en charge.
 - **TikTok** : les diaporamas de photos ne sont pas pris en charge.

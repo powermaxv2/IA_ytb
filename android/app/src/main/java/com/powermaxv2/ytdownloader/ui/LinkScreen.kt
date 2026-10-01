@@ -575,6 +575,7 @@ private fun EmptyCard(platform: Platform) {
                 Platform.OTHER -> listOf(
                     Pill("X", platform = Platform.TWITTER),
                     Pill("TikTok", platform = Platform.TIKTOK),
+                    Pill("Facebook", platform = Platform.FACEBOOK),
                     Pill("Snapchat", platform = Platform.SNAPCHAT),
                     Pill("BeReal", platform = Platform.BEREAL, dimmed = true),
                     Pill("Tout lien vidéo", Icons.Rounded.Public),
@@ -592,8 +593,7 @@ private fun EmptyCard(platform: Platform) {
         }
         if (platform == Platform.OTHER) {
             Text(
-                "Snapchat : liens Spotlight uniquement. BeReal : aucun lien public, donc rien à télécharger pour " +
-                    "l'instant. Les photos de X et les diaporamas TikTok ne sont pas pris en charge.",
+                "Snapchat : liens Spotlight uniquement. Facebook : certains contenus (en direct, protégés) ne sont pas lus. BeReal : aucun lien public, donc rien à télécharger pour l'instant. Les photos de X et les diaporamas TikTok ne sont pas pris en charge.",
                 color = Palette.TextTertiary,
                 fontSize = 11.5.sp,
                 textAlign = TextAlign.Center,

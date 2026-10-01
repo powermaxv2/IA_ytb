@@ -15,6 +15,7 @@ object Errors {
         return when {
             "unsupported url" in lower ->
                 "Aucune vidéo détectée à ce lien : le site n'est pas pris en charge, ou la page ne contient pas de vidéo."
+            "cannot parse data" in lower -> "Facebook n'a pas pu lire cette vidéo : elle est en direct, supprimée ou privée."
             "is not a valid url" in lower -> "Ce lien n'est pas valide."
             fromInstagram && ("private" in lower || "follow" in lower) ->
                 "Publication d'un compte privé : connectez un compte Instagram qui suit ce compte."

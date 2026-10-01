@@ -631,6 +631,28 @@ fun PlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
             drawPath(ghost, Color.White)
             drawPath(ghost, Color(0xFF1A1A1A), style = Stroke(s * 0.05f, join = StrokeJoin.Round))
         }
+        Platform.FACEBOOK -> Canvas(modifier) {
+            val s = size.minDimension
+            drawRoundRect(Color(0xFF1877F2), cornerRadius = CornerRadius(s * 0.20f))
+            val f = Path().apply {
+                moveTo(s * 0.38f, s * 0.26f)
+                lineTo(s * 0.38f, s * 0.50f)
+                lineTo(s * 0.52f, s * 0.50f)
+                lineTo(s * 0.52f, s * 0.60f)
+                lineTo(s * 0.38f, s * 0.60f)
+                lineTo(s * 0.38f, s * 0.78f)
+                lineTo(s * 0.28f, s * 0.78f)
+                lineTo(s * 0.28f, s * 0.60f)
+                lineTo(s * 0.18f, s * 0.60f)
+                lineTo(s * 0.18f, s * 0.50f)
+                lineTo(s * 0.28f, s * 0.50f)
+                lineTo(s * 0.28f, s * 0.42f)
+                cubicTo(s * 0.28f, s * 0.32f, s * 0.32f, s * 0.26f, s * 0.40f, s * 0.26f)
+                lineTo(s * 0.38f, s * 0.26f)
+                close()
+            }
+            drawPath(f, Color.White)
+        }
         Platform.BEREAL -> BoxWithConstraints(
             modifier
                 .clip(RoundedCornerShape(24))
