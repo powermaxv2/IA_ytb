@@ -17,8 +17,9 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 - Choix de la qualité en tuiles (la meilleure est marquée **MAX**), formats MP4, MP4 · H.264 (lisible partout) ou MKV
 - File d'attente en arrière-plan avec notification de progression, annulation, nouvelle tentative
 - Fichiers enregistrés dans la Galerie : **Films / Musique / Images › YT Downloader**
-- Interface animée : fond vivant, accent rouge (YouTube), violet-rose (Instagram) ou cyan-indigo (Autres) selon l'onglet,
-  tuiles en cascade, barre de progression animée, effet de réussite, vibrations légères
+- Interface sombre et lisible (depuis 1.5.0) : un gros bouton **Coller le lien**, les étapes « Comment faire » sur
+  chaque onglet, des tuiles de qualité, des réglages en liste ; accent rouge (YouTube), violet-rose (Instagram) ou
+  cyan-indigo (Autres) selon l'onglet, animations discrètes et vibrations légères
 
 ## Installer l'APK
 

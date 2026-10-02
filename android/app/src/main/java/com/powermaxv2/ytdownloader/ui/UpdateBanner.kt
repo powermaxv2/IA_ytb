@@ -76,33 +76,27 @@ private fun UpdateCard(state: AppUpdateState, vm: MainViewModel) {
     Column(
         Modifier
             .fillMaxWidth()
-            .glass(RoundedCornerShape(18.dp), accent.start.copy(alpha = 0.10f))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .panel(RoundedCornerShape(22.dp))
+            .background(accent.tint(0.08f))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
                 Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(11.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(13.dp))
                     .background(accent.brush),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    Icons.Rounded.SystemUpdate,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .then(if (state is AppUpdateState.Available) Modifier.floating(2.dp, 1800) else Modifier),
-                )
+                Icon(Icons.Rounded.SystemUpdate, contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, color = Palette.TextSecondary, fontSize = 12.sp)
+                Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Text(subtitle, color = Palette.TextSecondary, fontSize = 12.5.sp)
             }
             if (state is AppUpdateState.Available) {
-                IconCircleButton(Icons.Rounded.Close, size = 28.dp, contentDescription = "Plus tard") {
+                IconCircleButton(Icons.Rounded.Close, size = 32.dp, contentDescription = "Plus tard") {
                     vm.dismissAppUpdate(state.release.version)
                 }
             }
@@ -111,19 +105,20 @@ private fun UpdateCard(state: AppUpdateState, vm: MainViewModel) {
             is AppUpdateState.Available -> {
                 val notes = UpdateNotes.preview(state.release.notes, maxLines = 5)
                 if (notes.isNotBlank()) {
-                    Text(notes, color = Palette.TextSecondary, fontSize = 12.5.sp, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                    Text(notes, color = Palette.TextSecondary, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 6, overflow = TextOverflow.Ellipsis)
                 }
-                GradientButton("Mettre à jour", Modifier.fillMaxWidth(), icon = Icons.Rounded.SystemUpdate) { vm.startAppUpdate() }
+                PrimaryButton("Mettre à jour", Modifier.fillMaxWidth(), icon = Icons.Rounded.SystemUpdate) { vm.startAppUpdate() }
             }
-            is AppUpdateState.Downloading -> GradientProgressBar(state.progress)
+            is AppUpdateState.Downloading -> ProgressBar(state.progress)
             is AppUpdateState.NeedsPermission -> {
                 Text(
                     "Android doit autoriser YT Downloader à installer ses propres mises à jour. Activez " +
                         "« Autoriser cette source », puis revenez : l'installation reprend toute seule.",
                     color = Palette.TextSecondary,
-                    fontSize = 12.5.sp,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
                 )
-                GradientButton("Autoriser", Modifier.fillMaxWidth(), icon = Icons.Rounded.Security) {
+                PrimaryButton("Autoriser", Modifier.fillMaxWidth(), icon = Icons.Rounded.Security) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
                         runCatching { context.startActivity(intent) }
@@ -135,11 +130,11 @@ private fun UpdateCard(state: AppUpdateState, vm: MainViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 CircularProgressIndicator(Modifier.size(16.dp), color = accent.start, strokeWidth = 2.dp)
-                Text("L'app va redémarrer dans sa nouvelle version.", color = Palette.TextSecondary, fontSize = 12.5.sp)
+                Text("L'app va redémarrer dans sa nouvelle version.", color = Palette.TextSecondary, fontSize = 13.sp)
             }
             is AppUpdateState.Failed -> {
-                Text(state.message, color = Palette.Danger, fontSize = 12.5.sp)
-                SecondaryButton("Réessayer", Icons.Rounded.Refresh, compact = true) { vm.startAppUpdate() }
+                Text(state.message, color = Palette.Danger, fontSize = 13.sp, lineHeight = 18.sp)
+                TonalButton("Réessayer", Icons.Rounded.Refresh, compact = true) { vm.startAppUpdate() }
             }
             AppUpdateState.None -> Unit
         }

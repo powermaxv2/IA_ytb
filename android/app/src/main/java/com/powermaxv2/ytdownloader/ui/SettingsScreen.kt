@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,17 +26,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -53,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.BuildConfig
 import com.powermaxv2.ytdownloader.core.AudioFormat
-import com.powermaxv2.ytdownloader.core.Platform
+import com.powermaxv2.ytdownloader.core.MediaExporter
 import com.powermaxv2.ytdownloader.core.VideoContainer
 
 @Composable
@@ -61,7 +58,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val version by vm.engine.version.collectAsStateWithLifecycle()
     val updating by vm.engine.updating.collectAsStateWithLifecycle()
-    val accent = LocalAccent.current
+    val checking by vm.updater.checking.collectAsStateWithLifecycle()
 
     Column(
         Modifier
@@ -69,26 +66,38 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             .verticalScroll(rememberScrollState())
             .padding(contentPadding)
             .padding(horizontal = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Réglages", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) {
+            ScreenTitle("Réglages", null, Modifier.weight(1f))
             IconCircleButton(Icons.Rounded.Close, contentDescription = "Fermer", onClick = vm::closeSettings)
         }
         UpdateBanner(vm)
 
-        Section("Formats par défaut", Icons.Rounded.Tune, index = 0) {
-            SectionLabel("Vidéo")
-            ChipRow(VideoContainer.entries, settings.container, { it.title }, { c -> vm.prefs.update { it.copy(container = c) } })
-            SectionLabel("Audio")
-            ChipRow(AudioFormat.entries, settings.audioFormat, { it.title }, { f -> vm.prefs.update { it.copy(audioFormat = f) } })
+        GroupTitle("Formats par défaut", 0)
+        ListCard(0) {
+            ChoiceRow(Icons.Rounded.Movie, "Vidéo", settings.container.subtitle) {
+                ChoiceChips(VideoContainer.entries, settings.container, { it.title }, { c -> vm.prefs.update { it.copy(container = c) } })
+            }
+            RowDivider()
+            ChoiceRow(Icons.Rounded.MusicNote, "Audio", settings.audioFormat.subtitle) {
+                ChoiceChips(AudioFormat.entries, settings.audioFormat, { it.title }, { f -> vm.prefs.update { it.copy(audioFormat = f) } })
+            }
         }
 
-        Section("Options", Icons.Rounded.CheckCircle, index = 1) {
-            ToggleRow("Miniature intégrée au fichier", settings.embedThumbnail) { v -> vm.prefs.update { it.copy(embedThumbnail = v) } }
-            ToggleRow("Titre, artiste et date (métadonnées)", settings.embedMetadata) { v -> vm.prefs.update { it.copy(embedMetadata = v) } }
-            ToggleRow("Chapitres YouTube", settings.embedChapters) { v -> vm.prefs.update { it.copy(embedChapters = v) } }
-            ToggleRow("Sous-titres intégrés", settings.subtitles) { v -> vm.prefs.update { it.copy(subtitles = v) } }
+        GroupTitle("Fichiers téléchargés", 1)
+        ListCard(1) {
+            SwitchRow("Miniature dans le fichier", "Pochette visible dans la Galerie et les lecteurs", settings.embedThumbnail) { v ->
+                vm.prefs.update { it.copy(embedThumbnail = v) }
+            }
+            RowDivider()
+            SwitchRow("Titre, artiste et date", "Lus par les apps de musique et de vidéo", settings.embedMetadata) { v ->
+                vm.prefs.update { it.copy(embedMetadata = v) }
+            }
+            RowDivider()
+            SwitchRow("Chapitres YouTube", null, settings.embedChapters) { v -> vm.prefs.update { it.copy(embedChapters = v) } }
+            RowDivider()
+            SwitchRow("Sous-titres intégrés", "Quand la vidéo en propose", settings.subtitles) { v -> vm.prefs.update { it.copy(subtitles = v) } }
             AnimatedVisibility(
                 visible = settings.subtitles,
                 enter = expandVertically() + fadeIn(),
@@ -96,155 +105,151 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             ) {
                 Row(
                     Modifier
+                        .padding(start = 16.dp, end = 16.dp, bottom = 14.dp)
                         .fillMaxWidth()
-                        .glass(RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .panel(RoundedCornerShape(14.dp), Palette.Surface2)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Langues", color = Palette.TextSecondary, fontSize = 13.sp)
-                    Spacer(Modifier.width(10.dp))
+                    Text("Langues", color = Palette.TextSecondary, fontSize = 14.sp)
+                    Spacer(Modifier.width(12.dp))
                     BasicTextField(
                         value = settings.subtitleLangs,
                         onValueChange = { v -> vm.prefs.update { it.copy(subtitleLangs = v.take(40)) } },
                         singleLine = true,
-                        textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                        cursorBrush = SolidColor(accent.start),
+                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                        cursorBrush = SolidColor(LocalAccent.current.start),
                         modifier = Modifier.weight(1f),
                     )
                 }
             }
-            ToggleRow("Notification à la fin", settings.notify) { v -> vm.prefs.update { it.copy(notify = v) } }
-            ToggleRow("Vibrations", settings.haptics) { v -> vm.prefs.update { it.copy(haptics = v) } }
         }
 
-        Section("Moteur yt-dlp", Icons.Rounded.Bolt, index = 2) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Version installée", color = Palette.TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Text(version ?: "…", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        GroupTitle("Application", 2)
+        ListCard(2) {
+            SwitchRow("Notification à la fin", null, settings.notify) { v -> vm.prefs.update { it.copy(notify = v) } }
+            RowDivider()
+            SwitchRow("Vibrations", "Petit retour quand vous touchez un bouton", settings.haptics) { v -> vm.prefs.update { it.copy(haptics = v) } }
+        }
+
+        GroupTitle("Moteur yt-dlp", 3)
+        ListCard(3) {
+            ValueRow("Version installée", version ?: "…")
+            RowDivider()
+            SwitchRow("Mise à jour automatique", "Toutes les 12 h, fichier vérifié avant l'installation", settings.autoUpdateYtDlp) { v ->
+                vm.prefs.update { it.copy(autoUpdateYtDlp = v) }
             }
-            ToggleRow("Mise à jour automatique (vérifiée)", settings.autoUpdateYtDlp) { v -> vm.prefs.update { it.copy(autoUpdateYtDlp = v) } }
-            GradientButton(
-                "Mettre à jour yt-dlp",
-                Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.SystemUpdate,
-                loading = updating,
-            ) { vm.updateYtDlp() }
-            AnimatedVisibility(visible = vm.updateMessage != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-                Text(vm.updateMessage ?: "", color = Palette.TextSecondary, fontSize = 12.5.sp)
-            }
-            Text(
-                "En cas d'erreur soudaine (403, « not a bot »…), mettez à jour yt-dlp : les sites changent souvent.",
-                color = Palette.TextTertiary,
-                fontSize = 12.sp,
+            RowDivider()
+            ActionArea(
+                button = { TonalButton("Mettre à jour yt-dlp", Icons.Rounded.SystemUpdate, Modifier.fillMaxWidth(), loading = updating) { vm.updateYtDlp() } },
+                message = vm.updateMessage,
+                hint = "En cas d'erreur soudaine (403, « not a bot »…), mettez yt-dlp à jour : les sites changent souvent.",
             )
         }
 
-        Section("Mises à jour de l'app", Icons.Rounded.NewReleases, index = 3) {
-            val checking by vm.updater.checking.collectAsStateWithLifecycle()
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Version installée", color = Palette.TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Text(BuildConfig.VERSION_NAME, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        GroupTitle("Mises à jour de l'app", 4)
+        ListCard(4) {
+            ValueRow("Version installée", BuildConfig.VERSION_NAME)
+            RowDivider()
+            SwitchRow("Chercher les nouvelles versions", "Une notification quand une version sort", settings.autoCheckAppUpdates, vm::setAutoCheckAppUpdates)
+            RowDivider()
+            ActionArea(
+                button = { TonalButton("Rechercher une mise à jour", Icons.Rounded.Refresh, Modifier.fillMaxWidth(), loading = checking) { vm.checkAppUpdate() } },
+                message = vm.appUpdateMessage,
+                hint = "Les versions viennent du projet GitHub de l'app ; chaque fichier est vérifié (empreinte et signature) avant l'installation.",
+            )
+        }
+
+        GroupTitle("Où sont les fichiers", 5)
+        ListCard(5) {
+            ValueRow("Vidéos", "Films › ${MediaExporter.FOLDER}", Icons.Rounded.Movie)
+            RowDivider()
+            ValueRow("Musique", "Musique › ${MediaExporter.FOLDER}", Icons.Rounded.MusicNote)
+            RowDivider()
+            ValueRow("Photos", "Images › ${MediaExporter.FOLDER}", Icons.Rounded.Image)
+        }
+
+        GroupTitle("Sécurité", 6)
+        ListCard(6) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(
+                    "Aucune connexion à un compte (Instagram ou autre) : l'app ne lit que les contenus publics.",
+                    "yt-dlp vient de sa page GitHub officielle et doit correspondre à l'empreinte SHA-256 publiée.",
+                    "Contrôle à chaque lancement : un yt-dlp modifié est supprimé et remplacé par l'original.",
+                    "yt-dlp isolé : aucun fichier de configuration ni plugin externe.",
+                    "Seuls les liens https:// sont acceptés ; rien n'est envoyé ailleurs qu'au site du lien.",
+                    "Une mise à jour de l'app est refusée si son empreinte ou sa signature ne correspond pas.",
+                ).forEach { Bullet(it) }
             }
-            ToggleRow("Chercher les nouvelles versions (notification)", settings.autoCheckAppUpdates, vm::setAutoCheckAppUpdates)
-            GradientButton(
-                "Rechercher une mise à jour",
-                Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.Refresh,
-                loading = checking,
-            ) { vm.checkAppUpdate() }
-            AnimatedVisibility(visible = vm.appUpdateMessage != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-                Text(vm.appUpdateMessage ?: "", color = Palette.TextSecondary, fontSize = 12.5.sp)
+        }
+
+        GroupTitle("À propos", 7)
+        ListCard(7) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Color.White, fontSize = 15.sp)
+                Text(
+                    "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +
+                        "et respectez les conditions d'utilisation de YouTube, d'Instagram et des autres sites.",
+                    color = Palette.TextTertiary,
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp,
+                )
             }
-            Text(
-                "Les nouvelles versions viennent du projet GitHub de l'app. Chaque fichier est vérifié (empreinte et " +
-                    "signature) avant l'installation.",
-                color = Palette.TextTertiary,
-                fontSize = 12.sp,
-            )
         }
-
-        Section("Sécurité", Icons.Rounded.Shield, index = 4) {
-            listOf(
-                "Mises à jour de yt-dlp téléchargées depuis sa page GitHub officielle et comparées à l'empreinte SHA-256 publiée : un fichier non conforme est refusé.",
-                "Contrôle d'intégrité à chaque lancement : un yt-dlp modifié est supprimé et remplacé par la version d'origine.",
-                "yt-dlp isolé : aucun fichier de configuration ni plugin externe (--ignore-config, --no-plugin-dirs).",
-                "Seuls les liens https:// sont acceptés ; aucune donnée n'est envoyée ailleurs qu'au site du lien.",
-                "Aucune connexion à un compte (Instagram ou autre) : l'app ne lit que les contenus publics.",
-                "Mises à jour de l'app refusées si leur empreinte SHA-256 ou leur signature ne correspond pas.",
-            ).forEach { Bullet(it) }
-        }
-
-        Section("Emplacement des fichiers", Icons.Rounded.FolderOpen, index = 5) {
-            Bullet("Vidéos : Films › YT Downloader")
-            Bullet("Musique : Musique › YT Downloader")
-            Bullet("Photos : Images › YT Downloader")
-            Text(
-                "Ils apparaissent dans la Galerie, Google Photos et les apps de musique.",
-                color = Palette.TextTertiary,
-                fontSize = 12.sp,
-            )
-        }
-
-        Section("À propos", Icons.Rounded.Info, index = 6) {
-            Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Color.White, fontSize = 13.sp)
-            Text(
-                "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +
-                    "et respectez les conditions d'utilisation de YouTube, d'Instagram et des autres sites.",
-                color = Palette.TextTertiary,
-                fontSize = 12.sp,
-            )
-        }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun Section(
-    title: String,
-    icon: ImageVector?,
-    index: Int,
-    glyph: Platform? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val accent = LocalAccent.current
+private fun GroupTitle(text: String, index: Int) {
+    Text(
+        text,
+        color = Palette.TextSecondary,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier
+            .padding(start = 6.dp, top = 8.dp)
+            .staggeredEntrance(index),
+    )
+}
+
+@Composable
+private fun ListCard(index: Int, content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
             .staggeredEntrance(index)
-            .glass()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(accent.start.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (glyph != null) {
-                    PlatformGlyph(glyph, Modifier.size(18.dp))
-                } else if (icon != null) {
-                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp).gradientTint(accent.brush))
-                }
-            }
-            Spacer(Modifier.width(10.dp))
-            Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        }
-        content()
-    }
+            .panel(RoundedCornerShape(22.dp)),
+        content = content,
+    )
 }
 
 @Composable
-private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun RowDivider() {
+    Box(
+        Modifier
+            .padding(start = 16.dp)
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Palette.Stroke),
+    )
+}
+
+@Composable
+private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
     val accent = LocalAccent.current
     Row(
         Modifier
             .fillMaxWidth()
-            .bounceClick(pressedScale = 0.98f) { onChange(!checked) },
+            .clickable { onChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 15.sp)
+            subtitle?.let { Text(it, color = Palette.TextTertiary, fontSize = 12.5.sp, lineHeight = 16.sp) }
+        }
+        Spacer(Modifier.width(12.dp))
         Switch(
             checked = checked,
             onCheckedChange = onChange,
@@ -253,10 +258,65 @@ private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
                 checkedTrackColor = accent.start,
                 checkedBorderColor = accent.start,
                 uncheckedThumbColor = Palette.TextSecondary,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.08f),
-                uncheckedBorderColor = Palette.Stroke,
+                uncheckedTrackColor = Color.White.copy(alpha = 0.06f),
+                uncheckedBorderColor = Color.White.copy(alpha = 0.18f),
             ),
         )
+    }
+}
+
+@Composable
+private fun ValueRow(title: String, value: String, icon: ImageVector? = null) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = if (icon != null) 11.dp else 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon?.let {
+            IconBadge(it, size = 34.dp)
+            Spacer(Modifier.width(12.dp))
+        }
+        Text(title, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(12.dp))
+        Text(value, color = Palette.TextSecondary, fontSize = 14.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun ChoiceRow(icon: ImageVector, title: String, subtitle: String, content: @Composable () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(icon, size = 34.dp)
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(title, color = Color.White, fontSize = 15.sp)
+                Text(subtitle, color = Palette.TextTertiary, fontSize = 12.5.sp, lineHeight = 16.sp)
+            }
+        }
+        content()
+    }
+}
+
+/** Button of a list card, with the result of the action under it and a short explanation. */
+@Composable
+private fun ActionArea(button: @Composable () -> Unit, message: String?, hint: String) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        button()
+        AnimatedVisibility(visible = message != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            Text(message ?: "", color = Color.White, fontSize = 13.sp, lineHeight = 18.sp)
+        }
+        Text(hint, color = Palette.TextTertiary, fontSize = 12.5.sp, lineHeight = 17.sp)
     }
 }
 
@@ -265,11 +325,11 @@ private fun Bullet(text: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(
             Modifier
-                .padding(top = 6.dp)
+                .padding(top = 7.dp)
                 .size(6.dp)
                 .clip(CircleShape)
                 .background(LocalAccent.current.start),
         )
-        Text(text, color = Palette.TextSecondary, fontSize = 12.5.sp, modifier = Modifier.weight(1f))
+        Text(text, color = Palette.TextSecondary, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.weight(1f))
     }
 }

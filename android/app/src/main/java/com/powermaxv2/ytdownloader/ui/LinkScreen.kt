@@ -3,14 +3,7 @@ package com.powermaxv2.ytdownloader.ui
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -21,14 +14,13 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -41,14 +33,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -60,8 +50,8 @@ import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Subtitles
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.ViewCarousel
@@ -69,7 +59,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,25 +66,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -103,10 +88,6 @@ import com.powermaxv2.ytdownloader.core.EngineState
 import com.powermaxv2.ytdownloader.core.Links
 import com.powermaxv2.ytdownloader.core.MediaInfo
 import com.powermaxv2.ytdownloader.core.Platform
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
 
 /** Content of the YouTube, Instagram and Autres tabs: each has its own link field and result. */
 @Composable
@@ -122,35 +103,27 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Header(pane, vm.queuedPulse, onSettings = vm::openSettings)
+        Header(pane.platform, onSettings = vm::openSettings)
         UpdateBanner(vm)
         AnimatedVisibility(
             visible = integrity != null,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Banner(
-                icon = Icons.Rounded.Shield,
-                text = integrity ?: "",
-                color = Palette.Danger,
-                onDismiss = vm.engine::dismissIntegrityAlert,
-            )
+            NoticeBanner(Icons.Rounded.Shield, integrity ?: "", Palette.Danger, onDismiss = vm.engine::dismissIntegrityAlert)
         }
         EngineBanner(engineState)
-        UrlBar(vm, pane, enabled = engineState !is EngineState.Failed)
+        LinkCard(vm, pane, enabled = engineState !is EngineState.Failed)
         AnimatedContent(
             targetState = pane.phase,
             transitionSpec = {
-                (
-                    fadeIn(tween(350, delayMillis = 90)) +
-                        slideInVertically(spring(dampingRatio = 0.8f, stiffness = 300f)) { it / 6 } +
-                        scaleIn(initialScale = 0.96f, animationSpec = tween(350, delayMillis = 90))
-                    ) togetherWith (fadeOut(tween(160)) + scaleOut(targetScale = 0.98f)) using SizeTransform(clip = false)
+                (fadeIn(tween(300, delayMillis = 80)) + slideInVertically(spring(dampingRatio = 0.9f, stiffness = 320f)) { it / 10 }) togetherWith
+                    fadeOut(tween(150)) using SizeTransform(clip = false)
             },
             label = "phase",
         ) { phase ->
             when (phase) {
-                Phase.Idle -> EmptyCard(pane.platform)
+                Phase.Idle -> GuideCard(pane.platform)
                 is Phase.Loading -> LoadingCard(phase.platform)
                 is Phase.Failed -> ErrorCard(phase.message, onRetry = { vm.analyze(pane) })
                 is Phase.Ready -> when (val media = phase.media) {
@@ -165,103 +138,44 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
 
 // MARK: - Header
 
-@Composable
-private fun Header(pane: LinkPane, pulse: Int, onSettings: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        AnimatedLogo(pulse, Modifier.size(56.dp))
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                if (pane.platform == Platform.OTHER) "Autres réseaux" else pane.name,
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.staggeredEntrance(0),
-            )
-            Text(
-                when (pane.platform) {
-                    Platform.INSTAGRAM -> "Reels, carrousels et photos publics · YT Downloader"
-                    Platform.OTHER -> "X, TikTok, Facebook, Snapchat et tout lien vidéo · YT Downloader"
-                    else -> "Vidéos jusqu'en 4K/8K, musique, playlists · YT Downloader"
-                },
-                color = Palette.TextSecondary,
-                fontSize = 12.5.sp,
-                modifier = Modifier.staggeredEntrance(1),
-            )
-        }
-        Spacer(Modifier.width(10.dp))
-        IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = onSettings)
-    }
+private fun title(platform: Platform) = when (platform) {
+    Platform.INSTAGRAM -> "Instagram"
+    Platform.OTHER -> "Autres sites"
+    else -> "YouTube"
 }
 
-/** Logo: orbiting gradient ring, bobbing arrow that drops through the box when something is queued. */
+private fun subtitle(platform: Platform) = when (platform) {
+    Platform.INSTAGRAM -> "Reels, photos et carrousels publics"
+    Platform.OTHER -> "X, TikTok, Facebook, Snapchat et liens vidéo"
+    else -> "Vidéos jusqu'en 8K, musique, playlists"
+}
+
 @Composable
-fun AnimatedLogo(pulse: Int, modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
-    val transition = rememberInfiniteTransition(label = "logo")
-    val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(6000, easing = LinearEasing)), label = "ring")
-    val bob by transition.animateFloat(
-        -1f, 1f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bob",
-    )
-    val drop = remember { Animatable(0f) }
-    LaunchedEffect(pulse) {
-        if (pulse > 0) {
-            drop.snapTo(0f)
-            drop.animateTo(1f, tween(700, easing = FastOutSlowInEasing))
-            drop.snapTo(0f)
-        }
-    }
-    Box(modifier, contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
-            rotate(rotation) {
-                drawCircle(
-                    Brush.sweepGradient(listOf(Color.Transparent, accent.start, accent.end, Color.Transparent)),
-                    radius = size.minDimension / 2 - 1.5.dp.toPx(),
-                    style = Stroke(2.5.dp.toPx()),
-                )
-            }
-        }
+private fun Header(platform: Platform, onSettings: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
         Box(
             Modifier
-                .fillMaxSize(0.72f)
-                .shadow(14.dp, RoundedCornerShape(13.dp), spotColor = accent.start, ambientColor = accent.start)
-                .clip(RoundedCornerShape(13.dp))
-                .background(accent.brush),
+                .size(52.dp)
+                .panel(RoundedCornerShape(17.dp), Palette.Surface2),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Rounded.ArrowDownward,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier
-                    .size(24.dp)
-                    .graphicsLayer {
-                        val d = drop.value
-                        val travel = 30.dp.toPx()
-                        val dropOffset = if (d < 0.5f) d * 2 * travel else (d - 1f) * 2 * travel
-                        translationY = bob * 2.dp.toPx() + dropOffset
-                        alpha = 1f - abs(sin(d * PI)).toFloat() * 0.9f
-                    },
-            )
+            if (platform == Platform.OTHER) {
+                Icon(
+                    Icons.Rounded.Public,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .gradientTint(LocalAccent.current.brush),
+                )
+            } else {
+                PlatformGlyph(platform, Modifier.size(29.dp))
+            }
         }
-    }
-}
-
-// MARK: - Banners
-
-@Composable
-private fun Banner(icon: ImageVector, text: String, color: Color, onDismiss: (() -> Unit)? = null) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .glass(RoundedCornerShape(16.dp), color.copy(alpha = 0.12f))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        Text(text, color = Color.White, fontSize = 12.5.sp, modifier = Modifier.weight(1f))
-        onDismiss?.let { IconCircleButton(Icons.Rounded.Close, size = 28.dp, onClick = it) }
+        Spacer(Modifier.width(14.dp))
+        ScreenTitle(title(platform), subtitle(platform), Modifier.weight(1f))
+        Spacer(Modifier.width(10.dp))
+        IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = onSettings)
     }
 }
 
@@ -276,20 +190,16 @@ private fun EngineBanner(state: EngineState) {
             EngineState.Starting -> Row(
                 Modifier
                     .fillMaxWidth()
-                    .glass(RoundedCornerShape(16.dp))
+                    .panel(RoundedCornerShape(18.dp))
                     .shimmer()
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 CircularProgressIndicator(Modifier.size(16.dp), color = LocalAccent.current.start, strokeWidth = 2.dp)
-                Text(
-                    "Préparation du moteur yt-dlp… (quelques secondes au premier lancement)",
-                    color = Palette.TextSecondary,
-                    fontSize = 12.5.sp,
-                )
+                Text("Préparation du moteur… (quelques secondes au premier lancement)", color = Palette.TextSecondary, fontSize = 13.sp)
             }
-            is EngineState.Failed -> Banner(
+            is EngineState.Failed -> NoticeBanner(
                 icon = Icons.Rounded.ErrorOutline,
                 text = "Le moteur n'a pas pu démarrer : ${current.message}",
                 color = Palette.Danger,
@@ -301,51 +211,45 @@ private fun EngineBanner(state: EngineState) {
 
 // MARK: - Link field
 
+/**
+ * Link field and its main action: "Coller le lien" while the field is empty (paste + analysis in one tap),
+ * "Analyser" once something is typed, with a paste button next to it.
+ */
 @Composable
-private fun UrlBar(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
+private fun LinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
     val accent = LocalAccent.current
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
     var focused by remember { mutableStateOf(false) }
     val detected = remember(pane.urlText) { Links.platformOfText(pane.urlText) }
     val platform = if (pane.urlText.isBlank()) pane.platform else detected
-    val transition = rememberInfiniteTransition(label = "border")
-    val angle by transition.animateFloat(
-        0f, (2 * PI).toFloat(), infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "angle",
-    )
-    val outline by animateFloatAsState(if (focused) 1f else 0f, tween(300), label = "outline")
+    val outline by animateColorAsState(if (focused) accent.start.copy(alpha = 0.8f) else Palette.Stroke, label = "fieldOutline")
     val loading = pane.phase is Phase.Loading
-    val shape = RoundedCornerShape(22.dp)
+    val fieldShape = RoundedCornerShape(18.dp)
+    val paste = {
+        focus.clearFocus()
+        vm.paste(pane, clipboard.getText()?.text)
+    }
 
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(Color.White.copy(alpha = 0.06f))
-            .border(1.dp, Palette.Stroke, shape)
-            .drawWithContent {
-                drawContent()
-                if (outline > 0f) {
-                    val r = size.maxDimension
-                    val dx = cos(angle) * r
-                    val dy = sin(angle) * r
-                    drawRoundRect(
-                        Brush.linearGradient(
-                            listOf(accent.start, accent.end, Palette.Purple, accent.start),
-                            start = Offset(center.x + dx, center.y + dy),
-                            end = Offset(center.x - dx, center.y - dy),
-                        ),
-                        cornerRadius = CornerRadius(22.dp.toPx()),
-                        alpha = outline,
-                        style = Stroke(1.6.dp.toPx()),
-                    )
-                }
-            }
-            .padding(14.dp),
+            .panel()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AnimatedPlatformGlyph(platform, Modifier.size(26.dp))
-            Spacer(Modifier.width(10.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(fieldShape)
+                .background(Palette.Surface2)
+                .border(1.dp, outline, fieldShape)
+                .padding(start = 14.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AnimatedPlatformGlyph(platform, Modifier.size(24.dp))
+            Spacer(Modifier.width(12.dp))
             BasicTextField(
                 value = pane.urlText,
                 onValueChange = { pane.urlText = it },
@@ -380,99 +284,111 @@ private fun UrlBar(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
             )
             AnimatedVisibility(
                 visible = pane.urlText.isNotEmpty(),
-                enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(),
+                enter = scaleIn(spring(dampingRatio = 0.6f)) + fadeIn(),
                 exit = scaleOut() + fadeOut(),
             ) {
-                IconCircleButton(Icons.Rounded.Close, Modifier.padding(start = 8.dp), size = 28.dp) { vm.reset(pane) }
+                IconCircleButton(Icons.Rounded.Close, Modifier.padding(start = 6.dp), size = 32.dp, contentDescription = "Effacer") {
+                    vm.reset(pane)
+                }
             }
         }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SecondaryButton("Coller", Icons.Rounded.ContentPaste, Modifier.weight(1f)) {
-                focus.clearFocus()
-                vm.paste(pane, clipboard.getText()?.text)
-            }
-            GradientButton(
-                "Analyser",
-                Modifier.weight(1.4f),
-                icon = Icons.Rounded.Search,
-                enabled = enabled && pane.urlText.isNotBlank(),
-                loading = loading,
-            ) {
-                focus.clearFocus()
-                vm.analyze(pane)
+        AnimatedContent(
+            targetState = pane.urlText.isBlank(),
+            transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(120)) },
+            label = "linkAction",
+        ) { empty ->
+            if (empty) {
+                PrimaryButton("Coller le lien", Modifier.fillMaxWidth(), icon = Icons.Rounded.ContentPaste, enabled = enabled, onClick = paste)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    IconCircleButton(
+                        Icons.Rounded.ContentPaste,
+                        size = 56.dp,
+                        shape = RoundedCornerShape(18.dp),
+                        contentDescription = "Coller",
+                        onClick = paste,
+                    )
+                    PrimaryButton(
+                        "Analyser",
+                        Modifier.weight(1f),
+                        icon = Icons.Rounded.Search,
+                        enabled = enabled,
+                        loading = loading,
+                    ) {
+                        focus.clearFocus()
+                        vm.analyze(pane)
+                    }
+                }
             }
         }
     }
 }
 
-// MARK: - Placeholder cards
+// MARK: - Empty state: how to
+
+private fun bold(vararg parts: Pair<String, Boolean>): AnnotatedString = buildAnnotatedString {
+    parts.forEach { (text, strong) ->
+        if (strong) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(text) } else append(text)
+    }
+}
+
+private fun steps(platform: Platform): List<AnnotatedString> {
+    val first = when (platform) {
+        Platform.INSTAGRAM -> bold("Sur le reel ou la publication, touchez " to false, "Partager" to true, " puis " to false, "Copier le lien" to true, "." to false)
+        Platform.OTHER -> bold("Copiez le lien de la vidéo : X, TikTok, Facebook, Snapchat ou un autre site." to false)
+        else -> bold("Dans YouTube, touchez " to false, "Partager" to true, " puis " to false, "Copier le lien" to true, "." to false)
+    }
+    val last = if (platform == Platform.INSTAGRAM) {
+        bold("Choisissez ce que vous gardez, puis " to false, "Télécharger" to true, "." to false)
+    } else {
+        bold("Choisissez la qualité, puis " to false, "Télécharger" to true, "." to false)
+    }
+    return listOf(first, bold("Revenez ici et touchez " to false, "Coller le lien" to true, "." to false), last)
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EmptyCard(platform: Platform) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .glass()
-            .padding(vertical = 28.dp, horizontal = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        OrbitIcon()
-        Text(
-            if (platform == Platform.OTHER) {
-                "Collez un lien de vidéo, ou partagez-le depuis une app"
-            } else {
-                "Collez un lien, ou partagez-le depuis l'app ${platform.label}"
-            },
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.staggeredEntrance(0, baseDelay = 120),
-        )
-        Row(
-            Modifier.staggeredEntrance(1, baseDelay = 120),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+private fun GuideCard(platform: Platform) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .panel()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Icon(Icons.Rounded.Share, contentDescription = null, tint = Palette.TextSecondary, modifier = Modifier.size(15.dp))
-            Text(
-                "Dans l'app : Partager → YT Downloader",
-                color = Palette.TextSecondary,
-                fontSize = 12.5.sp,
+            Text("Comment faire", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            steps(platform).forEachIndexed { index, step ->
+                StepRow(index + 1, step, Modifier.staggeredEntrance(index, baseDelay = 80))
+            }
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Palette.Stroke),
             )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 6.dp),
-        ) {
-            val pills = when (platform) {
-                Platform.INSTAGRAM -> listOf(
-                    Pill("Reels", Icons.Rounded.PlayArrow),
-                    Pill("Carrousels", Icons.Rounded.ViewCarousel),
-                    Pill("Photos", Icons.Rounded.PhotoLibrary),
-                    Pill("Sans compte", Icons.Rounded.Shield),
-                )
-                Platform.OTHER -> listOf(
-                    Pill("X", platform = Platform.TWITTER),
-                    Pill("TikTok", platform = Platform.TIKTOK),
-                    Pill("Facebook", platform = Platform.FACEBOOK),
-                    Pill("Snapchat", platform = Platform.SNAPCHAT),
-                    Pill("BeReal", platform = Platform.BEREAL, dimmed = true),
-                    Pill("Tout lien vidéo", Icons.Rounded.Public),
-                )
-                else -> listOf(
-                    Pill("Jusqu'en 8K", Icons.Rounded.HighQuality),
-                    Pill("MP3 · M4A · FLAC", Icons.Rounded.MusicNote),
-                    Pill("Playlists", Icons.Rounded.VideoLibrary),
-                    Pill("Sous-titres", Icons.Rounded.Subtitles),
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Rounded.Share, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(18.dp))
+                Text(
+                    "Plus rapide : dans l'app, Partager → YT Downloader ouvre le lien ici directement.",
+                    color = Palette.TextSecondary,
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp,
                 )
             }
-            pills.forEachIndexed { index, pill ->
-                FeaturePill(pill, Modifier.staggeredEntrance(index, baseDelay = 260))
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            features(platform).forEachIndexed { index, chip ->
+                FeatureChip(
+                    chip.text,
+                    Modifier.staggeredEntrance(index, baseDelay = 200),
+                    icon = chip.icon,
+                    platform = chip.platform,
+                    dimmed = chip.dimmed,
+                )
             }
         }
         val footnote = when (platform) {
@@ -485,105 +401,70 @@ private fun EmptyCard(platform: Platform) {
             else -> null
         }
         footnote?.let {
-            Text(
-                it,
-                color = Palette.TextTertiary,
-                fontSize = 11.5.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.staggeredEntrance(7, baseDelay = 260),
-            )
+            Text(it, color = Palette.TextTertiary, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(horizontal = 4.dp))
         }
     }
 }
 
-/** A feature chip: a Material [icon] or a [platform] logo; [dimmed] marks something limited. */
-private data class Pill(
+private data class Feature(
     val text: String,
     val icon: ImageVector? = null,
     val platform: Platform? = null,
     val dimmed: Boolean = false,
 )
 
-@Composable
-private fun FeaturePill(pill: Pill, modifier: Modifier = Modifier) {
-    Row(
-        modifier
-            .graphicsLayer { alpha = if (pill.dimmed) 0.55f else 1f }
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.06f))
-            .border(1.dp, Palette.Stroke, CircleShape)
-            .padding(horizontal = 11.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        if (pill.platform != null) {
-            PlatformGlyph(pill.platform, Modifier.size(18.dp))
-        } else if (pill.icon != null) {
-            Icon(pill.icon, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(15.dp))
-        }
-        Text(pill.text, color = Palette.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    }
+private fun features(platform: Platform): List<Feature> = when (platform) {
+    Platform.INSTAGRAM -> listOf(
+        Feature("Reels", Icons.Rounded.PlayArrow),
+        Feature("Carrousels", Icons.Rounded.ViewCarousel),
+        Feature("Photos", Icons.Rounded.PhotoLibrary),
+        Feature("Sans compte", Icons.Rounded.Shield),
+    )
+    Platform.OTHER -> listOf(
+        Feature("X", platform = Platform.TWITTER),
+        Feature("TikTok", platform = Platform.TIKTOK),
+        Feature("Facebook", platform = Platform.FACEBOOK),
+        Feature("Snapchat", platform = Platform.SNAPCHAT),
+        Feature("BeReal", platform = Platform.BEREAL, dimmed = true),
+        Feature("Tout lien vidéo", Icons.Rounded.Public),
+    )
+    else -> listOf(
+        Feature("Jusqu'en 8K", Icons.Rounded.HighQuality),
+        Feature("MP3 · M4A · FLAC", Icons.Rounded.MusicNote),
+        Feature("Playlists", Icons.Rounded.VideoLibrary),
+        Feature("Sous-titres", Icons.Rounded.Subtitles),
+    )
 }
 
-/** Play icon floating inside a breathing halo, with three dots orbiting around it. */
-@Composable
-private fun OrbitIcon() {
-    val accent = LocalAccent.current
-    val transition = rememberInfiniteTransition(label = "orbit")
-    val angle by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(5200, easing = LinearEasing)), label = "angle")
-    val breathe by transition.animateFloat(
-        0.9f, 1.08f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breathe",
-    )
-    Box(Modifier.size(104.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
-            val r = size.minDimension / 2 - 6.dp.toPx()
-            drawCircle(accent.start.copy(alpha = 0.14f), radius = r * 0.74f * breathe)
-            drawCircle(Color.White.copy(alpha = 0.07f), radius = r, style = Stroke(1.dp.toPx()))
-            val a = Math.toRadians(angle.toDouble())
-            listOf(0.0 to Palette.Accent, 2.1 to Palette.InstaPink, 4.2 to Palette.Accent2).forEach { (shift, color) ->
-                val point = Offset((cos(a + shift) * r).toFloat(), (sin(a + shift) * r).toFloat())
-                drawCircle(color, radius = 4.dp.toPx(), center = center + point)
-            }
-        }
-        Icon(
-            Icons.Rounded.PlayArrow,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier
-                .size(44.dp)
-                .floating(amplitude = 3.dp)
-                .gradientTint(accent.brush),
-        )
-    }
-}
+// MARK: - Loading and errors
 
 @Composable
 private fun LoadingCard(platform: Platform) {
     Column(
         Modifier
             .fillMaxWidth()
-            .glass()
-            .padding(14.dp),
+            .panel()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.White.copy(alpha = 0.06f))
+                .clip(RoundedCornerShape(18.dp))
+                .background(Palette.Surface2)
                 .shimmer(),
             contentAlignment = Alignment.Center,
         ) {
-            PlatformGlyph(platform, Modifier.size(46.dp).pulsing())
+            PlatformGlyph(platform, Modifier.size(44.dp).pulsing())
         }
-        listOf(0.92f, 0.6f).forEach { fraction ->
+        listOf(0.9f, 0.55f).forEach { fraction ->
             Box(
                 Modifier
                     .fillMaxWidth(fraction)
                     .height(14.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White.copy(alpha = 0.07f))
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(Palette.Surface2)
                     .shimmer(),
             )
         }
@@ -592,7 +473,7 @@ private fun LoadingCard(platform: Platform) {
             Text(
                 if (platform == Platform.OTHER) "Analyse du lien…" else "Analyse du lien ${platform.label} et des qualités…",
                 color = Palette.TextSecondary,
-                fontSize = 12.5.sp,
+                fontSize = 13.sp,
             )
         }
     }
@@ -604,20 +485,22 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .shakeOnAppear(message)
-            .glass(tint = Palette.Danger.copy(alpha = 0.09f))
-            .padding(18.dp),
+            .panel()
+            .background(Palette.Danger.copy(alpha = 0.07f))
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Icon(
-            Icons.Rounded.ErrorOutline,
-            contentDescription = null,
-            tint = Palette.Danger,
-            modifier = Modifier
-                .size(38.dp)
-                .pulsing(0.96f, 1.08f, 900),
-        )
-        Text(message, color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
-        SecondaryButton("Réessayer", Icons.Rounded.Refresh, compact = true, onClick = onRetry)
+        Box(
+            Modifier
+                .size(52.dp)
+                .clip(RoundedCornerShape(17.dp))
+                .background(Palette.Danger.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.ErrorOutline, contentDescription = null, tint = Palette.Danger, modifier = Modifier.size(28.dp))
+        }
+        Text(message, color = Color.White, fontSize = 14.sp, lineHeight = 20.sp, textAlign = TextAlign.Center)
+        TonalButton("Réessayer", Icons.Rounded.Refresh, onClick = onRetry)
     }
 }

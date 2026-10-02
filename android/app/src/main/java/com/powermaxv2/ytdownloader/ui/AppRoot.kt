@@ -10,7 +10,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -28,10 +27,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -57,7 +56,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -89,18 +87,18 @@ fun AppRoot(vm: MainViewModel) {
     AppTheme(vm.accentPlatform) {
         CompositionLocalProvider(LocalHaptics provides settings.haptics, LocalDownloadGate provides gate) {
             Box(Modifier.fillMaxSize()) {
-                AnimatedBackground()
+                ScreenBackground()
                 val insets = WindowInsets.systemBars.asPaddingValues()
                 val contentPadding = PaddingValues(
-                    top = insets.calculateTopPadding() + 18.dp,
-                    bottom = insets.calculateBottomPadding() + 100.dp,
+                    top = insets.calculateTopPadding() + 16.dp,
+                    bottom = insets.calculateBottomPadding() + 104.dp,
                 )
                 AnimatedContent(
                     targetState = vm.tab,
                     transitionSpec = {
                         val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                        (slideInHorizontally(spring(dampingRatio = 0.86f, stiffness = 320f)) { it * direction / 4 } + fadeIn(tween(260))) togetherWith
-                            (slideOutHorizontally(tween(220)) { -it * direction / 4 } + fadeOut(tween(180)))
+                        (slideInHorizontally(spring(dampingRatio = 0.92f, stiffness = 380f)) { it * direction / 6 } + fadeIn(tween(240))) togetherWith
+                            (slideOutHorizontally(tween(200)) { -it * direction / 6 } + fadeOut(tween(160)))
                     },
                     label = "tabs",
                 ) { tab ->
@@ -116,7 +114,7 @@ fun AppRoot(vm: MainViewModel) {
                     vm.toasts,
                     Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = insets.calculateBottomPadding() + 92.dp, start = 24.dp, end = 24.dp),
+                        .padding(bottom = insets.calculateBottomPadding() + 98.dp, start = 24.dp, end = 24.dp),
                 )
                 BottomBar(
                     tab = vm.tab,
@@ -175,76 +173,73 @@ private val navItems = listOf(
 )
 
 /**
- * Floating glass bar; the highlight pill glides to the selected tab, the Files icon jumps when something is queued.
- * Settings has no tab here: while it is open the pill fades out.
+ * Floating bar: the selected tab gets a tinted pill behind its icon, the Files icon jumps when something is queued.
+ * Settings has no tab here: while it is open no tab is highlighted.
  */
 @Composable
 private fun BottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val accent = LocalAccent.current
     val view = LocalView.current
     val haptics = LocalHaptics.current
-    val shape = RoundedCornerShape(26.dp)
-    BoxWithConstraints(
+    val shape = RoundedCornerShape(28.dp)
+    Row(
         modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 12.dp)
             .fillMaxWidth()
-            .height(66.dp)
-            .shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .height(74.dp)
+            .shadow(20.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
             .clip(shape)
-            .background(Color(0xFF16161E).copy(alpha = 0.94f))
+            .background(Palette.NavBar)
             .border(1.dp, Palette.Stroke, shape)
-            .padding(6.dp),
+            .padding(horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        val width = maxWidth / navItems.size
-        val selectedIndex = navItems.indexOfFirst { it.tab == tab }
-        var pillIndex by remember { mutableIntStateOf(0) }
-        LaunchedEffect(selectedIndex) { if (selectedIndex >= 0) pillIndex = selectedIndex }
-        val x by animateDpAsState(width * pillIndex, spring(dampingRatio = 0.68f, stiffness = 320f), label = "navPill")
-        val pillAlpha by animateFloatAsState(if (selectedIndex >= 0) 1f else 0f, tween(200), label = "navPillAlpha")
-        Box(
-            Modifier
-                .offset(x = x)
-                .width(width)
-                .fillMaxHeight()
-                .graphicsLayer { alpha = pillAlpha }
-                .clip(RoundedCornerShape(20.dp))
-                .background(accent.start.copy(alpha = 0.16f))
-                .border(1.dp, accent.start.copy(alpha = 0.35f), RoundedCornerShape(20.dp)),
-        )
-        Row(Modifier.fillMaxSize()) {
-            navItems.forEach { item ->
-                val selected = item.tab == tab
-                val scale by animateFloatAsState(if (selected) 1.12f else 1f, spring(dampingRatio = 0.4f, stiffness = 420f), label = "navScale")
-                val color by animateColorAsState(if (selected) Color.White else Palette.TextTertiary, label = "navColor")
-                val bump = remember { Animatable(0f) }
-                if (item.tab == Tab.DOWNLOADS) {
-                    LaunchedEffect(pulse) {
-                        if (pulse > 0) {
-                            bump.snapTo(1f)
-                            bump.animateTo(0f, spring(dampingRatio = 0.3f, stiffness = 260f))
-                        }
+        navItems.forEach { item ->
+            val selected = item.tab == tab
+            val indicator by animateFloatAsState(
+                if (selected) 1f else 0f, spring(dampingRatio = 0.75f, stiffness = 500f), label = "navIndicator",
+            )
+            val color by animateColorAsState(if (selected) Color.White else Palette.TextTertiary, label = "navColor")
+            val bump = remember { Animatable(0f) }
+            if (item.tab == Tab.DOWNLOADS) {
+                LaunchedEffect(pulse) {
+                    if (pulse > 0) {
+                        bump.snapTo(1f)
+                        bump.animateTo(0f, spring(dampingRatio = 0.35f, stiffness = 260f))
                     }
                 }
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                            view.tick(haptics)
-                            onSelect(item.tab)
-                        },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
+            }
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        view.tick(haptics)
+                        onSelect(item.tab)
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier
+                            .width(58.dp)
+                            .height(32.dp)
+                            .graphicsLayer {
+                                scaleX = 0.6f + 0.4f * indicator
+                                alpha = indicator
+                            }
+                            .clip(CircleShape)
+                            .background(accent.tint(0.22f)),
+                    )
                     Box {
                         val iconModifier = Modifier
-                            .size(23.dp)
+                            .size(24.dp)
                             .graphicsLayer {
                                 val b = bump.value
-                                scaleX = scale + b * 0.45f
-                                scaleY = scale + b * 0.45f
-                                translationY = -b * 8.dp.toPx()
+                                scaleX = 1f + b * 0.4f
+                                scaleY = 1f + b * 0.4f
+                                translationY = -b * 7.dp.toPx()
                                 alpha = if (item.platform != null && !selected) 0.55f else 1f
                             }
                         if (item.platform != null) {
@@ -256,7 +251,7 @@ private fun BottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) ->
                             // Fully qualified: the outer Column/Row scopes must not be used implicitly here.
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = activeCount > 0,
-                                enter = scaleIn(spring(dampingRatio = 0.4f)) + fadeIn(),
+                                enter = scaleIn(spring(dampingRatio = 0.45f)) + fadeIn(),
                                 exit = fadeOut(),
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
@@ -275,13 +270,15 @@ private fun BottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) ->
                             }
                         }
                     }
-                    Text(
-                        item.label,
-                        color = color,
-                        fontSize = 11.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                    )
                 }
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    item.label,
+                    color = color,
+                    fontSize = 12.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                )
             }
         }
     }
@@ -317,9 +314,9 @@ private fun ToastHost(toasts: SharedFlow<Toast>, modifier: Modifier = Modifier) 
                 Modifier
                     .shadow(18.dp, CircleShape, ambientColor = Color.Black, spotColor = Color.Black)
                     .clip(CircleShape)
-                    .background(Color(0xFF1D1D27))
-                    .border(1.dp, Palette.Stroke, CircleShape)
-                    .padding(horizontal = 16.dp, vertical = 11.dp),
+                    .background(Palette.Surface2)
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                    .padding(horizontal = 18.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {

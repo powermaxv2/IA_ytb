@@ -23,16 +23,18 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,11 +43,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -56,11 +58,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -69,14 +69,11 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -88,29 +85,52 @@ import kotlin.math.min
 
 // MARK: - Surfaces
 
-fun Modifier.glass(shape: Shape = RoundedCornerShape(22.dp), tint: Color = Palette.Fill): Modifier =
-    this.clip(shape).background(tint).border(1.dp, Palette.Stroke, shape)
+/** Card surface: solid dark fill and a hairline outline. */
+fun Modifier.panel(shape: Shape = RoundedCornerShape(24.dp), color: Color = Palette.Surface): Modifier =
+    this.clip(shape).background(color).border(1.dp, Palette.Stroke, shape)
 
+/** Title of a block inside a card ("Qualité", "Format"…). */
 @Composable
-fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text.uppercase(),
-        modifier = modifier,
-        color = Palette.TextTertiary,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.2.sp,
-    )
+fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier = modifier, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+}
+
+/** Big screen title with an optional line under it. */
+@Composable
+fun ScreenTitle(title: String, subtitle: String?, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(title, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp, maxLines = 1)
+        subtitle?.let {
+            Spacer(Modifier.height(3.dp))
+            Text(it, color = Palette.TextSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Accent-tinted rounded square holding an icon (settings rows, card headers). */
+@Composable
+fun IconBadge(icon: ImageVector, modifier: Modifier = Modifier, size: Dp = 36.dp) {
+    val accent = LocalAccent.current
+    Box(
+        modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.3f))
+            .background(accent.tint()),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = accent.start, modifier = Modifier.size(size * 0.53f))
+    }
 }
 
 // MARK: - Buttons
 
-/** Main call to action: accent gradient, a sheen sweeping across, glow, springy press. */
+/** Main action of a screen: accent gradient, big and easy to hit; [subtitle] repeats the chosen options. */
 @Composable
-fun GradientButton(
+fun PrimaryButton(
     text: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    subtitle: String? = null,
     enabled: Boolean = true,
     loading: Boolean = false,
     onClick: () -> Unit,
@@ -118,15 +138,11 @@ fun GradientButton(
     val accent = LocalAccent.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, spring(dampingRatio = 0.5f, stiffness = 600f), label = "scale")
-    val alpha by animateFloatAsState(if (enabled) 1f else 0.45f, label = "alpha")
-    val transition = rememberInfiniteTransition(label = "button")
-    val sheen by transition.animateFloat(
-        -0.6f, 1.6f, infiniteRepeatable(tween(2600, delayMillis = 900, easing = FastOutSlowInEasing)), label = "sheen",
-    )
+    val scale by animateFloatAsState(if (pressed) 0.97f else 1f, spring(dampingRatio = 0.6f, stiffness = 700f), label = "scale")
+    val alpha by animateFloatAsState(if (enabled) 1f else 0.4f, label = "alpha")
     val view = LocalView.current
     val haptics = LocalHaptics.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(18.dp)
     Box(
         modifier
             .graphicsLayer {
@@ -134,98 +150,97 @@ fun GradientButton(
                 scaleY = scale
                 this.alpha = alpha
             }
-            .shadow(if (enabled) 14.dp else 0.dp, shape, ambientColor = accent.start, spotColor = accent.start)
+            .shadow(if (enabled) 12.dp else 0.dp, shape, ambientColor = accent.start, spotColor = accent.start)
             .clip(shape)
             .background(accent.horizontal())
-            .drawWithContent {
-                drawContent()
-                if (enabled) {
-                    val w = size.width
-                    drawRect(
-                        Brush.linearGradient(
-                            listOf(Color.Transparent, Color.White.copy(alpha = 0.24f), Color.Transparent),
-                            start = Offset(w * sheen - w * 0.25f, 0f),
-                            end = Offset(w * sheen + w * 0.25f, size.height),
-                        ),
-                    )
-                }
-            }
             .clickable(interactionSource = interaction, indication = null, enabled = enabled && !loading) {
                 view.tick(haptics)
                 onClick()
             }
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .defaultMinSize(minHeight = 56.dp)
+            .padding(horizontal = 18.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         AnimatedContent(
             targetState = loading,
-            transitionSpec = {
-                (fadeIn() + scaleIn(initialScale = 0.6f)) togetherWith (fadeOut() + scaleOut(targetScale = 0.6f))
-            },
+            transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.7f)) togetherWith (fadeOut() + scaleOut(targetScale = 0.7f)) },
             label = "buttonContent",
         ) { isLoading ->
             if (isLoading) {
-                CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.5.dp)
+                CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp)
             } else {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    icon?.let { Icon(it, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp)) }
-                    Text(
-                        text,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        icon?.let { Icon(it, contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp)) }
+                        Text(
+                            text,
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 16.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    subtitle?.let {
+                        Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
             }
         }
     }
 }
 
+/** Secondary action: dark filled button with an outline. */
 @Composable
-fun SecondaryButton(
+fun TonalButton(
     text: String,
     icon: ImageVector?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     compact: Boolean = false,
     tint: Color = Color.White,
+    loading: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val iconSize = if (compact) 16.dp else 18.dp
     Row(
         modifier
-            .bounceClick(enabled = enabled, onClick = onClick)
-            .graphicsLayer { alpha = if (enabled) 1f else 0.45f }
-            .glass(RoundedCornerShape(if (compact) 12.dp else 16.dp), Color.White.copy(alpha = 0.07f))
-            .padding(horizontal = if (compact) 12.dp else 16.dp, vertical = if (compact) 8.dp else 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            .bounceClick(enabled = enabled && !loading, onClick = onClick)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.4f }
+            .panel(RoundedCornerShape(14.dp), Palette.Surface2)
+            .height(if (compact) 36.dp else 44.dp)
+            .padding(horizontal = if (compact) 12.dp else 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        icon?.let { Icon(it, contentDescription = null, tint = tint, modifier = Modifier.size(if (compact) 16.dp else 19.dp)) }
-        Text(text, color = tint, fontSize = if (compact) 12.5.sp else 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        if (loading) {
+            CircularProgressIndicator(Modifier.size(iconSize), color = LocalAccent.current.start, strokeWidth = 2.dp)
+        } else {
+            icon?.let { Icon(it, contentDescription = null, tint = tint, modifier = Modifier.size(iconSize)) }
+        }
+        Text(text, color = tint, fontSize = if (compact) 13.sp else 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
     }
 }
 
+/** Icon-only button (settings, close, delete…). */
 @Composable
 fun IconCircleButton(
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    size: Dp = 36.dp,
-    tint: Color = Color.White,
+    size: Dp = 42.dp,
+    shape: Shape = CircleShape,
+    tint: Color = Color.White.copy(alpha = 0.8f),
     contentDescription: String? = null,
     onClick: () -> Unit,
 ) {
     Box(
         modifier
-            .bounceClick(pressedScale = 0.88f, onClick = onClick)
+            .bounceClick(pressedScale = 0.9f, onClick = onClick)
             .size(size)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.08f))
-            .border(1.dp, Palette.Stroke, CircleShape),
+            .panel(shape, Palette.Surface2),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(size * 0.5f))
+        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(size * 0.48f))
     }
 }
 
@@ -249,17 +264,16 @@ fun <T> SegmentedControl(
         modifier
             .fillMaxWidth()
             .height(48.dp)
-            .glass(RoundedCornerShape(15.dp))
+            .panel(RoundedCornerShape(16.dp), Palette.Surface2)
             .padding(4.dp),
     ) {
         val segment = maxWidth / options.size
-        val offset by animateDpAsState(segment * index, spring(dampingRatio = 0.7f, stiffness = 380f), label = "segment")
+        val offset by animateDpAsState(segment * index, spring(dampingRatio = 0.8f, stiffness = 420f), label = "segment")
         Box(
             Modifier
                 .offset(x = offset)
                 .width(segment)
                 .fillMaxHeight()
-                .shadow(10.dp, RoundedCornerShape(12.dp), spotColor = accent.start)
                 .clip(RoundedCornerShape(12.dp))
                 .background(accent.horizontal()),
         )
@@ -267,9 +281,6 @@ fun <T> SegmentedControl(
             options.forEach { option ->
                 val isSelected = option == selected
                 val color by animateColorAsState(if (isSelected) Color.White else Palette.TextSecondary, label = "segmentColor")
-                val iconScale by animateFloatAsState(
-                    if (isSelected) 1.15f else 1f, spring(dampingRatio = 0.4f, stiffness = 420f), label = "segmentIcon",
-                )
                 Row(
                     Modifier
                         .weight(1f)
@@ -282,26 +293,16 @@ fun <T> SegmentedControl(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        icon(option),
-                        contentDescription = null,
-                        tint = color,
-                        modifier = Modifier
-                            .size(18.dp)
-                            .graphicsLayer {
-                                scaleX = iconScale
-                                scaleY = iconScale
-                            },
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(label(option), color = color, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Icon(icon(option), contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text(label(option), color = color, fontWeight = FontWeight.Medium, fontSize = 14.sp, maxLines = 1)
                 }
             }
         }
     }
 }
 
-/** Quality / format tile: gradient outline and tint when selected. */
+/** Quality / format tile: accent outline, tint and a check when selected. */
 @Composable
 fun SelectableTile(
     title: String,
@@ -314,103 +315,139 @@ fun SelectableTile(
 ) {
     val accent = LocalAccent.current
     val background by animateColorAsState(
-        if (selected) accent.start.copy(alpha = 0.18f) else Palette.Fill, tween(260), label = "tileBg",
+        if (selected) accent.start.copy(alpha = 0.14f) else Color.Transparent, tween(220), label = "tileBg",
     )
-    val outline by animateFloatAsState(if (selected) 1f else 0f, tween(260), label = "tileOutline")
+    val outline by animateColorAsState(if (selected) accent.start else Palette.Stroke, tween(220), label = "tileOutline")
     val shape = RoundedCornerShape(16.dp)
     Column(
         modifier
             .bounceClick(onClick = onClick)
             .clip(shape)
+            .background(Palette.Surface2)
             .background(background)
-            .border(1.dp, Palette.Stroke, shape)
-            .drawWithContent {
-                drawContent()
-                if (outline > 0f) {
-                    drawRoundRect(
-                        brush = Brush.linearGradient(listOf(accent.start, accent.end)),
-                        cornerRadius = CornerRadius(16.dp.toPx()),
-                        alpha = outline,
-                        style = Stroke(2.dp.toPx()),
-                    )
-                }
-            }
+            .border(if (selected) 2.dp else 1.dp, outline, shape)
             .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 title,
                 color = Color.White,
-                fontSize = 18.sp,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )
+            if (highlight) {
+                Spacer(Modifier.width(6.dp))
+                MaxBadge()
+            }
             Spacer(Modifier.weight(1f))
-            if (highlight) MaxBadge()
-            Text(
-                badge,
-                color = if (selected) Color.White else Palette.TextSecondary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = if (selected) 0.2f else 0.08f))
-                    .padding(horizontal = 7.dp, vertical = 3.dp),
-            )
+            Spacer(Modifier.width(6.dp))
+            Pill(badge, selected)
         }
-        Text(detail, color = Palette.TextSecondary, fontSize = 11.5.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                detail,
+                color = Palette.TextSecondary,
+                fontSize = 12.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            CheckDot(selected)
+        }
+    }
+}
+
+/** Small accent disc with a tick, shown on the selected tile. */
+@Composable
+private fun CheckDot(visible: Boolean) {
+    val scale by animateFloatAsState(if (visible) 1f else 0f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "checkDot")
+    if (scale <= 0.01f) return
+    Box(
+        Modifier
+            .padding(start = 6.dp)
+            .size(20.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(CircleShape)
+            .background(LocalAccent.current.start),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
     }
 }
 
 @Composable
-fun MaxBadge() {
-    val accent = LocalAccent.current
+private fun Pill(text: String, selected: Boolean) {
     Text(
-        "MAX",
-        color = Color.White,
-        fontSize = 9.sp,
-        fontWeight = FontWeight.ExtraBold,
+        text,
+        color = if (selected) Color.White else Palette.TextSecondary,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
         modifier = Modifier
             .clip(CircleShape)
-            .background(accent.horizontal())
-            .shimmer()
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .background(Color.White.copy(alpha = if (selected) 0.16f else 0.08f))
+            .padding(horizontal = 7.dp, vertical = 3.dp),
     )
 }
 
-/** Horizontally scrolling pills (formats, qualities). */
 @Composable
-fun <T> ChipRow(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
-    Row(
-        modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
+fun MaxBadge() {
+    Text(
+        "MAX",
+        color = Color.White,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(LocalAccent.current.horizontal())
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+    )
+}
+
+/** Choice between a few options (formats, qualities): outlined pills, the selected one tinted with the accent. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun <T> ChoiceChips(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+    FlowRow(
+        modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         options.forEach { option ->
-            val isSelected = option == selected
-            val fill by animateFloatAsState(if (isSelected) 1f else 0f, tween(240), label = "chip")
-            Text(
-                label(option),
-                color = Color.White.copy(alpha = 0.7f + 0.3f * fill),
-                fontSize = 13.5.sp,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                modifier = Modifier
-                    .bounceClick { onSelect(option) }
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.06f))
-                    .drawWithContent {
-                        if (fill > 0f) drawRect(Brush.horizontalGradient(listOf(accent.start, accent.end)), alpha = fill)
-                        drawContent()
-                    }
-                    .border(1.dp, Palette.Stroke, CircleShape)
-                    .padding(horizontal = 16.dp, vertical = 9.dp),
-            )
+            ChoiceChip(label(option), option == selected) { onSelect(option) }
         }
+    }
+}
+
+@Composable
+private fun ChoiceChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    val accent = LocalAccent.current
+    val background by animateColorAsState(if (selected) accent.tint(0.2f) else Color.Transparent, tween(200), label = "chipBg")
+    val outline by animateColorAsState(if (selected) accent.start.copy(alpha = 0.75f) else Palette.Stroke, tween(200), label = "chipLine")
+    Box(
+        Modifier
+            .bounceClick(onClick = onClick)
+            .height(36.dp)
+            .clip(CircleShape)
+            .background(background)
+            .border(1.dp, outline, CircleShape)
+            .padding(horizontal = 15.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            color = if (selected) Color.White else Palette.TextSecondary,
+            fontSize = 13.5.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+        )
     }
 }
 
@@ -448,14 +485,14 @@ fun <T> TileGrid(
 fun AnimatedCheckbox(checked: Boolean, modifier: Modifier = Modifier) {
     val accent = LocalAccent.current
     val progress by animateFloatAsState(
-        if (checked) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 420f), label = "check",
+        if (checked) 1f else 0f, spring(dampingRatio = 0.6f, stiffness = 480f), label = "check",
     )
     Canvas(modifier.size(24.dp)) {
         val radius = size.minDimension / 2
         val p = progress.coerceIn(0f, 1f)
         drawCircle(Color.White.copy(alpha = 0.35f * (1f - p)), radius - 1.dp.toPx(), style = Stroke(1.5.dp.toPx()))
         if (progress > 0.01f) {
-            drawCircle(Brush.linearGradient(listOf(accent.start, accent.end)), radius * min(progress, 1.08f))
+            drawCircle(accent.start, radius * min(progress, 1.05f))
             val path = Path().apply {
                 moveTo(size.width * 0.28f, size.height * 0.52f)
                 lineTo(size.width * 0.44f, size.height * 0.67f)
@@ -470,11 +507,70 @@ fun AnimatedCheckbox(checked: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
+// MARK: - Information
+
+/** Feature chip of the empty screens: a Material [icon] or a [platform] logo; [dimmed] marks something unavailable. */
+@Composable
+fun FeatureChip(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null, platform: Platform? = null, dimmed: Boolean = false) {
+    Row(
+        modifier
+            .graphicsLayer { alpha = if (dimmed) 0.5f else 1f }
+            .height(34.dp)
+            .panel(CircleShape)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (platform != null) {
+            PlatformGlyph(platform, Modifier.size(17.dp))
+        } else if (icon != null) {
+            Icon(icon, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(16.dp))
+        }
+        Text(text, color = Palette.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+    }
+}
+
+/** Numbered step of a short how-to. */
+@Composable
+fun StepRow(number: Int, text: AnnotatedString, modifier: Modifier = Modifier) {
+    val accent = LocalAccent.current
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(
+            Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(accent.tint(0.18f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(number.toString(), color = accent.start, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        }
+        Text(text, color = Color.White, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 3.dp))
+    }
+}
+
+/** One-line notice (engine problem, integrity alert) with an optional ✕. */
+@Composable
+fun NoticeBanner(icon: ImageVector, text: String, color: Color, modifier: Modifier = Modifier, onDismiss: (() -> Unit)? = null) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .panel(RoundedCornerShape(18.dp), Palette.Surface)
+            .background(color.copy(alpha = 0.10f))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+        Text(text, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        onDismiss?.let { IconCircleButton(Icons.Rounded.Close, size = 30.dp, onClick = it) }
+    }
+}
+
 // MARK: - Progress
 
-/** Gradient bar with a moving sheen; negative [progress] = indeterminate sweep. */
+/** Gradient bar; negative [progress] = indeterminate sweep. */
 @Composable
-fun GradientProgressBar(progress: Float, modifier: Modifier = Modifier, height: Dp = 6.dp) {
+fun ProgressBar(progress: Float, modifier: Modifier = Modifier, height: Dp = 6.dp) {
     val accent = LocalAccent.current
     val indeterminate = progress < 0f
     val animated by animateFloatAsState(
@@ -501,218 +597,28 @@ fun GradientProgressBar(progress: Float, modifier: Modifier = Modifier, height: 
         } else {
             val w = max(size.height, size.width * animated)
             drawRoundRect(brush, size = Size(w, size.height), cornerRadius = radius)
-            val sheenX = w * phase
-            drawRoundRect(
-                Brush.horizontalGradient(
-                    listOf(Color.Transparent, Color.White.copy(alpha = 0.38f), Color.Transparent),
-                    startX = sheenX - 36.dp.toPx(),
-                    endX = sheenX,
-                ),
-                size = Size(w, size.height),
-                cornerRadius = radius,
-            )
         }
     }
 }
 
-/** Circular progress: rotating arc while waiting, filling arc while downloading. */
-@Composable
-fun ProgressRing(progress: Float, modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
-    val transition = rememberInfiniteTransition(label = "ring")
-    val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(1100, easing = LinearEasing)), label = "rotation")
-    val animated by animateFloatAsState(progress.coerceIn(0f, 1f), tween(450), label = "ringProgress")
-    Canvas(modifier) {
-        val stroke = 3.dp.toPx()
-        val inset = stroke / 2
-        val arcSize = Size(size.width - stroke, size.height - stroke)
-        drawCircle(Color.White.copy(alpha = 0.1f), radius = size.minDimension / 2 - inset, style = Stroke(stroke))
-        val brush = Brush.sweepGradient(listOf(accent.start, accent.end, accent.start))
-        if (progress < 0f || progress == 0f) {
-            drawArc(brush, rotation, 90f, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
-        } else {
-            drawArc(brush, -90f, 360f * animated, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
-        }
-    }
-}
-
-/** Success disc whose tick draws itself. */
+/** Green disc whose tick draws itself (finished download). */
 @Composable
 fun AnimatedCheck(modifier: Modifier = Modifier, animate: Boolean = true) {
     val progress = remember { Animatable(if (animate) 0f else 1f) }
-    LaunchedEffect(Unit) { progress.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 200f)) }
+    LaunchedEffect(Unit) { progress.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 220f)) }
     Canvas(modifier) {
         val p = progress.value
-        drawCircle(Palette.Success.copy(alpha = 0.18f), radius = size.minDimension / 2 * min(p, 1.1f))
-        drawCircle(Palette.Success, radius = size.minDimension / 2 * 0.72f * min(p, 1.05f))
+        drawCircle(Palette.Success, radius = size.minDimension / 2 * min(p, 1.04f))
         val path = Path().apply {
-            moveTo(size.width * 0.33f, size.height * 0.52f)
-            lineTo(size.width * 0.46f, size.height * 0.64f)
-            lineTo(size.width * 0.69f, size.height * 0.39f)
+            moveTo(size.width * 0.29f, size.height * 0.52f)
+            lineTo(size.width * 0.44f, size.height * 0.66f)
+            lineTo(size.width * 0.72f, size.height * 0.37f)
         }
         val measure = PathMeasure()
         measure.setPath(path, false)
         val segment = Path()
         measure.getSegment(0f, measure.length * p.coerceIn(0f, 1f), segment, true)
-        drawPath(segment, Color.White, style = Stroke(2.4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-    }
-}
-
-// MARK: - Platform glyphs (simple generic shapes)
-
-@Composable
-fun PlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
-    when (platform) {
-        Platform.YOUTUBE -> Canvas(modifier) {
-            val h = size.height * 0.72f
-            val top = (size.height - h) / 2
-            drawRoundRect(Color(0xFFFF0033), topLeft = Offset(0f, top), size = Size(size.width, h), cornerRadius = CornerRadius(h * 0.3f))
-            val triangle = Path().apply {
-                moveTo(size.width * 0.41f, top + h * 0.28f)
-                lineTo(size.width * 0.41f, top + h * 0.72f)
-                lineTo(size.width * 0.66f, top + h * 0.5f)
-                close()
-            }
-            drawPath(triangle, Color.White)
-        }
-        Platform.INSTAGRAM -> Canvas(modifier) {
-            val brush = Brush.linearGradient(
-                listOf(Palette.InstaOrange, Palette.InstaPink, Palette.InstaPurple),
-                start = Offset(0f, size.height),
-                end = Offset(size.width, 0f),
-            )
-            val stroke = size.minDimension * 0.1f
-            drawRoundRect(
-                brush,
-                topLeft = Offset(stroke / 2, stroke / 2),
-                size = Size(size.width - stroke, size.height - stroke),
-                cornerRadius = CornerRadius(size.minDimension * 0.28f),
-                style = Stroke(stroke),
-            )
-            drawCircle(brush, radius = size.minDimension * 0.2f, style = Stroke(stroke))
-            drawCircle(brush, radius = stroke * 0.7f, center = Offset(size.width * 0.74f, size.height * 0.26f))
-        }
-        Platform.TWITTER -> Canvas(modifier) {
-            blackTile()
-            val s = size.minDimension
-            val near = s * 0.29f
-            val far = s * 0.71f
-            drawLine(Color.White, Offset(near, near), Offset(far, far), strokeWidth = s * 0.11f, cap = StrokeCap.Round)
-            drawLine(Color.White, Offset(far, near), Offset(near, far), strokeWidth = s * 0.075f, cap = StrokeCap.Round)
-        }
-        Platform.TIKTOK -> Canvas(modifier) {
-            blackTile()
-            val s = size.minDimension
-            val note = Path().apply {
-                moveTo(s * 0.57f, s * 0.20f)
-                lineTo(s * 0.57f, s * 0.62f)
-                moveTo(s * 0.57f, s * 0.20f)
-                cubicTo(s * 0.57f, s * 0.34f, s * 0.66f, s * 0.40f, s * 0.78f, s * 0.40f)
-                addOval(Rect(Offset(s * 0.44f, s * 0.64f), s * 0.115f))
-            }
-            val stroke = Stroke(s * 0.085f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            translate(-s * 0.03f, -s * 0.025f) { drawPath(note, Color(0xFF25F4EE), style = stroke) }
-            translate(s * 0.03f, s * 0.025f) { drawPath(note, Color(0xFFFE2C55), style = stroke) }
-            drawPath(note, Color.White, style = stroke)
-        }
-        Platform.SNAPCHAT -> Canvas(modifier) {
-            val s = size.minDimension
-            drawRoundRect(Color(0xFFFFFC00), cornerRadius = CornerRadius(s * 0.24f))
-            val ghost = Path().apply {
-                moveTo(s * 0.28f, s * 0.74f)
-                lineTo(s * 0.28f, s * 0.44f)
-                cubicTo(s * 0.28f, s * 0.26f, s * 0.38f, s * 0.16f, s * 0.50f, s * 0.16f)
-                cubicTo(s * 0.62f, s * 0.16f, s * 0.72f, s * 0.26f, s * 0.72f, s * 0.44f)
-                lineTo(s * 0.72f, s * 0.74f)
-                quadraticTo(s * 0.647f, s * 0.80f, s * 0.573f, s * 0.74f)
-                quadraticTo(s * 0.50f, s * 0.68f, s * 0.427f, s * 0.74f)
-                quadraticTo(s * 0.353f, s * 0.80f, s * 0.28f, s * 0.74f)
-                close()
-            }
-            drawPath(ghost, Color.White)
-            drawPath(ghost, Color(0xFF1A1A1A), style = Stroke(s * 0.05f, join = StrokeJoin.Round))
-        }
-        Platform.FACEBOOK -> Canvas(modifier) {
-            // Blue disc with the white "f" running off its bottom edge, drawn on a 24-unit grid.
-            val k = size.minDimension / 24f
-            val disc = Path().apply { addOval(Rect(Offset(12f * k, 12f * k), 12f * k)) }
-            drawPath(disc, Color(0xFF0866FF))
-            val f = Path().apply {
-                moveTo(9.1f * k, 25f * k)
-                lineTo(9.1f * k, 15.71f * k)
-                lineTo(6.63f * k, 15.71f * k)
-                lineTo(6.63f * k, 12.04f * k)
-                lineTo(9.1f * k, 12.04f * k)
-                lineTo(9.1f * k, 10.46f * k)
-                cubicTo(9.1f * k, 6.38f * k, 10.95f * k, 4.49f * k, 14.96f * k, 4.49f * k)
-                cubicTo(15.6f * k, 4.49f * k, 16.9f * k, 4.6f * k, 17.57f * k, 4.78f * k)
-                lineTo(17.57f * k, 8.11f * k)
-                cubicTo(17.2f * k, 8.07f * k, 16.6f * k, 8.06f * k, 16.18f * k, 8.06f * k)
-                cubicTo(14.37f * k, 8.06f * k, 13.45f * k, 8.75f * k, 13.45f * k, 10.75f * k)
-                lineTo(13.45f * k, 12.04f * k)
-                lineTo(17.37f * k, 12.04f * k)
-                lineTo(16.7f * k, 15.71f * k)
-                lineTo(13.45f * k, 15.71f * k)
-                lineTo(13.45f * k, 25f * k)
-                close()
-            }
-            clipPath(disc) { drawPath(f, Color.White) }
-        }
-        Platform.BEREAL -> BoxWithConstraints(
-            modifier
-                .clip(RoundedCornerShape(20))
-                .background(Color(0xFF0B0B0F))
-                .border(0.7.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(20)),
-            contentAlignment = Alignment.Center,
-        ) {
-            val side = minOf(maxWidth, maxHeight)
-            Text(
-                "Be",
-                color = Color.White,
-                fontSize = with(LocalDensity.current) { (side * 0.48f).toSp() },
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-0.4).sp,
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
-        Platform.OTHER -> Icon(
-            Icons.Rounded.Link,
-            contentDescription = null,
-            modifier = modifier.gradientTint(LocalAccent.current.brush),
-            tint = Color.White,
-        )
-    }
-}
-
-/** Near-black rounded square with a faint outline, the backdrop of the X and TikTok logos. */
-private fun DrawScope.blackTile() {
-    val s = size.minDimension
-    val corner = CornerRadius(s * 0.24f)
-    drawRoundRect(Color(0xFF0B0B0F), cornerRadius = corner)
-    val stroke = s * 0.05f
-    drawRoundRect(
-        Color.White.copy(alpha = 0.32f),
-        topLeft = Offset(stroke / 2, stroke / 2),
-        size = Size(s - stroke, s - stroke),
-        cornerRadius = corner,
-        style = Stroke(stroke),
-    )
-}
-
-/** Glyph that pops (overshooting spring) whenever the detected platform changes. */
-@Composable
-fun AnimatedPlatformGlyph(platform: Platform, modifier: Modifier = Modifier) {
-    AnimatedContent(
-        targetState = platform,
-        transitionSpec = {
-            (scaleIn(spring(dampingRatio = 0.42f, stiffness = 380f), initialScale = 0.2f) + fadeIn()) togetherWith
-                (scaleOut(targetScale = 0.2f) + fadeOut(tween(120)))
-        },
-        label = "glyph",
-        modifier = modifier,
-    ) { target ->
-        PlatformGlyph(target, Modifier.fillMaxSize())
+        drawPath(segment, Palette.Background, style = Stroke(2.4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }
 

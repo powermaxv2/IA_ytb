@@ -35,12 +35,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.DownloadDone
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.Inbox
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PriorityHigh
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
@@ -65,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.core.DownloadJob
+import com.powermaxv2.ytdownloader.core.Fmt
 import com.powermaxv2.ytdownloader.core.JobState
 import com.powermaxv2.ytdownloader.core.MediaExporter
 import com.powermaxv2.ytdownloader.core.SavedFile
@@ -74,6 +74,13 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
     val jobs by vm.downloads.jobs.collectAsStateWithLifecycle()
     val active = jobs.count { it.isActive }
     val done = jobs.count { it.state == JobState.DONE }
+    val finishedText = if (done > 1) "$done terminés" else "$done terminé"
+    val summary = when {
+        active > 0 && done > 0 -> "$active en cours · $finishedText"
+        active > 0 -> "$active en cours"
+        done > 0 -> finishedText
+        else -> "Rien pour l'instant"
+    }
 
     Column(
         Modifier
@@ -81,34 +88,33 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             .padding(top = contentPadding.calculateTopPadding())
             .padding(horizontal = 18.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Téléchargements", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                AnimatedContent(targetState = active to done, label = "summary") { (running, finished) ->
-                    val finishedText = if (finished > 1) "$finished terminés" else "$finished terminé"
-                    Text(
-                        when {
-                            running > 0 && finished > 0 -> "$running en cours · $finishedText"
-                            running > 0 -> "$running en cours"
-                            finished > 0 -> "$finishedText · Films, Musique et Images › ${MediaExporter.FOLDER}"
-                            else -> "Rien pour l'instant"
-                        },
-                        color = Palette.TextSecondary,
-                        fontSize = 12.5.sp,
-                    )
-                }
-            }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+            ScreenTitle("Téléchargements", summary, Modifier.weight(1f))
             Spacer(Modifier.width(10.dp))
             IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = vm::openSettings)
         }
-        UpdateBanner(vm, Modifier.padding(top = 12.dp))
+        UpdateBanner(vm, Modifier.padding(top = 14.dp))
         AnimatedVisibility(
             visible = jobs.any { it.isFinished },
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.End) {
-                SecondaryButton("Effacer", Icons.Rounded.DeleteOutline, compact = true) { vm.downloads.clearFinished() }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Films, Musique et Images › ${MediaExporter.FOLDER}",
+                    color = Palette.TextTertiary,
+                    fontSize = 12.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(10.dp))
+                TonalButton("Effacer", Icons.Rounded.DeleteOutline, compact = true) { vm.downloads.clearFinished() }
             }
         }
         AnimatedContent(
@@ -136,6 +142,7 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
 
 @Composable
 private fun EmptyDownloads(onStart: () -> Unit) {
+    val accent = LocalAccent.current
     Column(
         Modifier
             .fillMaxSize()
@@ -143,37 +150,56 @@ private fun EmptyDownloads(onStart: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(110.dp)) {
-            Box(
-                Modifier
-                    .size(96.dp)
-                    .pulsing(0.9f, 1.05f, 2000)
-                    .clip(CircleShape)
-                    .background(LocalAccent.current.start.copy(alpha = 0.12f)),
-            )
+        Box(
+            Modifier
+                .size(96.dp)
+                .clip(CircleShape)
+                .background(accent.tint(0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
                 Icons.Rounded.Inbox,
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier
-                    .size(46.dp)
-                    .floating(5.dp, 2200)
-                    .gradientTint(LocalAccent.current.brush),
+                    .size(44.dp)
+                    .gradientTint(accent.brush),
             )
         }
-        Spacer(Modifier.height(14.dp))
-        Text("Aucun téléchargement", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Vos vidéos arrivent dans Films › YT Downloader, la musique dans Musique et les photos dans Images.",
-            color = Palette.TextSecondary,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp),
-        )
         Spacer(Modifier.height(18.dp))
-        GradientButton("Coller un lien", icon = Icons.Rounded.PlayArrow, onClick = onStart)
+        Text("Aucun téléchargement", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Les vidéos arrivent dans Films › YT Downloader, la musique dans Musique et les photos dans Images.",
+            color = Palette.TextSecondary,
+            fontSize = 13.5.sp,
+            lineHeight = 19.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 28.dp),
+        )
+        Spacer(Modifier.height(22.dp))
+        PrimaryButton("Coller un lien", icon = Icons.Rounded.ContentPaste, onClick = onStart)
     }
+}
+
+/** "Movies/YT Downloader" → "Films › YT Downloader": the names the phone's apps show. */
+private fun SavedFile.place(): String {
+    val top = location.substringBefore('/')
+    val name = when (top) {
+        "Movies" -> "Films"
+        "Music" -> "Musique"
+        "Pictures" -> "Images"
+        "Download" -> "Téléchargements"
+        else -> top
+    }
+    return "$name › ${MediaExporter.FOLDER}"
+}
+
+private fun DownloadJob.savedText(): String {
+    val first = outputs.firstOrNull() ?: return status
+    val size = Fmt.bytes(outputs.sumOf { it.size }.toDouble())
+    val count = if (outputs.size > 1) " · ${outputs.size} fichiers" else ""
+    return "Enregistré dans ${first.place()} · $size$count"
 }
 
 @Composable
@@ -190,19 +216,19 @@ private fun DownloadRow(job: DownloadJob, vm: MainViewModel, modifier: Modifier 
         Column(
             modifier
                 .fillMaxWidth()
-                .glass(RoundedCornerShape(20.dp))
-                .animateContentSize(spring(dampingRatio = 0.85f, stiffness = 320f))
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .panel(RoundedCornerShape(22.dp))
+                .animateContentSize(spring(dampingRatio = 0.9f, stiffness = 320f))
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(64.dp)) {
+            Row {
+                Box(Modifier.size(72.dp)) {
                     RemoteImage(
                         job.thumbnail,
                         Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White.copy(alpha = 0.06f)),
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Palette.Surface2),
                     )
                     PlatformGlyph(
                         job.platform,
@@ -212,104 +238,106 @@ private fun DownloadRow(job: DownloadJob, vm: MainViewModel, modifier: Modifier 
                             .offset(5.dp, 5.dp),
                     )
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(job.title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(job.summary, color = Palette.TextTertiary, fontSize = 11.5.sp, maxLines = 1)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        job.title,
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 20.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(job.summary, color = Palette.TextTertiary, fontSize = 12.5.sp, maxLines = 1)
                 }
                 Spacer(Modifier.width(8.dp))
-                StateIndicator(job, celebrate)
+                StateBadge(job.state, celebrate)
             }
             AnimatedVisibility(
                 visible = job.isActive,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
-                GradientProgressBar(if (job.state == JobState.QUEUED) 0f else job.progress, Modifier.padding(top = 2.dp))
+                ProgressBar(if (job.state == JobState.QUEUED) 0f else job.progress, Modifier.padding(top = 2.dp))
             }
-            Text(
-                job.status,
-                color = if (job.state == JobState.FAILED) Palette.Danger else Palette.TextSecondary,
-                fontSize = 12.sp,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                when (job.state) {
-                    JobState.QUEUED, JobState.DOWNLOADING, JobState.PROCESSING ->
-                        SecondaryButton("Annuler", Icons.Rounded.Close, compact = true) { vm.downloads.cancel(job.id) }
-                    JobState.DONE -> {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (job.state == JobState.DONE) job.savedText() else job.status,
+                    color = when (job.state) {
+                        JobState.FAILED -> Palette.Danger
+                        JobState.DONE -> Palette.Success
+                        else -> Palette.TextSecondary
+                    },
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (job.isActive) {
+                    Spacer(Modifier.width(10.dp))
+                    TonalButton("Annuler", Icons.Rounded.Close, compact = true) { vm.downloads.cancel(job.id) }
+                }
+            }
+            if (job.isFinished) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (job.state == JobState.DONE) {
                         job.outputs.firstOrNull()?.let { first ->
-                            SecondaryButton("Ouvrir", Icons.Rounded.PlayArrow, compact = true) { openFile(context, first, vm) }
-                            SecondaryButton("Partager", Icons.Rounded.Share, compact = true) { shareFiles(context, job.outputs, vm) }
+                            TonalButton("Ouvrir", Icons.Rounded.PlayArrow, compact = true) { openFile(context, first, vm) }
+                            TonalButton("Partager", Icons.Rounded.Share, compact = true) { shareFiles(context, job.outputs, vm) }
                         }
-                        SecondaryButton("Retirer", Icons.Rounded.DeleteOutline, compact = true, tint = Palette.TextSecondary) {
-                            vm.downloads.remove(job.id)
-                        }
+                    } else {
+                        TonalButton("Réessayer", Icons.Rounded.Refresh, compact = true) { vm.downloads.retry(job.id) }
                     }
-                    JobState.FAILED, JobState.CANCELED -> {
-                        SecondaryButton("Réessayer", Icons.Rounded.Refresh, compact = true) { vm.downloads.retry(job.id) }
-                        SecondaryButton("Retirer", Icons.Rounded.DeleteOutline, compact = true, tint = Palette.TextSecondary) {
-                            vm.downloads.remove(job.id)
-                        }
-                    }
+                    Spacer(Modifier.weight(1f))
+                    IconCircleButton(
+                        Icons.Rounded.DeleteOutline,
+                        size = 36.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        tint = Palette.TextSecondary,
+                        contentDescription = "Retirer de la liste",
+                    ) { vm.downloads.remove(job.id) }
                 }
             }
         }
     }
 }
 
-private enum class Indicator { WAITING, ACTIVE, DONE, FAILED, CANCELED }
-
+/** Finished (green tick), failed (red !) or cancelled (grey ✕); nothing while the download runs. */
 @Composable
-private fun StateIndicator(job: DownloadJob, celebrate: Boolean) {
-    val indicator = when (job.state) {
-        JobState.QUEUED -> Indicator.WAITING
-        JobState.DOWNLOADING, JobState.PROCESSING -> Indicator.ACTIVE
-        JobState.DONE -> Indicator.DONE
-        JobState.FAILED -> Indicator.FAILED
-        JobState.CANCELED -> Indicator.CANCELED
-    }
-    Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-        if (indicator == Indicator.DONE) SuccessBurst(celebrate, Palette.Success, Modifier.size(44.dp))
+private fun StateBadge(state: JobState, celebrate: Boolean) {
+    Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) {
+        if (state == JobState.DONE) SuccessBurst(celebrate, Palette.Success, Modifier.size(30.dp))
         AnimatedContent(
-            targetState = indicator,
+            targetState = state,
             transitionSpec = {
-                (scaleIn(spring(dampingRatio = 0.45f, stiffness = 380f), initialScale = 0.3f) + fadeIn()) togetherWith
+                (scaleIn(spring(dampingRatio = 0.5f, stiffness = 400f), initialScale = 0.3f) + fadeIn()) togetherWith
                     (scaleOut(targetScale = 0.3f) + fadeOut(tween(120)))
             },
-            label = "indicator",
-        ) { state ->
-            when (state) {
-                Indicator.WAITING -> Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
-                    ProgressRing(0f, Modifier.size(34.dp))
-                    Icon(Icons.Rounded.HourglassTop, contentDescription = null, tint = Palette.TextSecondary, modifier = Modifier.size(15.dp))
-                }
-                Indicator.ACTIVE -> Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
-                    ProgressRing(job.progress, Modifier.size(34.dp))
-                    if (job.progress >= 0f) {
-                        Text("${(job.progress * 100).toInt()}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-                Indicator.DONE -> AnimatedCheck(Modifier.size(34.dp), animate = celebrate)
-                Indicator.FAILED -> Box(
+            label = "stateBadge",
+        ) { current ->
+            when (current) {
+                JobState.DONE -> AnimatedCheck(Modifier.size(28.dp), animate = celebrate)
+                JobState.FAILED -> Box(
                     Modifier
-                        .size(30.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(Palette.Danger.copy(alpha = 0.18f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.ErrorOutline, contentDescription = null, tint = Palette.Danger, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Rounded.PriorityHigh, contentDescription = null, tint = Palette.Danger, modifier = Modifier.size(18.dp))
                 }
-                Indicator.CANCELED -> Box(
+                JobState.CANCELED -> Box(
                     Modifier
-                        .size(30.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.Close, contentDescription = null, tint = Palette.TextSecondary, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Rounded.Close, contentDescription = null, tint = Palette.TextSecondary, modifier = Modifier.size(16.dp))
                 }
+                else -> Spacer(Modifier.size(28.dp))
             }
         }
     }
