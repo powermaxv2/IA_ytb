@@ -327,37 +327,19 @@ fun SelectableTile(
             .background(background)
             .border(if (selected) 2.dp else 1.dp, outline, shape)
             .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        // The title is never squeezed: only the spacer stretches, so "2160p" stays whole next to the check.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                title,
-                color = Color.White,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (highlight) {
-                Spacer(Modifier.width(6.dp))
-                MaxBadge()
-            }
+            Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
             Spacer(Modifier.weight(1f))
-            Spacer(Modifier.width(6.dp))
-            Pill(badge, selected)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                detail,
-                color = Palette.TextSecondary,
-                fontSize = 12.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
             CheckDot(selected)
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (highlight) MaxBadge()
+            Pill(badge, selected)
+        }
+        Text(detail, color = Palette.TextSecondary, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
