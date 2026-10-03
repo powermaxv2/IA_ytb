@@ -91,9 +91,11 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
           # Optional repository variable: SHA-256 of the signing certificate of the APKs already installed.
-          # When set, a release signed with another key fails here instead of being refused by the phones.
+          # When set, an APK signed with the release secrets but another key fails here instead of being refused
+          # by the phones. Test builds signed with the debug key are not checked.
           EXPECTED_SIGNER: ${{ vars.ANDROID_SIGNER_SHA256 }}
         run: |
+          [ -n "${ANDROID_KEYSTORE_PATH:-}" ] || EXPECTED_SIGNER=""
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)/apksigner"
           mkdir -p dist
           for f in app/build/outputs/apk/release/app-*-release.apk; do
