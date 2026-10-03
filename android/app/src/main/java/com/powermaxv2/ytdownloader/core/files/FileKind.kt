@@ -103,6 +103,8 @@ enum class FileKind {
                 h.size >= offset + text.length && text.indices.all { (h[offset + it].toInt() and 0xFF) == text[it].code }
 
             return when {
+                // Text byte order marks first: FF FE (UTF-16LE) would otherwise pass for an MPEG audio frame sync.
+                at(0, 0xFF, 0xFE) || at(0, 0xFE, 0xFF) || at(0, 0xEF, 0xBB, 0xBF) -> null
                 at(0, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A) -> Sniffed(IMAGE, "png")
                 at(0, 0xFF, 0xD8, 0xFF) -> Sniffed(IMAGE, "jpg")
                 ascii(0, "GIF87a") || ascii(0, "GIF89a") -> Sniffed(IMAGE, "gif")

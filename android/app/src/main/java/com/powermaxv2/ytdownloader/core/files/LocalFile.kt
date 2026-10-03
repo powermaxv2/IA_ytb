@@ -128,7 +128,7 @@ object FileIntake {
         val info = describe(context, uri)
         if (info.size != null && info.size > maxBytes) throw FileTooLarge(maxBytes)
         val folder = dir ?: WorkDir.create(context)
-        val target = File(folder, info.name)
+        val target = uniqueFile(folder, info.name)
         try {
             open(context, uri).use { input ->
                 target.outputStream().use { output ->
@@ -144,11 +144,32 @@ object FileIntake {
                 }
             }
         } catch (e: Exception) {
+            // Only our own new file: uniqueFile never picks an existing name.
             target.delete()
             if (dir == null) WorkDir.delete(context, folder)
             throw e
         }
         return target
+    }
+
+    /**
+     * A file named [name] in [dir] that does not exist yet, created empty (atomically, so two copies never share it):
+     * "photo.jpg", then "photo (2).jpg", "photo (3).jpg"…
+     */
+    fun uniqueFile(dir: File, name: String): File {
+        val base = SafeNames.baseOf(name)
+        val ext = name.substring(base.length)
+        for (n in 1..9_999) {
+            val candidate = if (n == 1) {
+                name
+            } else {
+                val suffix = " ($n)$ext"
+                base.take((SafeNames.MAX_LENGTH - suffix.length).coerceAtLeast(1)) + suffix
+            }
+            val file = File(dir, candidate)
+            if (file.createNewFile()) return file
+        }
+        throw IOException("Impossible de créer la copie de travail.")
     }
 
     private fun open(context: Context, uri: Uri): InputStream =

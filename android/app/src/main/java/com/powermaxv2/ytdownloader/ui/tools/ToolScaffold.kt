@@ -1,6 +1,8 @@
 package com.powermaxv2.ytdownloader.ui.tools
 
+import android.content.ActivityNotFoundException
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -56,6 +58,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -334,9 +337,14 @@ fun FilePickButton(
     val many = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) onPicked(uris)
     }
+    val context = LocalContext.current
     FileDropZone(title = title, hint = hint, icon = icon, enabled = enabled, modifier = modifier) {
-        // No document picker on the phone (very rare): nothing to open.
-        runCatching { if (multiple) many.launch(mimeTypes) else single.launch(mimeTypes) }
+        try {
+            if (multiple) many.launch(mimeTypes) else single.launch(mimeTypes)
+        } catch (e: ActivityNotFoundException) {
+            // No document picker on the phone (very rare, stripped-down Android builds).
+            Toast.makeText(context, "Aucun sélecteur de fichiers sur ce téléphone.", Toast.LENGTH_LONG).show()
+        }
     }
 }
 

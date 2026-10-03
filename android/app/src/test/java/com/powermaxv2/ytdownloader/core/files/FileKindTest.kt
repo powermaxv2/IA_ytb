@@ -101,6 +101,26 @@ class FileKindTest {
         assertEquals(FileKind.OTHER, FileKind.detect("blob", "application/octet-stream", bytes(0x00, 0x01, 0x02, 0x03, 0x10)))
     }
 
+    @Test fun byteOrderMarksAreTextNotAudio() {
+        // FF FE also looks like an MPEG audio frame sync: the BOM must win.
+        val utf16le = bytes(0xFF, 0xFE) + "a,b\n1,2\n".toByteArray(Charsets.UTF_16LE)
+        val utf16be = bytes(0xFE, 0xFF) + "bonjour".toByteArray(Charsets.UTF_16BE)
+        val utf8 = bytes(0xEF, 0xBB, 0xBF) + ascii("hello")
+        assertNull(FileKind.sniff(utf16le))
+        assertNull(FileKind.sniff(utf16be))
+        assertNull(FileKind.sniff(utf8))
+        assertEquals(FileKind.CSV, FileKind.detect("table.csv", null, utf16le))
+        assertEquals(FileKind.TEXT, FileKind.detect("notes.txt", null, utf16le))
+        assertEquals(FileKind.TEXT, FileKind.detect("notes", null, utf16le))
+        assertEquals(FileKind.TEXT, FileKind.detect("notes.txt", null, utf16be))
+        assertEquals(FileKind.TEXT, FileKind.detect("notes", null, utf16be))
+        assertEquals(FileKind.TEXT, FileKind.detect("notes", null, utf8))
+        // A real MPEG-1 Layer III frame header (FF FB, 128 kbit/s, 44.1 kHz) is still audio.
+        assertEquals(FileKind.AUDIO, FileKind.detect("song.mp3", null, pad(bytes(0xFF, 0xFB, 0x90, 0x64))))
+        assertEquals(FileKind.AUDIO, FileKind.detect("unknown", null, pad(bytes(0xFF, 0xFB, 0x90, 0x64))))
+        assertEquals(FileKind.AUDIO, FileKind.detect("unknown", null, pad(bytes(0xFF, 0xF3, 0x90, 0x64))))
+    }
+
     @Test fun textDetection() {
         assertTrue(FileKind.looksLikeText(ascii("Bonjour\tà tous\r\n")))
         assertTrue(FileKind.looksLikeText("Été déjà là — ok".toByteArray(Charsets.UTF_8)))
