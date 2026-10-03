@@ -62,6 +62,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -88,6 +89,8 @@ import com.powermaxv2.ytdownloader.ui.RemoteImage
 import com.powermaxv2.ytdownloader.ui.Tab
 import com.powermaxv2.ytdownloader.ui.TileGrid
 import com.powermaxv2.ytdownloader.ui.bounceClick
+import com.powermaxv2.ytdownloader.ui.brand.GulpColors
+import com.powermaxv2.ytdownloader.ui.brand.LocalGulpPulse
 import com.powermaxv2.ytdownloader.ui.pulsing
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.staggeredEntrance
@@ -95,11 +98,12 @@ import com.powermaxv2.ytdownloader.ui.tick
 import kotlin.math.max
 import kotlin.math.min
 
-private val Ink = Color(0xFF111216)
+/** The ink of the logo's mouth (duration pill, recent download square). */
+private val Ink = GulpColors.Ink
 
 // MARK: - Thumbnail
 
-/** 16:9 thumbnail with a centred accent play disc (breathing ring) and a black duration pill. */
+/** 16:9 thumbnail with a centred accent play disc (breathing ring) and an ink duration pill. */
 @Composable
 private fun PaperThumbnail(url: String?, duration: Double?, key: Any) {
     val accent = LocalAccent.current.start
@@ -143,7 +147,7 @@ private fun PaperThumbnail(url: String?, duration: Double?, key: Any) {
         duration?.let {
             Text(
                 Fmt.duration(it),
-                color = Color.White,
+                color = GulpColors.Cream,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier
@@ -159,7 +163,7 @@ private fun PaperThumbnail(url: String?, duration: Double?, key: Any) {
 
 // MARK: - Mode switch
 
-/** "Vidéo + son" / "Audio seul" on a grey track; the black selected segment slides. */
+/** "Vidéo + son" / "Audio seul" on a cream track; the ink selected segment slides. */
 @Composable
 private fun PaperSegmented(selected: MediaMode, onSelect: (MediaMode) -> Unit, modifier: Modifier = Modifier) {
     val options = MediaMode.entries
@@ -212,7 +216,7 @@ private fun PaperSegmented(selected: MediaMode, onSelect: (MediaMode) -> Unit, m
 
 // MARK: - Tiles and chips
 
-/** White tile: big label + grey detail; the accent border springs in when selected, [max] adds a popping "MAX" badge. */
+/** White tile: big label + warm grey detail; when selected the accent border springs in and the tile takes a hint of accent, [max] adds a popping "MAX" badge. */
 @Composable
 private fun PaperTile(
     title: String,
@@ -227,14 +231,17 @@ private fun PaperTile(
     val shape = RoundedCornerShape(18.dp)
     val borderWidth by animateDpAsState(if (selected) 2.dp else 0.5.dp, spring(dampingRatio = 0.5f, stiffness = 500f), label = "paperTileBorder")
     val borderColor by animateColorAsState(if (selected) accent else Color.Transparent, tween(200), label = "paperTileColor")
+    val surface = Palette.Surface
+    val fill by animateColorAsState(if (selected) accent.copy(alpha = 0.07f).compositeOver(surface) else surface, tween(220), label = "paperTileFill")
+    val warm = LocalTokens.current.cardShadowColor
     Box(modifier) {
         Column(
             Modifier
                 .fillMaxSize()
                 .bounceClick(onClick = onClick)
-                .shadow(3.dp, shape, ambientColor = Color.Black.copy(alpha = 0.08f), spotColor = Color.Black.copy(alpha = 0.08f))
+                .shadow(if (selected) 8.dp else 3.dp, shape, ambientColor = warm, spotColor = warm)
                 .clip(shape)
-                .background(Palette.Surface)
+                .background(fill)
                 .border(borderWidth, borderColor, shape)
                 .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -432,7 +439,9 @@ fun PaperVideoCard(
         }
         PaperButton(
             "Télécharger",
-            Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .staggeredEntrance(2, key = info.id, baseDelay = 120),
             icon = Icons.Rounded.Download,
             subtitle = if (mode == MediaMode.VIDEO) "${quality?.label ?: "Max"} · ${container.title}" else "Audio · ${audioFormat.title}",
         ) {
@@ -443,7 +452,7 @@ fun PaperVideoCard(
 
 // MARK: - Recent download strip
 
-/** Short label for the black square: "4K", "1080p", "MP3"…, or null to show the platform logo. */
+/** Short label for the ink square: "4K", "1080p", "MP3"…, or null to show the platform logo. */
 private fun jobBadge(job: DownloadJob): String? {
     val head = job.summary.substringBefore(" · ").trim()
     if (head == "Audio") return job.summary.substringAfter(" · ", "").trim().takeIf { it.isNotEmpty() && it.length <= 4 }
@@ -456,11 +465,12 @@ private fun jobBadge(job: DownloadJob): String? {
     }
 }
 
-/** Black bar on a grey track; negative [progress] = indeterminate sweep. */
+/** Ink bar on a cream track, with an accent dot at its head; negative [progress] = indeterminate sweep. */
 @Composable
 private fun InkProgress(progress: Float, modifier: Modifier = Modifier) {
     val track = Palette.Surface2
     val ink = Palette.TextPrimary
+    val head = LocalAccent.current.start
     val indeterminate = progress < 0f
     val animated by animateFloatAsState(progress.coerceIn(0f, 1f), tween(450, easing = FastOutSlowInEasing), label = "inkProgress")
     val transition = rememberInfiniteTransition(label = "inkSweep")
@@ -479,12 +489,14 @@ private fun InkProgress(progress: Float, modifier: Modifier = Modifier) {
             val right = min(size.width, x + w)
             if (right > left) drawRoundRect(ink, topLeft = Offset(left, 0f), size = Size(right - left, size.height), cornerRadius = radius)
         } else {
-            drawRoundRect(ink, size = Size(max(size.height, size.width * animated), size.height), cornerRadius = radius)
+            val w = max(size.height, size.width * animated)
+            drawRoundRect(ink, size = Size(w, size.height), cornerRadius = radius)
+            drawCircle(head, radius = size.height / 2, center = Offset(w - size.height / 2, size.height / 2))
         }
     }
 }
 
-/** Compact strip of the active download (else the latest one); tap opens Fichiers. */
+/** Compact strip of the active download (else the latest one); tap opens Fichiers. The ink square gulps when a download is queued. */
 @Composable
 fun PaperRecentDownload(vm: MainViewModel) {
     val jobs by vm.downloads.jobs.collectAsStateWithLifecycle()
@@ -507,8 +519,24 @@ fun PaperRecentDownload(vm: MainViewModel) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            val pulse = LocalGulpPulse.current
+            val gulp = remember { Animatable(0f) }
+            var firstPulse by remember { mutableStateOf(true) }
+            LaunchedEffect(pulse) {
+                if (firstPulse) {
+                    firstPulse = false
+                } else {
+                    gulp.snapTo(1f)
+                    gulp.animateTo(0f, spring(dampingRatio = 0.35f, stiffness = 300f))
+                }
+            }
             Box(
                 Modifier
+                    .graphicsLayer {
+                        val g = gulp.value
+                        scaleX = 1f + 0.16f * g
+                        scaleY = 1f - 0.12f * g
+                    }
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(Ink),
@@ -516,7 +544,7 @@ fun PaperRecentDownload(vm: MainViewModel) {
             ) {
                 val badge = jobBadge(current)
                 if (badge != null) {
-                    Text(badge, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                    Text(badge, color = GulpColors.Cream, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
                 } else {
                     PlatformGlyph(current.platform, Modifier.size(22.dp))
                 }

@@ -2,7 +2,7 @@ package com.powermaxv2.ytdownloader.ui.skin.classic
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -53,6 +54,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -77,7 +80,7 @@ import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.Phase
 import com.powermaxv2.ytdownloader.ui.PrimaryButton
-import com.powermaxv2.ytdownloader.ui.StepRow
+import com.powermaxv2.ytdownloader.ui.gradientTint
 import com.powermaxv2.ytdownloader.ui.panel
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.staggeredEntrance
@@ -109,7 +112,7 @@ fun ClassicLinkCard(
     var focused by remember { mutableStateOf(false) }
     val detected = remember(pane.urlText) { Links.platformOfText(pane.urlText) }
     val platform = if (pane.urlText.isBlank()) pane.platform else detected
-    val outline by animateColorAsState(if (focused) accent.start.copy(alpha = 0.8f) else Palette.Stroke, label = "fieldOutline")
+    val focusGlow by animateFloatAsState(if (focused) 1f else 0f, tween(220), label = "fieldFocus")
     val loading = pane.phase is Phase.Loading
     val fieldShape = RoundedCornerShape(18.dp)
     val paste = {
@@ -120,6 +123,7 @@ fun ClassicLinkCard(
     Column(
         Modifier
             .fillMaxWidth()
+            .staggeredEntrance(0, baseDelay = 60)
             .panel()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -130,7 +134,15 @@ fun ClassicLinkCard(
                 .height(56.dp)
                 .clip(fieldShape)
                 .background(Palette.Surface2)
-                .border(1.dp, outline, fieldShape)
+                .border(1.dp, Palette.Stroke, fieldShape)
+                // Accent gradient outline fading in with the focus.
+                .border(
+                    1.5.dp,
+                    Brush.horizontalGradient(
+                        listOf(accent.start.copy(alpha = 0.85f * focusGlow), accent.end.copy(alpha = 0.6f * focusGlow)),
+                    ),
+                    fieldShape,
+                )
                 .padding(start = 14.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -180,7 +192,7 @@ fun ClassicLinkCard(
             label = "linkAction",
         ) { empty ->
             if (empty) {
-                PrimaryButton("Coller le lien", Modifier.fillMaxWidth(), icon = Icons.Rounded.ContentPaste, enabled = enabled, onClick = paste)
+                PrimaryButton("Coller le lien", Modifier.fillMaxWidth().sheen(enabled), icon = Icons.Rounded.ContentPaste, enabled = enabled, onClick = paste)
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     IconCircleButton(
@@ -192,7 +204,9 @@ fun ClassicLinkCard(
                     )
                     PrimaryButton(
                         "Analyser",
-                        Modifier.weight(1f),
+                        Modifier
+                            .weight(1f)
+                            .sheen(enabled && !loading),
                         icon = Icons.Rounded.Search,
                         enabled = enabled,
                         loading = loading,
@@ -273,29 +287,69 @@ internal fun guideFeatures(platform: Platform): List<Feature> = when (platform) 
     )
 }
 
+/** Numbered step with its number on an accent gradient disc. */
+@Composable
+private fun ClassicStepRow(number: Int, text: AnnotatedString, modifier: Modifier = Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(
+            Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(LocalAccent.current.brush),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                number.toString(),
+                color = Palette.OnAccent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontFamily = LocalTokens.current.display,
+            )
+        }
+        Text(text, color = Palette.TextPrimary, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 3.dp))
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ClassicGuide(platform: Platform) {
+    val accent = LocalAccent.current
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(
             Modifier
                 .fillMaxWidth()
+                .staggeredEntrance(0, key = platform, baseDelay = 120)
                 .panel()
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Comment faire", color = Palette.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Text(
+                "Comment faire",
+                color = Palette.TextPrimary,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontFamily = LocalTokens.current.display,
+                letterSpacing = (-0.3).sp,
+            )
             guideSteps(platform).forEachIndexed { index, step ->
-                StepRow(index + 1, step, Modifier.staggeredEntrance(index, baseDelay = 80))
+                ClassicStepRow(index + 1, step, Modifier.staggeredEntrance(index, key = platform, baseDelay = 200))
             }
+            // Hairline fading out from the accent colour.
             Box(
                 Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Palette.Stroke),
+                    .background(Brush.horizontalGradient(listOf(accent.start.copy(alpha = 0.4f), Palette.Stroke, Color.Transparent))),
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Rounded.Share, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Rounded.Share,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .gradientTint(accent.brush),
+                )
                 Text(
                     SHARE_TIP,
                     color = Palette.TextSecondary,
@@ -311,7 +365,7 @@ fun ClassicGuide(platform: Platform) {
             guideFeatures(platform).forEachIndexed { index, chip ->
                 FeatureChip(
                     chip.text,
-                    Modifier.staggeredEntrance(index, baseDelay = 200),
+                    Modifier.staggeredEntrance(index, key = platform, baseDelay = 320),
                     icon = chip.icon,
                     platform = chip.platform,
                     dimmed = chip.dimmed,

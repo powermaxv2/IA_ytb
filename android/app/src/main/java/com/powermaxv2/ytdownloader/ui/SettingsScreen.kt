@@ -9,10 +9,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import com.powermaxv2.ytdownloader.core.Skin
+import com.powermaxv2.ytdownloader.ui.brand.GulpMarkStatic
+import com.powermaxv2.ytdownloader.ui.brand.GulpStyle
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import androidx.compose.animation.expandVertically
@@ -439,28 +444,43 @@ private fun SkinOption(skin: Skin, selected: Boolean, modifier: Modifier = Modif
     }
 }
 
-/** Miniature of a skin with its own colours and fonts: title, a card and a button in its YouTube accent. */
+/**
+ * Miniature of a skin with its own colours and fonts: the Gulp mark as that skin draws it, a title, a card and a
+ * button in its YouTube accent.
+ */
 @Composable
 private fun SkinPreview(skin: Skin, modifier: Modifier = Modifier) {
     val tokens = tokensFor(skin)
     val accent = tokens.youtubeAccent
     val cardShape = RoundedCornerShape(minOf(tokens.cardRadius, 10.dp))
+    // Brand tile on Gulp and Papier, orange outline on Terminal.
+    val markStyle = if (skin == Skin.TERMINAL) GulpStyle.outline(accent.start) else GulpStyle.Brand
+    val glow = accent.start.copy(alpha = 0.3f)
     Column(
         modifier
             .background(tokens.background)
+            .drawBehind {
+                // Gulp: the warm glow of its background.
+                if (skin == Skin.CLASSIC) {
+                    drawRect(Brush.radialGradient(listOf(glow, Color.Transparent), Offset(size.width * 0.3f, 0f), size.width))
+                }
+            }
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            if (skin == Skin.TERMINAL) "YT_" else "Aa",
-            color = tokens.textPrimary,
-            fontSize = 18.sp,
-            lineHeight = 20.sp,
-            fontFamily = tokens.display,
-            // Archivo Black has a single weight: asking for a bolder one would fake-bold it.
-            fontWeight = if (skin == Skin.TERMINAL) FontWeight.Normal else FontWeight.ExtraBold,
-            maxLines = 1,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            GulpMarkStatic(17.dp, style = markStyle)
+            Text(
+                if (skin == Skin.TERMINAL) "YT_" else "Aa",
+                color = tokens.textPrimary,
+                fontSize = 18.sp,
+                lineHeight = 20.sp,
+                fontFamily = tokens.display,
+                // Archivo Black has a single weight: asking for a bolder one would fake-bold it.
+                fontWeight = if (skin == Skin.TERMINAL) FontWeight.Normal else FontWeight.ExtraBold,
+                maxLines = 1,
+            )
+        }
         Column(
             Modifier
                 .fillMaxWidth()
