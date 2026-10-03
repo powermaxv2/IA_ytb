@@ -202,7 +202,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
         GroupTitle("À propos", 8)
         ListCard(8) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Palette.TextPrimary, fontSize = 15.sp)
+                Text("Gulp ${BuildConfig.VERSION_NAME} pour Android", color = Palette.TextPrimary, fontSize = 15.sp)
                 Text(
                     "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +
                         "et respectez les conditions d'utilisation de YouTube, d'Instagram et des autres sites.",

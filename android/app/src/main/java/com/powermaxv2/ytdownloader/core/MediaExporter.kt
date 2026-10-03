@@ -22,10 +22,10 @@ data class SavedFile(val uri: Uri, val mime: String, val name: String, val size:
 
 /**
  * Copies a finished file into the phone's public folders so it shows up in the Gallery / Music apps:
- * videos → Movies/YT Downloader, music → Music/YT Downloader, photos → Pictures/YT Downloader.
+ * videos → Movies/Gulp, music → Music/Gulp, photos → Pictures/Gulp.
  */
 object MediaExporter {
-    const val FOLDER = "YT Downloader"
+    const val FOLDER = "Gulp"
 
     private enum class Kind(val directory: String) {
         VIDEO(Environment.DIRECTORY_MOVIES),

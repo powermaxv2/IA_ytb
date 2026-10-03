@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Gulp icon for Android 7 (no adaptive icons): rounded tile + mark. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="48dp"
@@ -13,16 +14,21 @@
                 android:startY="4"
                 android:endX="104"
                 android:endY="104">
-                <item android:offset="0" android:color="#FFFF4561" />
-                <item android:offset="1" android:color="#FFFF8F3D" />
+                <item android:offset="0" android:color="#FFFF3B30" />
+                <item android:offset="1" android:color="#FFFF8A1F" />
             </gradient>
         </aapt:attr>
     </path>
     <path
-        android:fillColor="#00000000"
-        android:pathData="M54,30L54,66M39,52L54,67L69,52M37,79L71,79"
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M39.6,30.4L68.4,30.4L54,55.6Z"
         android:strokeWidth="8"
         android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
         android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34.4,67.2Q54,81.6 73.6,67.2"
+        android:strokeWidth="8"
+        android:strokeColor="#FF2A0F0A"
+        android:strokeLineCap="round" />
 </vector>

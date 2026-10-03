@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Gulp mark "La Gorgée": a play triangle dropping into a mouth, inside the 66dp safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#00000000"
-        android:pathData="M54,35L54,64M42,53L54,65L66,53M41,74L67,74"
-        android:strokeWidth="6"
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M41.54,34.51L66.46,34.51L54,56.31Z"
+        android:strokeWidth="6.92"
         android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
         android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M37.05,67.03Q54,79.49 70.95,67.03"
+        android:strokeWidth="6.92"
+        android:strokeColor="#FF2A0F0A"
+        android:strokeLineCap="round" />
 </vector>

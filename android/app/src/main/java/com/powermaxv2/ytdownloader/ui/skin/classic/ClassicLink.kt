@@ -230,7 +230,7 @@ internal fun guideSteps(platform: Platform): List<AnnotatedString> {
 }
 
 /** Tip shown under the steps. */
-internal const val SHARE_TIP = "Plus rapide : dans l'app, Partager → YT Downloader ouvre le lien ici directement."
+internal const val SHARE_TIP = "Plus rapide : dans l'app, Partager → Gulp ouvre le lien ici directement."
 
 /** Note on what a tab cannot download, or null. */
 internal fun guideFootnote(platform: Platform): String? = when (platform) {
