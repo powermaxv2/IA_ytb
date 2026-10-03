@@ -121,5 +121,33 @@ Sources/YTDownloader/
 
 ## Avertissement
 
-Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé
-(vos propres vidéos, licences libres, etc.) et respectez les conditions d'utilisation de YouTube.
+**Ce logiciel est fourni « tel quel », sans garantie, et n'est ni affilié à YouTube, Google, Meta, X, TikTok,
+Snap ou BeReal, ni approuvé par eux.**
+
+- Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé :
+  vos propres vidéos, des œuvres sous licence libre (Creative Commons…) ou dans le domaine public, ou des contenus
+  que leur auteur permet explicitement de télécharger.
+- Les conditions d'utilisation de YouTube, d'Instagram, de Facebook, de X, de TikTok et de Snapchat interdisent en
+  général le téléchargement en dehors de leurs propres fonctions. Les respecter relève de votre responsabilité.
+- L'exception de copie privée ne couvre ni les copies faites à partir d'une source illicite, ni le contournement
+  d'une mesure technique de protection. Elle varie selon les pays : renseignez-vous sur la loi qui vous
+  est applicable.
+- Ce logiciel ne contourne aucun DRM et n'en contournera pas : une vidéo protégée par DRM est refusée.
+- L'auteur n'encourage aucune violation du droit d'auteur et ne peut être tenu responsable de l'usage qui est fait
+  du logiciel.
+
+Données personnelles : voir [PRIVACY.md](PRIVACY.md). Signaler une faille : voir [SECURITY.md](SECURITY.md).
+
+## Licence
+
+Copyright (C) 2026 powermaxv2
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la
+**GNU General Public License version 3**, ou (à votre choix) toute version ultérieure, telle que publiée par la
+Free Software Foundation. Il est distribué sans aucune garantie. Texte complet : [LICENSE](LICENSE).
+
+La version Android intègre youtubedl-android et FFmpeg, distribués sous GPL-3.0. Les composants tiers et leurs
+licences sont listés dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+YouTube est une marque de Google LLC ; Instagram et Facebook sont des marques de Meta Platforms, Inc. ; les autres
+noms cités appartiennent à leurs propriétaires respectifs.
