@@ -68,6 +68,7 @@ import com.powermaxv2.ytdownloader.core.Fmt
 import com.powermaxv2.ytdownloader.core.JobState
 import com.powermaxv2.ytdownloader.core.MediaExporter
 import com.powermaxv2.ytdownloader.core.SavedFile
+import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 
 @Composable
 fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
@@ -167,7 +168,7 @@ private fun EmptyDownloads(onStart: () -> Unit) {
             )
         }
         Spacer(Modifier.height(18.dp))
-        Text("Aucun téléchargement", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Text("Aucun téléchargement", color = Palette.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(6.dp))
         Text(
             "Les vidéos arrivent dans Films › YT Downloader, la musique dans Musique et les photos dans Images.",
@@ -212,7 +213,7 @@ private fun DownloadRow(job: DownloadJob, vm: MainViewModel, modifier: Modifier 
         previous = job.state
     }
 
-    CompositionLocalProvider(LocalAccent provides Accent.of(job.platform)) {
+    CompositionLocalProvider(LocalAccent provides LocalTokens.current.accentFor(job.platform)) {
         Column(
             modifier
                 .fillMaxWidth()
@@ -242,7 +243,7 @@ private fun DownloadRow(job: DownloadJob, vm: MainViewModel, modifier: Modifier 
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
                         job.title,
-                        color = Color.White,
+                        color = Palette.TextPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
                         lineHeight = 20.sp,
@@ -332,7 +333,7 @@ private fun StateBadge(state: JobState, celebrate: Boolean) {
                     Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.08f)),
+                        .background(Palette.TextPrimary.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Rounded.Close, contentDescription = null, tint = Palette.TextSecondary, modifier = Modifier.size(16.dp))

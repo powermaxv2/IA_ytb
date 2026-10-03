@@ -119,6 +119,33 @@ jobs:
           path: android/dist/
           if-no-files-found: error
 
+      # Screenshots of the three interfaces (JVM tests, Robolectric + Roborazzi), after the APKs so a failure
+      # here never hides them.
+      - name: Record screenshots
+        if: env.IS_RELEASE != 'true'
+        run: ./gradlew --no-daemon --stacktrace recordRoborazziDebug
+
+      - name: Upload screenshots
+        if: always() && env.IS_RELEASE != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: android/app/build/outputs/roborazzi/
+          if-no-files-found: warn
+
+      # Also publish them on a branch "screenshots/<commit>" so they can be viewed without downloading the artifact.
+      - name: Publish screenshots to a branch
+        if: github.event_name == 'push' && env.IS_RELEASE != 'true' && hashFiles('android/app/build/outputs/roborazzi/*.png') != ''
+        run: |
+          out="$RUNNER_TEMP/shots"
+          mkdir -p "$out"
+          cp app/build/outputs/roborazzi/*.png "$out/"
+          cd "$out"
+          git init -q -b main
+          git add .
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -qm "Screenshots of $GITHUB_SHA"
+          git push "https://x-access-token:${{ github.token }}@github.com/$GITHUB_REPOSITORY.git" "HEAD:refs/heads/screenshots/${GITHUB_SHA::7}"
+
       # Release notes: android/release-notes/X.Y.Z.md when it exists (shown in the app and the notification).
       - name: Release notes
         if: env.IS_RELEASE == 'true'

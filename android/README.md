@@ -20,6 +20,9 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 - Interface sombre et lisible (depuis 1.5.0) : un gros bouton **Coller le lien**, les étapes « Comment faire » sur
   chaque onglet, des tuiles de qualité, des réglages en liste ; accent rouge (YouTube), violet-rose (Instagram) ou
   cyan-indigo (Autres) selon l'onglet, animations discrètes et vibrations légères
+- **Trois interfaces au choix** dans **Réglages › Interface**, appliquées tout de suite : **Classique** (sombre, accent
+  par onglet), **Papier** (clair, typographie magazine) et **Terminal** (console vert fluo). Polices embarquées sous
+  licence libre OFL : Bricolage Grotesque, JetBrains Mono et Archivo Black
 
 ## Installer l'APK
 

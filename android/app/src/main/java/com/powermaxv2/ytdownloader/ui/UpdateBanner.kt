@@ -89,10 +89,10 @@ private fun UpdateCard(state: AppUpdateState, vm: MainViewModel) {
                     .background(accent.brush),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Rounded.SystemUpdate, contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp))
+                Icon(Icons.Rounded.SystemUpdate, contentDescription = null, tint = Palette.OnAccent, modifier = Modifier.size(21.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Text(title, color = Palette.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 Text(subtitle, color = Palette.TextSecondary, fontSize = 12.5.sp)
             }
             if (state is AppUpdateState.Available) {

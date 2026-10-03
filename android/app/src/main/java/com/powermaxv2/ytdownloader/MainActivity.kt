@@ -8,22 +8,38 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.ui.AppRoot
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Tab
+import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-        )
+        applySystemBars(tokensFor(App.instance.prefs.settings.value.skin).isLight)
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) handleIntent(intent)
-        setContent { AppRoot(viewModel) }
+        setContent {
+            // Status / navigation bar icons follow the skin: dark on Papier, light on the dark skins.
+            val settings by viewModel.prefs.settings.collectAsStateWithLifecycle()
+            val light = tokensFor(settings.skin).isLight
+            LaunchedEffect(light) { applySystemBars(light) }
+            AppRoot(viewModel)
+        }
+    }
+
+    private fun applySystemBars(light: Boolean) {
+        val style = if (light) {
+            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        } else {
+            SystemBarStyle.dark(Color.TRANSPARENT)
+        }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 
     override fun onNewIntent(intent: Intent) {
