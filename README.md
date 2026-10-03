@@ -121,6 +121,9 @@ Sources/YTDownloader/
 
 ## Avertissement
 
+**Projet personnel.** Cette app est développée pour l'usage privé de son auteur. Elle n'est pas distribuée au
+public, et aucune version n'est proposée au téléchargement.
+
 **Ce logiciel est fourni « tel quel », sans garantie, et n'est ni affilié à YouTube, Google, Meta, X, TikTok,
 Snap ou BeReal, ni approuvé par eux.**
 
