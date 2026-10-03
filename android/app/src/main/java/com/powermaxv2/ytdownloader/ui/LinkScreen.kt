@@ -108,7 +108,7 @@ fun LinkScreen(vm: MainViewModel, pane: LinkPane, contentPadding: PaddingValues)
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        SkinHeader(pane.platform, engineState, onSettings = vm::openSettings)
+        SkinHeader(pane.platform, engineState, onSettings = vm::openSettings, onHome = vm::goHome)
         UpdateBanner(vm)
         AnimatedVisibility(
             visible = integrity != null,

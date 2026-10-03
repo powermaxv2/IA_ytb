@@ -19,6 +19,16 @@ import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.LinkPane
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Tab
+import com.powermaxv2.ytdownloader.ui.hub.GulpTool
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicComingSoon
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicHomeHeader
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicToolCard
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperComingSoon
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperHomeHeader
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperToolCard
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalComingSoon
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalHomeHeader
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalToolCard
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicBackground
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicBottomBar
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicGuide
@@ -65,13 +75,13 @@ fun SkinBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Uni
     }
 }
 
-/** Title block of a link tab with the settings button. */
+/** Title block of a link tab with the settings button; [onHome]: the logo also leads back to the home screen. */
 @Composable
-fun SkinHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit) {
+fun SkinHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit, onHome: (() -> Unit)? = null) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicHeader(platform, onSettings)
-        Skin.PAPER -> PaperHeader(platform, engineState, onSettings)
-        Skin.TERMINAL -> TerminalHeader(platform, engineState, onSettings)
+        Skin.CLASSIC -> ClassicHeader(platform, onSettings, onHome)
+        Skin.PAPER -> PaperHeader(platform, engineState, onSettings, onHome)
+        Skin.TERMINAL -> TerminalHeader(platform, engineState, onSettings, onHome)
     }
 }
 
@@ -144,5 +154,37 @@ fun SkinRecentDownload(vm: MainViewModel) {
         Skin.CLASSIC -> Unit
         Skin.PAPER -> PaperRecentDownload(vm)
         Skin.TERMINAL -> TerminalRecentDownload(vm)
+    }
+}
+
+// MARK: - Home screen of the hub
+
+/** Top of the home screen: logo, title and how many tools are out / coming. */
+@Composable
+fun SkinHomeHeader(ready: Int, upcoming: Int, onSettings: () -> Unit) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicHomeHeader(ready, upcoming, onSettings)
+        Skin.PAPER -> PaperHomeHeader(ready, upcoming, onSettings)
+        Skin.TERMINAL -> TerminalHomeHeader(ready, upcoming, onSettings)
+    }
+}
+
+/** Card of a tool that is out ([index] = its place among them); a tap opens it. */
+@Composable
+fun SkinToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicToolCard(tool, index, onOpen)
+        Skin.PAPER -> PaperToolCard(tool, index, onOpen)
+        Skin.TERMINAL -> TerminalToolCard(tool, index, onOpen)
+    }
+}
+
+/** The "À venir" tools, numbered from [firstNumber]. */
+@Composable
+fun SkinComingSoon(tools: List<GulpTool>, firstNumber: Int) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicComingSoon(tools, firstNumber)
+        Skin.PAPER -> PaperComingSoon(tools, firstNumber)
+        Skin.TERMINAL -> TerminalComingSoon(tools, firstNumber)
     }
 }

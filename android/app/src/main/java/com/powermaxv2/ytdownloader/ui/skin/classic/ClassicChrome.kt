@@ -1,5 +1,6 @@
 package com.powermaxv2.ytdownloader.ui.skin.classic
 
+import com.powermaxv2.ytdownloader.ui.hub.HomeLink
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -171,10 +172,10 @@ internal fun platformSubtitle(platform: Platform) = when (platform) {
 
 /** The Gulp lockup (its mark swallows on its own and on each queued download) with settings, then the tab title. */
 @Composable
-fun ClassicHeader(platform: Platform, onSettings: () -> Unit) {
+fun ClassicHeader(platform: Platform, onSettings: () -> Unit, onHome: (() -> Unit)? = null) {
     Column(Modifier.padding(top = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GulpLockup(markSize = 30.dp, textColor = Palette.TextPrimary)
+            HomeLink(onHome, Palette.TextSecondary) { GulpLockup(markSize = 30.dp, textColor = Palette.TextPrimary) }
             Spacer(Modifier.weight(1f))
             IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = onSettings)
         }

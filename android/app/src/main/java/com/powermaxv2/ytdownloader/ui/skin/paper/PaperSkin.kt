@@ -1,5 +1,6 @@
 package com.powermaxv2.ytdownloader.ui.skin.paper
 
+import com.powermaxv2.ytdownloader.ui.hub.HomeLink
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -276,7 +277,7 @@ private fun paperTitle(platform: Platform) = when (platform) {
  * and deepens for a moment when a download is queued ([swallow], like the mark's mouth).
  */
 @Composable
-private fun PaperSmileUnderline(grow: () -> Float, swallow: () -> Float, color: Color, modifier: Modifier = Modifier) {
+internal fun PaperSmileUnderline(grow: () -> Float, swallow: () -> Float, color: Color, modifier: Modifier = Modifier) {
     Canvas(
         modifier
             .fillMaxWidth()
@@ -298,7 +299,7 @@ private fun PaperSmileUnderline(grow: () -> Float, swallow: () -> Float, color: 
 
 /** Gulp lockup (animated mark + "gulp"), huge title on the accent smile (draws itself on each tab), settings square on the right. */
 @Composable
-fun PaperHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit) {
+fun PaperHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit, onHome: (() -> Unit)? = null) {
     val accent = LocalAccent.current.start
     val grow = remember(platform) { Animatable(0f) }
     LaunchedEffect(platform) { grow.animateTo(1f, tween(620, delayMillis = 120, easing = FastOutSlowInEasing)) }
@@ -324,7 +325,7 @@ fun PaperHeader(platform: Platform, engineState: EngineState, onSettings: () -> 
         verticalAlignment = Alignment.Top,
     ) {
         Column(Modifier.weight(1f)) {
-            GulpLockup(markSize = 26.dp, textColor = Palette.TextPrimary, fontSize = 21.sp)
+            HomeLink(onHome, Palette.TextPrimary, chevron = 20.dp) { GulpLockup(markSize = 26.dp, textColor = Palette.TextPrimary, fontSize = 21.sp) }
             Spacer(Modifier.height(6.dp))
             Column(Modifier.width(IntrinsicSize.Max)) {
                 Text(

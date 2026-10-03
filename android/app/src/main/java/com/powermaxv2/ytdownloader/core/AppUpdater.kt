@@ -235,9 +235,13 @@ class AppUpdater(private val context: Context, private val prefs: Prefs, private
                 _state.value = AppUpdateState.Downloading(release, if (size > 0) (done.toFloat() / size).coerceIn(0f, 1f) else 0f)
             }
         }
-        if (release.sha256 != null && !release.sha256.equals(sha256, ignoreCase = true)) {
+        // GitHub gives the SHA-256 of every release file: without it, or if it differs, the file is refused.
+        if (release.sha256 == null || !release.sha256.equals(sha256, ignoreCase = true)) {
             apk.delete()
-            throw IOException("Le fichier reçu est abîmé (empreinte SHA-256 différente). Réessayez.")
+            throw IOException(
+                if (release.sha256 == null) "Empreinte SHA-256 absente de la release : mise à jour refusée."
+                else "Le fichier reçu est abîmé (empreinte SHA-256 différente). Réessayez.",
+            )
         }
         withContext(Dispatchers.IO) { checkApk(apk) }
         return apk
@@ -252,8 +256,13 @@ class AppUpdater(private val context: Context, private val prefs: Prefs, private
             @Suppress("DEPRECATION")
             PackageManager.GET_SIGNATURES
         }
-        val candidate = pm.getPackageArchiveInfo(apk.path, flags)
+        var candidate = pm.getPackageArchiveInfo(apk.path, flags)
             ?: throw IOException("Le fichier téléchargé n'est pas une app Android valide.")
+        // Some Android 9 builds give no signing info for an APK file: ask again the old way.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && candidate.signingInfo == null) {
+            @Suppress("DEPRECATION")
+            pm.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNATURES)?.let { candidate = it }
+        }
         val installed = pm.getPackageInfo(context.packageName, flags)
         if (candidate.packageName != context.packageName) {
             throw SecurityException("Ce fichier n'est pas Gulp : mise à jour refusée.")
@@ -268,7 +277,7 @@ class AppUpdater(private val context: Context, private val prefs: Prefs, private
     }
 
     private fun signers(info: PackageInfo): Set<String> {
-        val certificates = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val certificates = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && info.signingInfo != null) {
             info.signingInfo?.let { if (it.hasMultipleSigners()) it.apkContentsSigners else it.signingCertificateHistory }
         } else {
             @Suppress("DEPRECATION")

@@ -5,6 +5,9 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 
 ## Fonctionnalités
 
+- **Gulp est une boîte à outils** (depuis 1.8.0) : au lancement, la page d'accueil liste les outils, dans les trois
+  interfaces. Le premier est le **Téléchargeur vidéo** décrit ci-dessous ; les cartes « À venir » réservent la
+  place des suivants. Le logo en haut d'un outil (ou le bouton retour) ramène à l'accueil.
 - Trois onglets séparés, **YouTube**, **Instagram** et **Autres**, chacun avec son champ de lien (un lien collé
   dans le mauvais onglet est ouvert dans le bon) ; les **Réglages** s'ouvrent avec la roue crantée en haut à droite
   de chaque écran
@@ -47,8 +50,9 @@ ajoutez ces secrets au dépôt (Settings → Secrets and variables → Actions) 
 | `ANDROID_KEY_PASSWORD` | mot de passe de la clé |
 
 Créer une clé : `keytool -genkeypair -v -keystore release.jks -alias ytd -keyalg RSA -keysize 4096 -validity 36500`.
-Sans ces secrets, les builds de branche utilisent la clé de debug du CI (gardée en cache) et un tag de version
-échoue : une release est toujours signée avec la clé de release. Facultatif : la variable de dépôt
+Les secrets ne servent qu'aux tags de version : les builds de branche et de pull request sont toujours signés
+avec la clé de debug du CI (gardée en cache), pour que la clé de release ne soit jamais exposée à du code non
+publié. Sans ces secrets, un tag de version échoue : une release est toujours signée avec la clé de release. Facultatif : la variable de dépôt
 `ANDROID_SIGNER_SHA256` (empreinte SHA-256 du certificat des APK déjà installés) fait échouer une release signée
 avec une autre clé, que les téléphones refuseraient.
 
@@ -133,6 +137,9 @@ Limites :
 - yt-dlp isolé : `--ignore-config`, `--no-plugin-dirs` ; seuls les liens `https://` sont acceptés.
 - Aucune connexion à un compte (Instagram ou autre) : seuls les contenus publics sont lus.
 - Pas de sauvegarde Android des données de l'app (`allowBackup=false`).
+- Mise à jour de l'app : APK venant uniquement des releases de ce dépôt, empreinte SHA-256 annoncée par GitHub
+  obligatoire, même nom de paquet, version plus récente et même certificat de signature que l'app installée.
+  Seule la notification de Gulp (alias d'activité non exporté) peut lancer une mise à jour.
 
 ## Structure
 
@@ -141,7 +148,12 @@ android/app/src/main/java/com/powermaxv2/ytdownloader/
 ├── App.kt, MainActivity.kt   démarrage, liens partagés
 ├── core/                     moteur yt-dlp, file de téléchargements, Instagram, mises à jour, export Galerie
 └── ui/                       écrans Compose et composants animés
+    ├── hub/                  accueil et registre des outils (Tools.kt)
+    └── skin/                 les trois interfaces (classic/, paper/, terminal/)
 ```
+
+Ajouter un outil : une entrée dans `ToolRegistry.tools` (`ui/hub/Tools.kt`) avec son écran composable ; une
+entrée sans écran s'affiche comme carte « À venir ».
 
 Version Android : fichier `android/VERSION` (indépendant du `VERSION` de l'app macOS).
 
