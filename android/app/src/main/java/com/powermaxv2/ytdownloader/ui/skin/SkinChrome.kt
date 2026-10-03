@@ -1,10 +1,20 @@
 package com.powermaxv2.ytdownloader.ui.skin
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.powermaxv2.ytdownloader.core.AudioFormat
 import com.powermaxv2.ytdownloader.core.EngineState
+import com.powermaxv2.ytdownloader.core.MediaMode
 import com.powermaxv2.ytdownloader.core.Platform
+import com.powermaxv2.ytdownloader.core.QualityOption
+import com.powermaxv2.ytdownloader.core.Settings
 import com.powermaxv2.ytdownloader.core.Skin
+import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.LinkPane
 import com.powermaxv2.ytdownloader.ui.MainViewModel
@@ -42,13 +52,16 @@ fun SkinBackground(modifier: Modifier = Modifier) {
     }
 }
 
-/** Bottom navigation; [activeCount] = running downloads (badge), [pulse] grows each time a download is queued. */
+/**
+ * Bottom navigation; [activeCount] = running downloads (badge), [pulse] grows each time a download is queued.
+ * [bottomInset] is the navigation bar height: Classique and Papier float 12dp above it, Terminal sits flush and fills it.
+ */
 @Composable
-fun SkinBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
+fun SkinBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, bottomInset: Dp, modifier: Modifier = Modifier) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicBottomBar(tab, activeCount, pulse, onSelect, modifier)
-        Skin.PAPER -> PaperBottomBar(tab, activeCount, pulse, onSelect, modifier)
-        Skin.TERMINAL -> TerminalBottomBar(tab, activeCount, pulse, onSelect, modifier)
+        Skin.CLASSIC -> ClassicBottomBar(tab, activeCount, pulse, onSelect, modifier.padding(bottom = bottomInset + 12.dp))
+        Skin.PAPER -> PaperBottomBar(tab, activeCount, pulse, onSelect, modifier.padding(bottom = bottomInset + 12.dp))
+        Skin.TERMINAL -> TerminalBottomBar(tab, activeCount, pulse, onSelect, bottomInset, modifier)
     }
 }
 
@@ -65,10 +78,28 @@ fun SkinHeader(platform: Platform, engineState: EngineState, onSettings: () -> U
 /** Link field with its paste / analyse actions. */
 @Composable
 fun SkinLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
+    SkinLinkCard(
+        pane = pane,
+        enabled = enabled,
+        onPaste = { text -> vm.paste(pane, text) },
+        onAnalyze = { vm.analyze(pane) },
+        onReset = { vm.reset(pane) },
+    )
+}
+
+/** Stateless form of [SkinLinkCard] (also used by the screenshot tests). */
+@Composable
+fun SkinLinkCard(
+    pane: LinkPane,
+    enabled: Boolean,
+    onPaste: (String?) -> Unit,
+    onAnalyze: () -> Unit,
+    onReset: () -> Unit,
+) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicLinkCard(vm, pane, enabled)
-        Skin.PAPER -> PaperLinkCard(vm, pane, enabled)
-        Skin.TERMINAL -> TerminalLinkCard(vm, pane, enabled)
+        Skin.CLASSIC -> ClassicLinkCard(pane, enabled, onPaste, onAnalyze, onReset)
+        Skin.PAPER -> PaperLinkCard(pane, enabled, onPaste, onAnalyze, onReset)
+        Skin.TERMINAL -> TerminalLinkCard(pane, enabled, onPaste, onAnalyze, onReset)
     }
 }
 
@@ -85,10 +116,24 @@ fun SkinGuide(platform: Platform) {
 /** Single video result: thumbnail, mode, quality / format choice and the download button. */
 @Composable
 fun SkinVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
+    val settings by vm.prefs.settings.collectAsStateWithLifecycle()
+    SkinVideoCard(info, sourceUrl, settings) { mode, quality, container, audioFormat ->
+        vm.downloadVideo(info, sourceUrl, mode, quality, container, audioFormat)
+    }
+}
+
+/** Stateless form of [SkinVideoCard]: [settings] gives the default format choices (also used by the screenshot tests). */
+@Composable
+fun SkinVideoCard(
+    info: VideoInfo,
+    sourceUrl: String,
+    settings: Settings,
+    onDownload: (MediaMode, QualityOption?, VideoContainer, AudioFormat) -> Unit,
+) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicVideoCard(info, sourceUrl, vm)
-        Skin.PAPER -> PaperVideoCard(info, sourceUrl, vm)
-        Skin.TERMINAL -> TerminalVideoCard(info, sourceUrl, vm)
+        Skin.CLASSIC -> ClassicVideoCard(info, sourceUrl, settings, onDownload)
+        Skin.PAPER -> PaperVideoCard(info, sourceUrl, settings, onDownload)
+        Skin.TERMINAL -> TerminalVideoCard(info, sourceUrl, settings, onDownload)
     }
 }
 

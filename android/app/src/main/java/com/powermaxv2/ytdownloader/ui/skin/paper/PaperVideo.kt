@@ -74,6 +74,8 @@ import com.powermaxv2.ytdownloader.core.DownloadJob
 import com.powermaxv2.ytdownloader.core.Fmt
 import com.powermaxv2.ytdownloader.core.JobState
 import com.powermaxv2.ytdownloader.core.MediaMode
+import com.powermaxv2.ytdownloader.core.QualityOption
+import com.powermaxv2.ytdownloader.core.Settings
 import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.LocalAccent
@@ -340,9 +342,13 @@ private fun containerNote(container: VideoContainer) = when (container) {
 // MARK: - Single video
 
 @Composable
-fun PaperVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
+fun PaperVideoCard(
+    info: VideoInfo,
+    sourceUrl: String,
+    settings: Settings,
+    onDownload: (MediaMode, QualityOption?, VideoContainer, AudioFormat) -> Unit,
+) {
     val gate = LocalDownloadGate.current
-    val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val qualities = info.qualityOptions
     val hasVideo = qualities.isNotEmpty()
     var mode by remember(info) { mutableStateOf(if (hasVideo) MediaMode.VIDEO else MediaMode.AUDIO) }
@@ -430,7 +436,7 @@ fun PaperVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
             icon = Icons.Rounded.Download,
             subtitle = if (mode == MediaMode.VIDEO) "${quality?.label ?: "Max"} · ${container.title}" else "Audio · ${audioFormat.title}",
         ) {
-            gate { vm.downloadVideo(info, sourceUrl, mode, quality, container, audioFormat) }
+            gate { onDownload(mode, quality, container, audioFormat) }
         }
     }
 }

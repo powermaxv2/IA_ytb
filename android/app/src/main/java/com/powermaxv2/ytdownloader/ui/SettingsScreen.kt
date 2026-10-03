@@ -88,8 +88,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
         }
         UpdateBanner(vm)
 
-        GroupTitle("Interface", 0)
-        SkinPicker(settings.skin) { s -> vm.prefs.update { it.copy(skin = s) } }
+        SettingsInterfaceSection(settings.skin) { s -> vm.prefs.update { it.copy(skin = s) } }
 
         GroupTitle("Formats par défaut", 1)
         ListCard(1) {
@@ -352,6 +351,13 @@ private fun Bullet(text: String) {
 }
 
 // MARK: - Interface (skins)
+
+/** "Interface" group of the settings: title and skin picker (stateless, also used by the screenshot tests). */
+@Composable
+internal fun SettingsInterfaceSection(current: Skin, onSelect: (Skin) -> Unit) {
+    GroupTitle("Interface", 0)
+    SkinPicker(current, onSelect)
+}
 
 /** The three skins side by side, each drawn as a miniature of its own look. */
 @Composable

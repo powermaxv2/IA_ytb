@@ -35,17 +35,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.core.AudioFormat
 import com.powermaxv2.ytdownloader.core.Fmt
 import com.powermaxv2.ytdownloader.core.Links
 import com.powermaxv2.ytdownloader.core.MediaMode
 import com.powermaxv2.ytdownloader.core.Platform
+import com.powermaxv2.ytdownloader.core.QualityOption
+import com.powermaxv2.ytdownloader.core.Settings
 import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.ChoiceChips
 import com.powermaxv2.ytdownloader.ui.LocalDownloadGate
-import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.PrimaryButton
@@ -104,9 +104,13 @@ private fun HeroThumbnail(url: String?, duration: Double?, platform: Platform) {
 // MARK: - Single video (YouTube video, Instagram reel…)
 
 @Composable
-fun ClassicVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
+fun ClassicVideoCard(
+    info: VideoInfo,
+    sourceUrl: String,
+    settings: Settings,
+    onDownload: (MediaMode, QualityOption?, VideoContainer, AudioFormat) -> Unit,
+) {
     val gate = LocalDownloadGate.current
-    val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val qualities = info.qualityOptions
     val hasVideo = qualities.isNotEmpty()
     var mode by remember(info) { mutableStateOf(if (hasVideo) MediaMode.VIDEO else MediaMode.AUDIO) }
@@ -192,7 +196,7 @@ fun ClassicVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
             icon = Icons.Rounded.Download,
             subtitle = if (mode == MediaMode.VIDEO) "${quality?.label ?: "Max"} · ${container.title}" else "Audio · ${audioFormat.title}",
         ) {
-            gate { vm.downloadVideo(info, sourceUrl, mode, quality, container, audioFormat) }
+            gate { onDownload(mode, quality, container, audioFormat) }
         }
     }
 }

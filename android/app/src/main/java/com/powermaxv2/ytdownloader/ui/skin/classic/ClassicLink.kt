@@ -74,7 +74,6 @@ import com.powermaxv2.ytdownloader.ui.FeatureChip
 import com.powermaxv2.ytdownloader.ui.IconCircleButton
 import com.powermaxv2.ytdownloader.ui.LinkPane
 import com.powermaxv2.ytdownloader.ui.LocalAccent
-import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.Phase
 import com.powermaxv2.ytdownloader.ui.PrimaryButton
@@ -97,7 +96,13 @@ internal fun linkPlaceholder(platform: Platform) = when (platform) {
  * "Analyser" once something is typed, with a paste button next to it.
  */
 @Composable
-fun ClassicLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
+fun ClassicLinkCard(
+    pane: LinkPane,
+    enabled: Boolean,
+    onPaste: (String?) -> Unit,
+    onAnalyze: () -> Unit,
+    onReset: () -> Unit,
+) {
     val accent = LocalAccent.current
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
@@ -109,7 +114,7 @@ fun ClassicLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
     val fieldShape = RoundedCornerShape(18.dp)
     val paste = {
         focus.clearFocus()
-        vm.paste(pane, clipboard.getText()?.text)
+        onPaste(clipboard.getText()?.text)
     }
 
     Column(
@@ -140,7 +145,7 @@ fun ClassicLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(onGo = {
                     focus.clearFocus()
-                    vm.analyze(pane)
+                    onAnalyze()
                 }),
                 modifier = Modifier
                     .weight(1f)
@@ -165,7 +170,7 @@ fun ClassicLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                 exit = scaleOut() + fadeOut(),
             ) {
                 IconCircleButton(Icons.Rounded.Close, Modifier.padding(start = 6.dp), size = 32.dp, contentDescription = "Effacer") {
-                    vm.reset(pane)
+                    onReset()
                 }
             }
         }
@@ -193,7 +198,7 @@ fun ClassicLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                         loading = loading,
                     ) {
                         focus.clearFocus()
-                        vm.analyze(pane)
+                        onAnalyze()
                     }
                 }
             }

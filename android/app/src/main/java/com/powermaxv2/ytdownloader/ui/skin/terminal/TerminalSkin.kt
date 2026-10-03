@@ -84,7 +84,6 @@ import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.LinkPane
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.LocalHaptics
-import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.Phase
 import com.powermaxv2.ytdownloader.ui.Tab
@@ -337,9 +336,19 @@ private val terminalTabs = listOf(
     Tab.DOWNLOADS to "FICHIERS",
 )
 
-/** Flat full-width bar; a lighter cell and a 2dp accent top line slide to the selected tab. */
+/**
+ * Flat full-width bar flush with the bottom edge (its fill runs under the navigation bar, [bottomInset]);
+ * a lighter cell and a 2dp accent top line slide to the selected tab.
+ */
 @Composable
-fun TerminalBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
+fun TerminalBottomBar(
+    tab: Tab,
+    activeCount: Int,
+    pulse: Int,
+    onSelect: (Tab) -> Unit,
+    bottomInset: Dp,
+    modifier: Modifier = Modifier,
+) {
     val accent = LocalAccent.current.start
     val view = LocalView.current
     val haptics = LocalHaptics.current
@@ -355,8 +364,9 @@ fun TerminalBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) ->
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(60.dp)
-            .background(Palette.NavBar),
+            .background(Palette.NavBar)
+            .padding(bottom = bottomInset)
+            .height(60.dp),
     ) {
         val segment = maxWidth / terminalTabs.size
         val offset by animateDpAsState(segment * index.coerceAtLeast(0), spring(dampingRatio = 0.8f, stiffness = 420f), label = "termNavLine")
@@ -438,7 +448,13 @@ fun TerminalBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) ->
 
 /** "> LIEN" panel: "$" prompt field with a blinking block cursor, then terminal buttons. */
 @Composable
-fun TerminalLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
+fun TerminalLinkCard(
+    pane: LinkPane,
+    enabled: Boolean,
+    onPaste: (String?) -> Unit,
+    onAnalyze: () -> Unit,
+    onReset: () -> Unit,
+) {
     val accent = LocalAccent.current.start
     val tokens = LocalTokens.current
     val clipboard = LocalClipboardManager.current
@@ -450,7 +466,7 @@ fun TerminalLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
     val fieldShape = RoundedCornerShape(tokens.fieldRadius)
     val paste = {
         focus.clearFocus()
-        vm.paste(pane, clipboard.getText()?.text)
+        onPaste(clipboard.getText()?.text)
     }
 
     Column(
@@ -482,7 +498,7 @@ fun TerminalLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(onGo = {
                     focus.clearFocus()
-                    vm.analyze(pane)
+                    onAnalyze()
                 }),
                 modifier = Modifier
                     .weight(1f)
@@ -517,7 +533,7 @@ fun TerminalLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .padding(start = 6.dp)
-                        .bounceClick(pressedScale = 0.85f) { vm.reset(pane) }
+                        .bounceClick(pressedScale = 0.85f) { onReset() }
                         .padding(horizontal = 4.dp, vertical = 6.dp),
                 )
             }
@@ -534,7 +550,7 @@ fun TerminalLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
                     TermButton("[ COLLER ]", Modifier.weight(1f), solid = false, onClick = paste)
                     TermButton("ANALYSER ↵", Modifier.weight(1.4f), enabled = enabled, loading = loading) {
                         focus.clearFocus()
-                        vm.analyze(pane)
+                        onAnalyze()
                     }
                 }
             }

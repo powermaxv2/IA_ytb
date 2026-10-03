@@ -86,10 +86,22 @@ import kotlin.math.min
 
 // MARK: - Surfaces
 
-/** Card surface: solid fill and a hairline outline, in the colours and radius of the current skin. */
+/**
+ * Card surface in the colours and radius of the current skin: solid fill plus a hairline outline, or, on skins
+ * with a `cardShadow` token (Papier), a soft shadow under top-level cards and no outline.
+ */
 @Composable
-fun Modifier.panel(shape: Shape = RoundedCornerShape(LocalTokens.current.cardRadius), color: Color = Palette.Surface): Modifier =
-    this.clip(shape).background(color).border(1.dp, Palette.Stroke, shape)
+fun Modifier.panel(shape: Shape = RoundedCornerShape(LocalTokens.current.cardRadius), color: Color = Palette.Surface): Modifier {
+    val tokens = LocalTokens.current
+    val elevated = tokens.cardShadow > 0.dp && color == tokens.surface
+    val shaded = if (elevated) {
+        this.shadow(tokens.cardShadow, shape, ambientColor = tokens.cardShadowColor, spotColor = tokens.cardShadowColor)
+    } else {
+        this
+    }
+    val filled = shaded.clip(shape).background(color)
+    return if (tokens.cardBorder) filled.border(1.dp, tokens.stroke, shape) else filled
+}
 
 /** Title of a block inside a card ("Qualité", "Format"…). */
 @Composable

@@ -67,6 +67,7 @@ import com.powermaxv2.ytdownloader.core.Fmt
 import com.powermaxv2.ytdownloader.core.JobState
 import com.powermaxv2.ytdownloader.core.MediaMode
 import com.powermaxv2.ytdownloader.core.QualityOption
+import com.powermaxv2.ytdownloader.core.Settings
 import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.LocalAccent
@@ -322,9 +323,13 @@ private fun TermContainers(selected: VideoContainer, onSelect: (VideoContainer) 
 // MARK: - Single video
 
 @Composable
-fun TerminalVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
+fun TerminalVideoCard(
+    info: VideoInfo,
+    sourceUrl: String,
+    settings: Settings,
+    onDownload: (MediaMode, QualityOption?, VideoContainer, AudioFormat) -> Unit,
+) {
     val gate = LocalDownloadGate.current
-    val settings by vm.prefs.settings.collectAsStateWithLifecycle()
     val qualities = info.qualityOptions
     val hasVideo = qualities.isNotEmpty()
     var mode by remember(info) { mutableStateOf(if (hasVideo) MediaMode.VIDEO else MediaMode.AUDIO) }
@@ -411,7 +416,7 @@ fun TerminalVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
                 "AUDIO · ${audioFormat.title.uppercase()}"
             },
         ) {
-            gate { vm.downloadVideo(info, sourceUrl, mode, quality, container, audioFormat) }
+            gate { onDownload(mode, quality, container, audioFormat) }
         }
     }
 }

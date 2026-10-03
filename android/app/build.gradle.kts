@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    // JVM screenshot tests (Robolectric): ./gradlew recordRoborazziDebug writes build/outputs/roborazzi/*.png
+    id("io.github.takahirom.roborazzi")
 }
 
 // Android has its own version number (android/VERSION), independent from the macOS app.
@@ -70,6 +72,12 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         // Python, FFmpeg and QuickJS are shipped as native libraries and must be extracted on install.
         jniLibs { useLegacyPackaging = true }
@@ -95,4 +103,14 @@ dependencies {
     // yt-dlp + Python + FFmpeg + QuickJS packaged for Android.
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
+
+    // Screenshot tests of the three interfaces (src/test, Robolectric + Roborazzi).
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.32.2")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.32.2")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-junit-rule:1.32.2")
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

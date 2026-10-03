@@ -119,6 +119,20 @@ jobs:
           path: android/dist/
           if-no-files-found: error
 
+      # Screenshots of the three interfaces (JVM tests, Robolectric + Roborazzi), after the APKs so a failure
+      # here never hides them.
+      - name: Record screenshots
+        if: env.IS_RELEASE != 'true'
+        run: ./gradlew --no-daemon --stacktrace recordRoborazziDebug
+
+      - name: Upload screenshots
+        if: always() && env.IS_RELEASE != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: android/app/build/outputs/roborazzi/
+          if-no-files-found: warn
+
       # Release notes: android/release-notes/X.Y.Z.md when it exists (shown in the app and the notification).
       - name: Release notes
         if: env.IS_RELEASE == 'true'

@@ -161,6 +161,8 @@ fun SuccessBurst(play: Boolean, color: Color, modifier: Modifier = Modifier) {
             progress.animateTo(1f, tween(900, easing = FastOutSlowInEasing))
         }
     }
+    // Every other particle in the text colour: white on the dark skins, ink on Papier.
+    val secondary = Palette.TextPrimary
     Canvas(modifier) {
         val p = progress.value
         if (p >= 1f) return@Canvas
@@ -174,7 +176,7 @@ fun SuccessBurst(play: Boolean, color: Color, modifier: Modifier = Modifier) {
             val angle = i * (2 * PI / 8) + p * 0.6
             val distance = maxRadius * (0.35f + 0.7f * p)
             val particle = center + Offset((cos(angle) * distance).toFloat(), (sin(angle) * distance).toFloat())
-            val particleColor = if (i % 2 == 0) color else Color.White
+            val particleColor = if (i % 2 == 0) color else secondary
             drawCircle(particleColor.copy(alpha = 1f - p), radius = 2.4.dp.toPx() * (1f - p * 0.6f), center = particle)
         }
     }
