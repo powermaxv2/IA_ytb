@@ -80,26 +80,36 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.powermaxv2.ytdownloader.core.Platform
+import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import kotlin.math.max
 import kotlin.math.min
 
 // MARK: - Surfaces
 
-/** Card surface: solid dark fill and a hairline outline. */
-fun Modifier.panel(shape: Shape = RoundedCornerShape(24.dp), color: Color = Palette.Surface): Modifier =
+/** Card surface: solid fill and a hairline outline, in the colours and radius of the current skin. */
+@Composable
+fun Modifier.panel(shape: Shape = RoundedCornerShape(LocalTokens.current.cardRadius), color: Color = Palette.Surface): Modifier =
     this.clip(shape).background(color).border(1.dp, Palette.Stroke, shape)
 
 /** Title of a block inside a card ("Qualité", "Format"…). */
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier = modifier, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+    Text(text, modifier = modifier, color = Palette.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
 }
 
 /** Big screen title with an optional line under it. */
 @Composable
 fun ScreenTitle(title: String, subtitle: String?, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text(title, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp, maxLines = 1)
+        Text(
+            title,
+            color = Palette.TextPrimary,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = LocalTokens.current.display,
+            letterSpacing = (-0.3).sp,
+            maxLines = 1,
+        )
         subtitle?.let {
             Spacer(Modifier.height(3.dp))
             Text(it, color = Palette.TextSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -142,7 +152,8 @@ fun PrimaryButton(
     val alpha by animateFloatAsState(if (enabled) 1f else 0.4f, label = "alpha")
     val view = LocalView.current
     val haptics = LocalHaptics.current
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(LocalTokens.current.buttonRadius)
+    val onAccent = Palette.OnAccent
     Box(
         modifier
             .graphicsLayer {
@@ -167,14 +178,14 @@ fun PrimaryButton(
             label = "buttonContent",
         ) { isLoading ->
             if (isLoading) {
-                CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp)
+                CircularProgressIndicator(Modifier.size(22.dp), color = onAccent, strokeWidth = 2.5.dp)
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        icon?.let { Icon(it, contentDescription = null, tint = Color.White, modifier = Modifier.size(21.dp)) }
+                        icon?.let { Icon(it, contentDescription = null, tint = onAccent, modifier = Modifier.size(21.dp)) }
                         Text(
                             text,
-                            color = Color.White,
+                            color = onAccent,
                             fontWeight = FontWeight.Medium,
                             fontSize = 16.sp,
                             maxLines = 1,
@@ -182,7 +193,7 @@ fun PrimaryButton(
                         )
                     }
                     subtitle?.let {
-                        Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(it, color = onAccent.copy(alpha = onAccent.alpha * 0.85f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -198,7 +209,7 @@ fun TonalButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     compact: Boolean = false,
-    tint: Color = Color.White,
+    tint: Color = Palette.TextPrimary,
     loading: Boolean = false,
     onClick: () -> Unit,
 ) {
@@ -229,7 +240,7 @@ fun IconCircleButton(
     modifier: Modifier = Modifier,
     size: Dp = 42.dp,
     shape: Shape = CircleShape,
-    tint: Color = Color.White.copy(alpha = 0.8f),
+    tint: Color = Palette.TextPrimary.copy(alpha = 0.8f),
     contentDescription: String? = null,
     onClick: () -> Unit,
 ) {
@@ -280,7 +291,7 @@ fun <T> SegmentedControl(
         Row(Modifier.fillMaxSize()) {
             options.forEach { option ->
                 val isSelected = option == selected
-                val color by animateColorAsState(if (isSelected) Color.White else Palette.TextSecondary, label = "segmentColor")
+                val color by animateColorAsState(if (isSelected) Palette.OnAccent else Palette.TextSecondary, label = "segmentColor")
                 Row(
                     Modifier
                         .weight(1f)
@@ -331,7 +342,7 @@ fun SelectableTile(
     ) {
         // The title is never squeezed: only the spacer stretches, so "2160p" stays whole next to the check.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+            Text(title, color = Palette.TextPrimary, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
             Spacer(Modifier.weight(1f))
             CheckDot(selected)
         }
@@ -360,7 +371,7 @@ private fun CheckDot(visible: Boolean) {
             .background(LocalAccent.current.start),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        Icon(Icons.Rounded.Check, contentDescription = null, tint = Palette.OnAccent, modifier = Modifier.size(14.dp))
     }
 }
 
@@ -368,13 +379,13 @@ private fun CheckDot(visible: Boolean) {
 private fun Pill(text: String, selected: Boolean) {
     Text(
         text,
-        color = if (selected) Color.White else Palette.TextSecondary,
+        color = if (selected) Palette.TextPrimary else Palette.TextSecondary,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         modifier = Modifier
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = if (selected) 0.16f else 0.08f))
+            .background(Palette.TextPrimary.copy(alpha = if (selected) 0.16f else 0.08f))
             .padding(horizontal = 7.dp, vertical = 3.dp),
     )
 }
@@ -383,7 +394,7 @@ private fun Pill(text: String, selected: Boolean) {
 fun MaxBadge() {
     Text(
         "MAX",
-        color = Color.White,
+        color = Palette.OnAccent,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
@@ -425,7 +436,7 @@ private fun ChoiceChip(text: String, selected: Boolean, onClick: () -> Unit) {
     ) {
         Text(
             text,
-            color = if (selected) Color.White else Palette.TextSecondary,
+            color = if (selected) Palette.TextPrimary else Palette.TextSecondary,
             fontSize = 13.5.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
@@ -469,10 +480,12 @@ fun AnimatedCheckbox(checked: Boolean, modifier: Modifier = Modifier) {
     val progress by animateFloatAsState(
         if (checked) 1f else 0f, spring(dampingRatio = 0.6f, stiffness = 480f), label = "check",
     )
+    val ring = Palette.TextPrimary
+    val tick = Palette.OnAccent
     Canvas(modifier.size(24.dp)) {
         val radius = size.minDimension / 2
         val p = progress.coerceIn(0f, 1f)
-        drawCircle(Color.White.copy(alpha = 0.35f * (1f - p)), radius - 1.dp.toPx(), style = Stroke(1.5.dp.toPx()))
+        drawCircle(ring.copy(alpha = 0.35f * (1f - p)), radius - 1.dp.toPx(), style = Stroke(1.5.dp.toPx()))
         if (progress > 0.01f) {
             drawCircle(accent.start, radius * min(progress, 1.05f))
             val path = Path().apply {
@@ -484,7 +497,7 @@ fun AnimatedCheckbox(checked: Boolean, modifier: Modifier = Modifier) {
             measure.setPath(path, false)
             val segment = Path()
             measure.getSegment(0f, measure.length * p, segment, true)
-            drawPath(segment, Color.White, style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(segment, tick, style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
     }
 }
@@ -526,7 +539,7 @@ fun StepRow(number: Int, text: AnnotatedString, modifier: Modifier = Modifier) {
         ) {
             Text(number.toString(), color = accent.start, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
-        Text(text, color = Color.White, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 3.dp))
+        Text(text, color = Palette.TextPrimary, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 3.dp))
     }
 }
 
@@ -543,7 +556,7 @@ fun NoticeBanner(icon: ImageVector, text: String, color: Color, modifier: Modifi
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        Text(text, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(text, color = Palette.TextPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
         onDismiss?.let { IconCircleButton(Icons.Rounded.Close, size = 30.dp, onClick = it) }
     }
 }
@@ -558,6 +571,7 @@ fun ProgressBar(progress: Float, modifier: Modifier = Modifier, height: Dp = 6.d
     val animated by animateFloatAsState(
         progress.coerceIn(0f, 1f), tween(450, easing = FastOutSlowInEasing), label = "progress",
     )
+    val track = Palette.TextPrimary.copy(alpha = 0.08f)
     val transition = rememberInfiniteTransition(label = "progressAnim")
     val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(1300, easing = LinearEasing)), label = "phase")
     Canvas(
@@ -566,7 +580,7 @@ fun ProgressBar(progress: Float, modifier: Modifier = Modifier, height: Dp = 6.d
             .height(height),
     ) {
         val radius = CornerRadius(size.height / 2)
-        drawRoundRect(Color.White.copy(alpha = 0.08f), cornerRadius = radius)
+        drawRoundRect(track, cornerRadius = radius)
         val brush = Brush.horizontalGradient(listOf(accent.start, accent.end))
         if (indeterminate) {
             val w = size.width * 0.32f
@@ -588,9 +602,11 @@ fun ProgressBar(progress: Float, modifier: Modifier = Modifier, height: Dp = 6.d
 fun AnimatedCheck(modifier: Modifier = Modifier, animate: Boolean = true) {
     val progress = remember { Animatable(if (animate) 0f else 1f) }
     LaunchedEffect(Unit) { progress.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 220f)) }
+    val disc = Palette.Success
+    val tick = Palette.Background
     Canvas(modifier) {
         val p = progress.value
-        drawCircle(Palette.Success, radius = size.minDimension / 2 * min(p, 1.04f))
+        drawCircle(disc, radius = size.minDimension / 2 * min(p, 1.04f))
         val path = Path().apply {
             moveTo(size.width * 0.29f, size.height * 0.52f)
             lineTo(size.width * 0.44f, size.height * 0.66f)
@@ -600,13 +616,13 @@ fun AnimatedCheck(modifier: Modifier = Modifier, animate: Boolean = true) {
         measure.setPath(path, false)
         val segment = Path()
         measure.getSegment(0f, measure.length * p.coerceIn(0f, 1f), segment, true)
-        drawPath(segment, Palette.Background, style = Stroke(2.4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(segment, tick, style = Stroke(2.4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }
 
 /** Number that rolls up/down when it changes. */
 @Composable
-fun RollingNumber(value: Int, modifier: Modifier = Modifier, color: Color = Color.White) {
+fun RollingNumber(value: Int, modifier: Modifier = Modifier, color: Color = Palette.OnAccent) {
     AnimatedContent(
         targetState = value,
         transitionSpec = {

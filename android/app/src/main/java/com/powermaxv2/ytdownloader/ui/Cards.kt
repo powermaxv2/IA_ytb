@@ -71,7 +71,7 @@ import com.powermaxv2.ytdownloader.core.PlaylistQuality
 import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 
-private fun modeIcon(mode: MediaMode) = if (mode == MediaMode.VIDEO) Icons.Rounded.Movie else Icons.Rounded.MusicNote
+internal fun modeIcon(mode: MediaMode) = if (mode == MediaMode.VIDEO) Icons.Rounded.Movie else Icons.Rounded.MusicNote
 
 @Composable
 fun RemoteImage(url: String?, modifier: Modifier = Modifier) {
@@ -84,150 +84,12 @@ fun RemoteImage(url: String?, modifier: Modifier = Modifier) {
     )
 }
 
-/** Thumbnail with the platform logo and the duration. */
-@Composable
-private fun HeroThumbnail(url: String?, duration: Double?, platform: Platform) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Palette.Surface2),
-    ) {
-        RemoteImage(url, Modifier.fillMaxSize())
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.45f))),
-        )
-        Box(
-            Modifier
-                .align(Alignment.TopStart)
-                .padding(10.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color.Black.copy(alpha = 0.55f))
-                .padding(6.dp),
-        ) {
-            PlatformGlyph(platform, Modifier.size(20.dp))
-        }
-        duration?.let {
-            Text(
-                Fmt.duration(it),
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(10.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.Black.copy(alpha = 0.65f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-            )
-        }
-    }
-}
-
 /** Card holding an analysis result. */
-private fun Modifier.resultCard(): Modifier = this
+@Composable
+internal fun Modifier.resultCard(): Modifier = this
     .fillMaxWidth()
     .panel()
     .padding(16.dp)
-
-// MARK: - Single video (YouTube video, Instagram reel…)
-
-@Composable
-fun VideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
-    val gate = LocalDownloadGate.current
-    val settings by vm.prefs.settings.collectAsStateWithLifecycle()
-    val qualities = info.qualityOptions
-    val hasVideo = qualities.isNotEmpty()
-    var mode by remember(info) { mutableStateOf(if (hasVideo) MediaMode.VIDEO else MediaMode.AUDIO) }
-    var quality by remember(info) { mutableStateOf(qualities.firstOrNull()) }
-    var container by remember(info) { mutableStateOf(settings.container) }
-    var audioFormat by remember(info) { mutableStateOf(settings.audioFormat) }
-    val platform = Links.platform(sourceUrl)
-
-    Column(Modifier.resultCard(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        HeroThumbnail(info.thumbnail, info.duration, platform)
-        Column(Modifier.staggeredEntrance(0, key = info.id), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(
-                info.title,
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 23.sp,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val meta = listOfNotNull(info.uploader, info.viewCount?.let { Fmt.views(it) }).joinToString(" · ")
-            if (meta.isNotEmpty()) Text(meta, color = Palette.TextSecondary, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (hasVideo) {
-            SegmentedControl(
-                options = MediaMode.entries,
-                selected = mode,
-                label = { it.title },
-                icon = ::modeIcon,
-                onSelect = { mode = it },
-                modifier = Modifier.staggeredEntrance(1, key = info.id),
-            )
-        }
-        AnimatedContent(
-            targetState = mode,
-            transitionSpec = {
-                val forward = targetState.ordinal > initialState.ordinal
-                (slideInHorizontally(spring(dampingRatio = 0.9f, stiffness = 380f)) { if (forward) it / 4 else -it / 4 } + fadeIn()) togetherWith
-                    (slideOutHorizontally(tween(180)) { if (forward) -it / 4 else it / 4 } + fadeOut(tween(140)))
-            },
-            label = "mode",
-        ) { current ->
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (current == MediaMode.VIDEO) {
-                    SectionTitle("Qualité")
-                    TileGrid(qualities, columns = 2) { index, option, cell ->
-                        SelectableTile(
-                            title = option.label,
-                            badge = option.badge,
-                            detail = option.detail,
-                            selected = quality == option,
-                            highlight = index == 0 && qualities.size > 1,
-                            onClick = { quality = option },
-                            modifier = cell.staggeredEntrance(index, key = info.id to "video"),
-                        )
-                    }
-                    SectionTitle("Format", Modifier.padding(top = 2.dp))
-                    ChoiceChips(VideoContainer.entries, container, { it.title }, { container = it })
-                    AnimatedContent(targetState = container, label = "containerInfo") {
-                        Text(it.subtitle, color = Palette.TextTertiary, fontSize = 12.5.sp)
-                    }
-                } else {
-                    SectionTitle("Format audio")
-                    val audioSize = info.audioEstimatedSize
-                    TileGrid(AudioFormat.entries, columns = 2) { index, format, cell ->
-                        SelectableTile(
-                            title = format.title,
-                            badge = format.badge,
-                            detail = format.subtitle + (audioSize?.let { " · ~" + Fmt.bytes(it) } ?: ""),
-                            selected = audioFormat == format,
-                            onClick = { audioFormat = format },
-                            modifier = cell.staggeredEntrance(index, key = info.id to "audio"),
-                        )
-                    }
-                }
-            }
-        }
-        PrimaryButton(
-            "Télécharger",
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            icon = Icons.Rounded.Download,
-            subtitle = if (mode == MediaMode.VIDEO) "${quality?.label ?: "Max"} · ${container.title}" else "Audio · ${audioFormat.title}",
-        ) {
-            gate { vm.downloadVideo(info, sourceUrl, mode, quality, container, audioFormat) }
-        }
-    }
-}
 
 // MARK: - Playlists and carousels of videos
 
@@ -254,7 +116,7 @@ fun PlaylistCard(playlist: PlaylistInfo, vm: MainViewModel) {
             IconBadge(Icons.Rounded.VideoLibrary, size = 48.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(playlist.title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(playlist.title, color = Palette.TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     listOfNotNull("${playlist.entries.size} vidéos", playlist.uploader).joinToString(" · "),
                     color = Palette.TextSecondary,
@@ -368,7 +230,7 @@ private fun PlaylistRow(entry: PlaylistEntry, checked: Boolean, modifier: Modifi
         }
         Text(
             entry.title,
-            color = Color.White,
+            color = Palette.TextPrimary,
             fontSize = 13.5.sp,
             lineHeight = 18.sp,
             maxLines = 2,
@@ -399,7 +261,7 @@ fun PhotosCard(post: InstagramPost, vm: MainViewModel) {
             Column(Modifier.weight(1f)) {
                 Text(
                     post.owner?.let { "@$it" } ?: "Instagram",
-                    color = Color.White,
+                    color = Palette.TextPrimary,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,

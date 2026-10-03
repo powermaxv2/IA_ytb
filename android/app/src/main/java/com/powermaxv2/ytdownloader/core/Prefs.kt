@@ -5,6 +5,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** Selectable look of the whole app (Réglages → Interface). */
+enum class Skin(val title: String, val subtitle: String) {
+    CLASSIC("Classique", "Sombre, accent par onglet"),
+    PAPER("Papier", "Clair, typographie magazine"),
+    TERMINAL("Terminal", "Console vert fluo"),
+}
+
 data class Settings(
     val container: VideoContainer = VideoContainer.MP4,
     val audioFormat: AudioFormat = AudioFormat.M4A,
@@ -17,6 +24,7 @@ data class Settings(
     val autoUpdateYtDlp: Boolean = true,
     val haptics: Boolean = true,
     val autoCheckAppUpdates: Boolean = true,
+    val skin: Skin = Skin.CLASSIC,
 )
 
 class Prefs(context: Context) {
@@ -39,6 +47,7 @@ class Prefs(context: Context) {
             .putBoolean("autoUpdateYtDlp", next.autoUpdateYtDlp)
             .putBoolean("haptics", next.haptics)
             .putBoolean("autoCheckAppUpdates", next.autoCheckAppUpdates)
+            .putString("skin", next.skin.name)
             .apply()
     }
 
@@ -56,6 +65,7 @@ class Prefs(context: Context) {
             autoUpdateYtDlp = sp.getBoolean("autoUpdateYtDlp", d.autoUpdateYtDlp),
             haptics = sp.getBoolean("haptics", d.haptics),
             autoCheckAppUpdates = sp.getBoolean("autoCheckAppUpdates", d.autoCheckAppUpdates),
+            skin = enumOr(sp.getString("skin", null), d.skin),
         )
     }
 

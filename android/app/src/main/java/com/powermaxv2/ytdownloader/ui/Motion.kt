@@ -17,7 +17,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
@@ -48,27 +47,6 @@ val LocalDownloadGate = staticCompositionLocalOf<(() -> Unit) -> Unit> { { actio
 
 fun View.tick(enabled: Boolean) {
     if (enabled) performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-}
-
-// MARK: - Background
-
-/** Plain dark background with a soft glow of the accent colour behind the screen title. */
-@Composable
-fun ScreenBackground(modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
-    Canvas(modifier.fillMaxSize()) {
-        drawRect(Palette.Background)
-        val center = Offset(size.width / 2, -size.width * 0.25f)
-        val radius = size.width * 1.15f
-        drawRect(Brush.radialGradient(listOf(accent.start.copy(alpha = 0.26f), Color.Transparent), center, radius))
-        drawRect(
-            Brush.radialGradient(
-                listOf(accent.end.copy(alpha = 0.10f), Color.Transparent),
-                Offset(size.width, size.height * 0.08f),
-                size.width * 0.7f,
-            ),
-        )
-    }
 }
 
 // MARK: - Modifiers
@@ -149,12 +127,13 @@ fun Modifier.pulsing(min: Float = 0.94f, max: Float = 1.06f, periodMs: Int = 140
 fun Modifier.shimmer(): Modifier {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val x by transition.animateFloat(-1f, 2f, infiniteRepeatable(tween(1500, easing = LinearEasing)), label = "shimmerX")
+    val highlight = Palette.TextPrimary.copy(alpha = 0.07f)
     return drawWithContent {
         drawContent()
         val w = size.width
         drawRect(
             Brush.linearGradient(
-                listOf(Color.Transparent, Color.White.copy(alpha = 0.07f), Color.Transparent),
+                listOf(Color.Transparent, highlight, Color.Transparent),
                 start = Offset(w * x - w * 0.4f, 0f),
                 end = Offset(w * x, size.height),
             ),

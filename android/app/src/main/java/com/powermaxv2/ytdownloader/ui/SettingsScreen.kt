@@ -1,6 +1,20 @@
 package com.powermaxv2.ytdownloader.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.style.TextAlign
+import com.powermaxv2.ytdownloader.core.Skin
+import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
+import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -74,8 +88,11 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
         }
         UpdateBanner(vm)
 
-        GroupTitle("Formats par défaut", 0)
-        ListCard(0) {
+        GroupTitle("Interface", 0)
+        SkinPicker(settings.skin) { s -> vm.prefs.update { it.copy(skin = s) } }
+
+        GroupTitle("Formats par défaut", 1)
+        ListCard(1) {
             ChoiceRow(Icons.Rounded.Movie, "Vidéo", settings.container.subtitle) {
                 ChoiceChips(VideoContainer.entries, settings.container, { it.title }, { c -> vm.prefs.update { it.copy(container = c) } })
             }
@@ -85,8 +102,8 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             }
         }
 
-        GroupTitle("Fichiers téléchargés", 1)
-        ListCard(1) {
+        GroupTitle("Fichiers téléchargés", 2)
+        ListCard(2) {
             SwitchRow("Miniature dans le fichier", "Pochette visible dans la Galerie et les lecteurs", settings.embedThumbnail) { v ->
                 vm.prefs.update { it.copy(embedThumbnail = v) }
             }
@@ -117,7 +134,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
                         value = settings.subtitleLangs,
                         onValueChange = { v -> vm.prefs.update { it.copy(subtitleLangs = v.take(40)) } },
                         singleLine = true,
-                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                        textStyle = TextStyle(color = Palette.TextPrimary, fontSize = 15.sp, fontFamily = LocalTokens.current.body),
                         cursorBrush = SolidColor(LocalAccent.current.start),
                         modifier = Modifier.weight(1f),
                     )
@@ -125,15 +142,15 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             }
         }
 
-        GroupTitle("Application", 2)
-        ListCard(2) {
+        GroupTitle("Application", 3)
+        ListCard(3) {
             SwitchRow("Notification à la fin", null, settings.notify) { v -> vm.prefs.update { it.copy(notify = v) } }
             RowDivider()
             SwitchRow("Vibrations", "Petit retour quand vous touchez un bouton", settings.haptics) { v -> vm.prefs.update { it.copy(haptics = v) } }
         }
 
-        GroupTitle("Moteur yt-dlp", 3)
-        ListCard(3) {
+        GroupTitle("Moteur yt-dlp", 4)
+        ListCard(4) {
             ValueRow("Version installée", version ?: "…")
             RowDivider()
             SwitchRow("Mise à jour automatique", "Toutes les 12 h, fichier vérifié avant l'installation", settings.autoUpdateYtDlp) { v ->
@@ -147,8 +164,8 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
 
-        GroupTitle("Mises à jour de l'app", 4)
-        ListCard(4) {
+        GroupTitle("Mises à jour de l'app", 5)
+        ListCard(5) {
             ValueRow("Version installée", BuildConfig.VERSION_NAME)
             RowDivider()
             SwitchRow("Chercher les nouvelles versions", "Une notification quand une version sort", settings.autoCheckAppUpdates, vm::setAutoCheckAppUpdates)
@@ -160,8 +177,8 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             )
         }
 
-        GroupTitle("Où sont les fichiers", 5)
-        ListCard(5) {
+        GroupTitle("Où sont les fichiers", 6)
+        ListCard(6) {
             ValueRow("Vidéos", "Films › ${MediaExporter.FOLDER}", Icons.Rounded.Movie)
             RowDivider()
             ValueRow("Musique", "Musique › ${MediaExporter.FOLDER}", Icons.Rounded.MusicNote)
@@ -169,8 +186,8 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             ValueRow("Photos", "Images › ${MediaExporter.FOLDER}", Icons.Rounded.Image)
         }
 
-        GroupTitle("Sécurité", 6)
-        ListCard(6) {
+        GroupTitle("Sécurité", 7)
+        ListCard(7) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
                     "Aucune connexion à un compte (Instagram ou autre) : l'app ne lit que les contenus publics.",
@@ -183,10 +200,10 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             }
         }
 
-        GroupTitle("À propos", 7)
-        ListCard(7) {
+        GroupTitle("À propos", 8)
+        ListCard(8) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Color.White, fontSize = 15.sp)
+                Text("YT Downloader ${BuildConfig.VERSION_NAME} pour Android", color = Palette.TextPrimary, fontSize = 15.sp)
                 Text(
                     "Téléchargez uniquement des contenus dont vous détenez les droits ou dont le téléchargement est autorisé, " +
                         "et respectez les conditions d'utilisation de YouTube, d'Instagram et des autres sites.",
@@ -246,7 +263,7 @@ private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChan
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 15.sp)
+            Text(title, color = Palette.TextPrimary, fontSize = 15.sp)
             subtitle?.let { Text(it, color = Palette.TextTertiary, fontSize = 12.5.sp, lineHeight = 16.sp) }
         }
         Spacer(Modifier.width(12.dp))
@@ -254,12 +271,12 @@ private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChan
             checked = checked,
             onCheckedChange = onChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
+                checkedThumbColor = Palette.OnAccent,
                 checkedTrackColor = accent.start,
                 checkedBorderColor = accent.start,
                 uncheckedThumbColor = Palette.TextSecondary,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.06f),
-                uncheckedBorderColor = Color.White.copy(alpha = 0.18f),
+                uncheckedTrackColor = Palette.TextPrimary.copy(alpha = 0.06f),
+                uncheckedBorderColor = Palette.TextPrimary.copy(alpha = 0.18f),
             ),
         )
     }
@@ -277,7 +294,7 @@ private fun ValueRow(title: String, value: String, icon: ImageVector? = null) {
             IconBadge(it, size = 34.dp)
             Spacer(Modifier.width(12.dp))
         }
-        Text(title, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Text(title, color = Palette.TextPrimary, fontSize = 15.sp, modifier = Modifier.weight(1f))
         Spacer(Modifier.width(12.dp))
         Text(value, color = Palette.TextSecondary, fontSize = 14.sp, maxLines = 1)
     }
@@ -295,7 +312,7 @@ private fun ChoiceRow(icon: ImageVector, title: String, subtitle: String, conten
             IconBadge(icon, size = 34.dp)
             Spacer(Modifier.width(12.dp))
             Column {
-                Text(title, color = Color.White, fontSize = 15.sp)
+                Text(title, color = Palette.TextPrimary, fontSize = 15.sp)
                 Text(subtitle, color = Palette.TextTertiary, fontSize = 12.5.sp, lineHeight = 16.sp)
             }
         }
@@ -314,7 +331,7 @@ private fun ActionArea(button: @Composable () -> Unit, message: String?, hint: S
     ) {
         button()
         AnimatedVisibility(visible = message != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            Text(message ?: "", color = Color.White, fontSize = 13.sp, lineHeight = 18.sp)
+            Text(message ?: "", color = Palette.TextPrimary, fontSize = 13.sp, lineHeight = 18.sp)
         }
         Text(hint, color = Palette.TextTertiary, fontSize = 12.5.sp, lineHeight = 17.sp)
     }
@@ -331,5 +348,144 @@ private fun Bullet(text: String) {
                 .background(LocalAccent.current.start),
         )
         Text(text, color = Palette.TextSecondary, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.weight(1f))
+    }
+}
+
+// MARK: - Interface (skins)
+
+/** The three skins side by side, each drawn as a miniature of its own look. */
+@Composable
+private fun SkinPicker(current: Skin, onSelect: (Skin) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .staggeredEntrance(0),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Skin.entries.forEach { skin ->
+            SkinOption(skin, skin == current, Modifier.weight(1f)) { onSelect(skin) }
+        }
+    }
+}
+
+@Composable
+private fun SkinOption(skin: Skin, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val accent = LocalAccent.current
+    val view = LocalView.current
+    val haptics = LocalHaptics.current
+    val scale by animateFloatAsState(if (selected) 1f else 0.95f, spring(dampingRatio = 0.5f, stiffness = 400f), label = "skinScale")
+    val outline by animateColorAsState(if (selected) accent.start else Palette.Stroke, tween(250), label = "skinOutline")
+    val outlineWidth by animateDpAsState(if (selected) 2.dp else 1.dp, tween(250), label = "skinOutlineWidth")
+    val check by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "skinCheck")
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(110.dp)
+                .clip(shape)
+                .clickable {
+                    view.tick(haptics)
+                    onClick()
+                }
+                .border(outlineWidth, outline, shape),
+        ) {
+            SkinPreview(skin, Modifier.fillMaxSize())
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(20.dp)
+                    .graphicsLayer {
+                        scaleX = check
+                        scaleY = check
+                        alpha = check.coerceIn(0f, 1f)
+                    }
+                    .clip(CircleShape)
+                    .background(accent.start),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Rounded.Check, contentDescription = null, tint = Palette.OnAccent, modifier = Modifier.size(14.dp))
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            skin.title,
+            color = if (selected) Palette.TextPrimary else Palette.TextSecondary,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+        )
+        Text(
+            skin.subtitle,
+            color = Palette.TextTertiary,
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+        )
+    }
+}
+
+/** Miniature of a skin with its own colours and fonts: title, a card and a button in its YouTube accent. */
+@Composable
+private fun SkinPreview(skin: Skin, modifier: Modifier = Modifier) {
+    val tokens = tokensFor(skin)
+    val accent = tokens.youtubeAccent
+    val cardShape = RoundedCornerShape(minOf(tokens.cardRadius, 10.dp))
+    Column(
+        modifier
+            .background(tokens.background)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            if (skin == Skin.TERMINAL) "YT_" else "Aa",
+            color = tokens.textPrimary,
+            fontSize = 18.sp,
+            lineHeight = 20.sp,
+            fontFamily = tokens.display,
+            // Archivo Black has a single weight: asking for a bolder one would fake-bold it.
+            fontWeight = if (skin == Skin.TERMINAL) FontWeight.Normal else FontWeight.ExtraBold,
+            maxLines = 1,
+        )
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .height(34.dp)
+                .clip(cardShape)
+                .background(tokens.surface)
+                .border(1.dp, tokens.stroke, cardShape)
+                .padding(horizontal = 7.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(minOf(tokens.chipRadius, 3.dp)))
+                    .background(tokens.textPrimary.copy(alpha = 0.75f)),
+            )
+            Box(
+                Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(minOf(tokens.chipRadius, 3.dp)))
+                    .background(tokens.textTertiary),
+            )
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(16.dp)
+                .clip(RoundedCornerShape(minOf(tokens.buttonRadius, 8.dp)))
+                .background(accent.horizontal()),
+        )
     }
 }
