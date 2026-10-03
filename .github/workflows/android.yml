@@ -1,8 +1,13 @@
 name: Build Android app
 
+# - Push on a branch or pull request touching android/: build the APKs and keep them as a workflow artifact.
+# - Push of a tag android-vX.Y.Z: build with the release key, check the signature and publish the GitHub release
+#   "android-vX.Y.Z" with the file names the in-app updater looks for (YT-Downloader-X.Y.Z-<abi>.apk).
 on:
   push:
     branches: ["**"]
+    tags: ["android-v*"]
+    # Path filters only apply to branch pushes: a tag push always builds.
     paths: ["android/**", ".github/workflows/android.yml"]
   pull_request:
     paths: ["android/**", ".github/workflows/android.yml"]
@@ -11,14 +16,32 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: android
+    env:
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/android-v') }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$IS_RELEASE" = true ] && [ "$GITHUB_REF_NAME" != "android-v$version" ]; then
+            echo "::error::Le tag $GITHUB_REF_NAME ne correspond pas à android/VERSION ($version)."
+            exit 1
+          fi
+          echo "Version $version"
 
       - uses: actions/setup-java@v4
         with:
@@ -27,22 +50,32 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Same debug key from one build to the next, so a new APK installs over the previous one
-      # (used only when no release keystore is configured in the repository secrets).
+      # Same debug key from one build to the next, so a test APK installs over the previous one
+      # (branch builds without the release secrets only; a release always uses the release key).
       - name: Restore debug signing key
+        if: env.IS_RELEASE != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
           key: android-debug-keystore-v1
 
-      - name: Decode release keystore (optional)
+      - name: Decode release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            for name in ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+              [ -n "${!name}" ] || { echo "::error::Secret $name manquant."; exit 1; }
+            done
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
             echo "Signature : clé de release"
+          elif [ "$IS_RELEASE" = true ]; then
+            echo "::error::Une release doit être signée : ajoutez les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD."
+            exit 1
           else
             echo "Signature : clé de debug (ajoutez ANDROID_KEYSTORE_BASE64 pour une signature permanente)"
           fi
@@ -54,41 +87,62 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew --no-daemon --stacktrace assembleRelease
 
-      - name: Collect APKs
-        id: apk
+      - name: Check signature and collect APKs
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          # Optional repository variable: SHA-256 of the signing certificate of the APKs already installed.
+          # When set, a release signed with another key fails here instead of being refused by the phones.
+          EXPECTED_SIGNER: ${{ vars.ANDROID_SIGNER_SHA256 }}
         run: |
-          version="$(tr -d '[:space:]' < VERSION)"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)/apksigner"
           mkdir -p dist
-          for f in app/build/outputs/apk/release/*.apk; do
+          for f in app/build/outputs/apk/release/app-*-release.apk; do
             abi="$(basename "$f" .apk | sed -e 's/^app-//' -e 's/-release$//')"
-            cp "$f" "dist/YT-Downloader-Android-${abi}.apk"
+            certs="$("$apksigner" verify --print-certs "$f")"
+            signer="$(sed -n 's/.*SHA-256 digest: //p' <<< "$certs" | head -n 1)"
+            echo "$abi : certificat $signer"
+            if [ -n "$EXPECTED_SIGNER" ] && [ "$signer" != "$EXPECTED_SIGNER" ]; then
+              echo "::error::$abi est signé avec $signer, attendu $EXPECTED_SIGNER."
+              exit 1
+            fi
+            # Name looked up by the in-app updater (core/AppUpdater.kt).
+            cp "$f" "dist/YT-Downloader-$VERSION-$abi.apk"
           done
-          ls -la dist
-          (cd dist && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          [ -f "dist/YT-Downloader-$VERSION-universal.apk" ] || { echo "::error::APK universel absent."; exit 1; }
+          (cd dist && sha256sum -- *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@v4
         with:
-          name: YT-Downloader-Android-${{ steps.apk.outputs.version }}
+          name: YT-Downloader-Android-${{ steps.version.outputs.version }}
           path: android/dist/
+          if-no-files-found: error
 
-      # Direct download link for the phone (not for pull requests).
+      # Release notes: android/release-notes/X.Y.Z.md when it exists (shown in the app and the notification).
+      - name: Release notes
+        if: env.IS_RELEASE == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          notes="release-notes/$VERSION.md"
+          if [ -s "$notes" ]; then
+            cp "$notes" "$RUNNER_TEMP/notes.md"
+          else
+            printf '%s\n' "YT Downloader Android $VERSION." "" \
+              "Installation : ouvrez \`YT-Downloader-$VERSION-arm64-v8a.apk\` sur le téléphone (ou \`-universal\` en cas de doute)." \
+              > "$RUNNER_TEMP/notes.md"
+          fi
+          cat "$RUNNER_TEMP/notes.md"
+
       - name: Publish release
-        if: github.event_name != 'pull_request'
+        if: env.IS_RELEASE == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-v${{ steps.apk.outputs.version }}
-          name: YT Downloader Android ${{ steps.apk.outputs.version }}
-          target_commitish: ${{ github.sha }}
+          tag_name: ${{ github.ref_name }}
+          name: YT Downloader Android ${{ steps.version.outputs.version }}
+          body_path: ${{ runner.temp }}/notes.md
+          # Not "latest": the repository also hosts the macOS app.
           make_latest: false
-          body: |
-            APK Android de YT Downloader (YouTube + Instagram).
-
-            **Quel fichier ?** `YT-Downloader-Android-arm64-v8a.apk` pour presque tous les téléphones récents,
-            `YT-Downloader-Android-universal.apk` si vous avez un doute (plus lourd, fonctionne partout).
-
-            Installation : ouvrez le fichier sur le téléphone → autorisez « Installer des applis inconnues » pour
-            votre navigateur ou gestionnaire de fichiers → Installer.
+          fail_on_unmatched_files: true
           files: |
             android/dist/*.apk
             android/dist/SHA256SUMS.txt
