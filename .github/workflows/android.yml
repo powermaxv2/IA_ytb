@@ -156,7 +156,7 @@ jobs:
           if [ -s "$notes" ]; then
             cp "$notes" "$RUNNER_TEMP/notes.md"
           else
-            printf '%s\n' "YT Downloader Android $VERSION." "" \
+            printf '%s\n' "Gulp Android $VERSION." "" \
               "Installation : ouvrez \`YT-Downloader-$VERSION-arm64-v8a.apk\` sur le téléphone (ou \`-universal\` en cas de doute)." \
               > "$RUNNER_TEMP/notes.md"
           fi
@@ -167,7 +167,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: YT Downloader Android ${{ steps.version.outputs.version }}
+          name: Gulp Android ${{ steps.version.outputs.version }}
           body_path: ${{ runner.temp }}/notes.md
           # Not "latest": the repository also hosts the macOS app.
           make_latest: false
