@@ -28,8 +28,8 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
    ou `YT-Downloader-Android-universal.apk` en cas de doute.
 2. Ouvrez le fichier, autorisez « Installer des applis inconnues » pour votre navigateur, puis **Installer**.
 
-Les APK sont produits par le workflow GitHub Actions **Build Android app** à chaque modification de `android/`
-(artefact du workflow + Release `android-vX.Y.Z`).
+Les APK sont produits par le workflow GitHub Actions **Build Android app** : à chaque modification de `android/`
+ils sont gardés en artefact du workflow, et un tag `android-vX.Y.Z` publie la Release (voir « Publier une version »).
 
 ### Signature (mises à jour par-dessus l'ancienne version)
 
@@ -44,8 +44,14 @@ ajoutez ces secrets au dépôt (Settings → Secrets and variables → Actions) 
 | `ANDROID_KEY_PASSWORD` | mot de passe de la clé |
 
 Créer une clé : `keytool -genkeypair -v -keystore release.jks -alias ytd -keyalg RSA -keysize 4096 -validity 36500`.
-Sans ces secrets, la clé de debug du CI est utilisée (gardée en cache) : si l'installation par-dessus échoue,
-désinstallez l'ancienne version puis installez la nouvelle.
+Sans ces secrets, les builds de branche utilisent la clé de debug du CI (gardée en cache) et un tag de version
+échoue : une release est toujours signée avec la clé de release. Facultatif : la variable de dépôt
+`ANDROID_SIGNER_SHA256` (empreinte SHA-256 du certificat des APK déjà installés) fait échouer une release signée
+avec une autre clé, que les téléphones refuseraient.
+
+Depuis la version qui suit la 1.5.1, l'app est signée avec une nouvelle clé (certificat SHA-256
+`3c68a495…96f4f5`) : la mise à jour depuis la 1.5.1 ou une version plus ancienne demande de désinstaller l'app
+une fois, puis d'installer le nouvel APK. Les suivantes s'installent ensuite par-dessus.
 
 ## Mises à jour automatiques (depuis 1.3.0)
 
@@ -57,16 +63,18 @@ clé que l'app installée, puis l'installe avec l'installateur d'Android. La pre
 YT Downloader à installer des applis ; à partir d'Android 12, les mises à jour suivantes n'ont souvent plus besoin
 de confirmation. Réglages → **Mises à jour de l'app** : recherche manuelle et notification activable.
 
-Publier une version : augmenter `android/VERSION`, compiler, commiter, puis
+Publier une version : augmenter `android/VERSION`, écrire les notes dans `android/release-notes/X.Y.Z.md`
+(en français, affichées dans l'app et la notification), commiter, pousser, puis poser le tag :
 
 ```bash
-cd android
-./scripts/publish-release.sh notes.md   # notes de version en français, affichées dans l'app
+git tag android-v1.5.2 && git push origin android-v1.5.2
 ```
 
-Le script vérifie la version et la signature des APK, pousse la branche et crée la release avec `gh`. Les APK
-publiés ainsi sont signés avec la clé des APK déjà installés ; ceux du workflow GitHub Actions (noms
-`YT-Downloader-Android-*.apk`) ne sont pas proposés par l'app, car leur clé peut être différente.
+Le workflow vérifie que le tag correspond à `android/VERSION`, compile avec la clé de release, contrôle la
+signature et publie la release `android-vX.Y.Z` avec les APK `YT-Downloader-X.Y.Z-<abi>.apk` que l'app reconnaît.
+
+Sans GitHub Actions, `./scripts/publish-release.sh notes.md` fait la même chose depuis une machine qui a le SDK
+Android, `gh` et la clé des APK déjà installés.
 
 ## Compiler soi-même
 
