@@ -42,9 +42,9 @@ object Palette {
     /** Text and icons on an accent fill. */
     val OnAccent: Color @Composable @ReadOnlyComposable get() = LocalTokens.current.onAccent
 
-    // Brand colours (Classique accents, Instagram logo): the same in every skin.
-    val Accent = Color(0xFFFF3B4E)
-    val Accent2 = Color(0xFFFF7A45)
+    // Brand colours (Gulp red → orange, Instagram logo): the same in every skin.
+    val Accent = Color(0xFFFF3B30)
+    val Accent2 = Color(0xFFFF8A1F)
     val InstaPurple = Color(0xFF9B3FD6)
     val InstaPink = Color(0xFFE1306C)
     val InstaOrange = Color(0xFFF77737)

@@ -4,8 +4,13 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,6 +18,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -62,10 +68,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -91,6 +104,11 @@ import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.RollingNumber
 import com.powermaxv2.ytdownloader.ui.Tab
 import com.powermaxv2.ytdownloader.ui.bounceClick
+import com.powermaxv2.ytdownloader.ui.brand.GulpColors
+import com.powermaxv2.ytdownloader.ui.brand.GulpLockup
+import com.powermaxv2.ytdownloader.ui.brand.GulpMark
+import com.powermaxv2.ytdownloader.ui.brand.GulpStyle
+import com.powermaxv2.ytdownloader.ui.brand.LocalGulpPulse
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.skin.classic.SHARE_TIP
 import com.powermaxv2.ytdownloader.ui.skin.classic.guideFeatures
@@ -100,20 +118,44 @@ import com.powermaxv2.ytdownloader.ui.skin.classic.linkPlaceholder
 import com.powermaxv2.ytdownloader.ui.staggeredEntrance
 import com.powermaxv2.ytdownloader.ui.tick
 
-// "Papier" skin: white cards on light grey, black ink, one flat accent per tab, Bricolage Grotesque.
+// "Papier" skin: Gulp's editorial look. White cards on cream paper, ink of the logo's mouth, one flat accent
+// per tab, Bricolage Grotesque.
 
-/** Text colour on the black ink (selected segment, badges): the white of the cards. */
+/** Text colour on the ink (selected segment, badges): the white of the cards. */
 private val PaperInkText = Color.White
+
+/** Paper-coloured fill on the ink bar (selected tab). */
+private val PaperCream = GulpColors.Cream
 
 // MARK: - Surfaces
 
-/** White card with a very soft shadow and no outline. */
+/** White card with a very soft, warm (brown) shadow and no outline. */
 @Composable
-internal fun Modifier.paperCard(shape: Shape = RoundedCornerShape(LocalTokens.current.cardRadius)): Modifier =
-    this
-        .shadow(6.dp, shape, ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.10f))
+internal fun Modifier.paperCard(shape: Shape = RoundedCornerShape(LocalTokens.current.cardRadius)): Modifier {
+    val warm = LocalTokens.current.cardShadowColor
+    return this
+        .shadow(6.dp, shape, ambientColor = warm, spotColor = warm)
         .clip(shape)
         .background(Palette.Surface)
+}
+
+/** Small ink square button (secondary actions next to the accent button), cream icon. */
+@Composable
+internal fun PaperInkButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val ink = Palette.TextPrimary
+    val shape = RoundedCornerShape(18.dp)
+    Box(
+        modifier
+            .bounceClick(pressedScale = 0.9f, onClick = onClick)
+            .size(60.dp)
+            .shadow(8.dp, shape, ambientColor = ink, spotColor = ink)
+            .clip(shape)
+            .background(ink),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = contentDescription, tint = PaperCream, modifier = Modifier.size(24.dp))
+    }
+}
 
 /** Big flat accent button: bold label, coloured shadow, press scale; [subtitle] repeats the chosen options. */
 @Composable
@@ -142,7 +184,7 @@ internal fun PaperButton(
                 scaleY = scale
                 this.alpha = alpha
             }
-            .shadow(if (enabled) 14.dp else 0.dp, shape, ambientColor = accent, spotColor = accent)
+            .shadow(if (enabled) 14.dp else 0.dp, shape, ambientColor = accent.copy(alpha = 0.7f), spotColor = accent.copy(alpha = 0.7f))
             .clip(shape)
             .background(accent)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled && !loading) {
@@ -177,13 +219,47 @@ internal fun PaperButton(
 
 // MARK: - Background
 
+/**
+ * Cream paper with a faint Gulp watermark (a big drop above a big smile, the logo's two strokes) that drifts
+ * slowly in the lower right corner. Barely visible: the content stays on top.
+ */
 @Composable
 fun PaperBackground(modifier: Modifier = Modifier) {
+    val ink = Palette.TextPrimary.copy(alpha = 0.035f)
+    val transition = rememberInfiniteTransition(label = "paperWatermark")
+    val drift by transition.animateFloat(
+        -1f, 1f, infiniteRepeatable(tween(6000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "paperDrift",
+    )
     Box(
         modifier
             .fillMaxSize()
             .background(Palette.Background),
-    )
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val side = size.width * 0.9f
+            val u = side / 512f
+            val left = size.width - side * 0.72f
+            val top = size.height - side * 1.05f
+            // The drop floats a little more than the smile, as if about to be swallowed.
+            translate(left, top + drift * 14.dp.toPx()) {
+                val drop = Path().apply {
+                    moveTo(184f * u, 158f * u)
+                    lineTo(328f * u, 158f * u)
+                    lineTo(256f * u, 284f * u)
+                    close()
+                }
+                drawPath(drop, ink)
+                drawPath(drop, ink, style = Stroke(40f * u, join = StrokeJoin.Round))
+            }
+            translate(left, top - drift * 4.dp.toPx()) {
+                val smile = Path().apply {
+                    moveTo(158f * u, 346f * u)
+                    quadraticTo(256f * u, 418f * u, 354f * u, 346f * u)
+                }
+                drawPath(smile, ink, style = Stroke(40f * u, cap = StrokeCap.Round))
+            }
+        }
+    }
 }
 
 // MARK: - Header
@@ -195,12 +271,52 @@ private fun paperTitle(platform: Platform) = when (platform) {
     else -> "YouTube"
 }
 
-/** Small grey app name, huge title underlined in the accent (the bar grows on each tab), settings square on the right. */
+/**
+ * The logo's smile in the accent, under the title: it draws itself from left to right on each tab ([grow])
+ * and deepens for a moment when a download is queued ([swallow], like the mark's mouth).
+ */
+@Composable
+private fun PaperSmileUnderline(grow: () -> Float, swallow: () -> Float, color: Color, modifier: Modifier = Modifier) {
+    Canvas(
+        modifier
+            .fillMaxWidth()
+            .height(14.dp),
+    ) {
+        val stroke = 4.dp.toPx()
+        val half = stroke / 2
+        val depth = (size.height - stroke) * (1f + 0.6f * swallow())
+        val smile = Path().apply {
+            moveTo(half, half)
+            // A quadratic curve reaches half of its control point's depth.
+            quadraticTo(size.width / 2, half + depth * 2f, size.width - half, half)
+        }
+        clipRect(right = size.width * grow().coerceIn(0f, 1f)) {
+            drawPath(smile, color, style = Stroke(stroke, cap = StrokeCap.Round))
+        }
+    }
+}
+
+/** Gulp lockup (animated mark + "gulp"), huge title on the accent smile (draws itself on each tab), settings square on the right. */
 @Composable
 fun PaperHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit) {
     val accent = LocalAccent.current.start
     val grow = remember(platform) { Animatable(0f) }
-    LaunchedEffect(platform) { grow.animateTo(1f, spring(dampingRatio = 0.7f, stiffness = 220f)) }
+    LaunchedEffect(platform) { grow.animateTo(1f, tween(620, delayMillis = 120, easing = FastOutSlowInEasing)) }
+    val rise = remember(platform) { Animatable(0f) }
+    LaunchedEffect(platform) { rise.animateTo(1f, spring(dampingRatio = 0.7f, stiffness = 220f)) }
+    // The smile deepens with each queued download, in time with the mark's gulp.
+    val pulse = LocalGulpPulse.current
+    val swallow = remember { Animatable(0f) }
+    var firstPulse by remember { mutableStateOf(true) }
+    LaunchedEffect(pulse) {
+        if (firstPulse) {
+            firstPulse = false
+        } else {
+            swallow.snapTo(0f)
+            swallow.animateTo(1f, tween(320, delayMillis = 260, easing = FastOutSlowInEasing))
+            swallow.animateTo(0f, spring(dampingRatio = 0.4f, stiffness = 260f))
+        }
+    }
     Row(
         Modifier
             .fillMaxWidth()
@@ -208,7 +324,8 @@ fun PaperHeader(platform: Platform, engineState: EngineState, onSettings: () -> 
         verticalAlignment = Alignment.Top,
     ) {
         Column(Modifier.weight(1f)) {
-            Text("YT Downloader", color = Palette.TextSecondary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            GulpLockup(markSize = 26.dp, textColor = Palette.TextPrimary, fontSize = 21.sp)
+            Spacer(Modifier.height(6.dp))
             Column(Modifier.width(IntrinsicSize.Max)) {
                 Text(
                     paperTitle(platform),
@@ -221,21 +338,11 @@ fun PaperHeader(platform: Platform, engineState: EngineState, onSettings: () -> 
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier.graphicsLayer {
-                        alpha = 0.3f + 0.7f * grow.value.coerceIn(0f, 1f)
-                        translationY = (1f - grow.value) * 8.dp.toPx()
+                        alpha = 0.3f + 0.7f * rise.value.coerceIn(0f, 1f)
+                        translationY = (1f - rise.value) * 8.dp.toPx()
                     },
                 )
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .graphicsLayer {
-                            scaleX = grow.value
-                            transformOrigin = TransformOrigin(0f, 0.5f)
-                        }
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(accent),
-                )
+                PaperSmileUnderline({ grow.value }, { swallow.value }, accent)
             }
         }
         Spacer(Modifier.width(12.dp))
@@ -261,18 +368,37 @@ private val paperTabs = listOf(
     Tab.DOWNLOADS to "Fichiers",
 )
 
-/** Black bar of labels; a white pill slides under the selected one (hidden while Réglages is open). */
+/** Gulp's drop (a small rounded play triangle pointing down), centred on [center], [side] wide. */
+private fun DrawScope.drawPaperDrop(center: Offset, side: Float, color: Color) {
+    val h = side * 0.875f
+    val drop = Path().apply {
+        moveTo(center.x - side / 2, center.y - h / 2)
+        lineTo(center.x + side / 2, center.y - h / 2)
+        lineTo(center.x, center.y + h / 2)
+        close()
+    }
+    drawPath(drop, color)
+    drawPath(drop, color, style = Stroke(side * 0.28f, join = StrokeJoin.Round))
+}
+
+/**
+ * Ink pill of labels; a cream pill slides under the selected one (hidden while Réglages is open). Each queued
+ * download is "swallowed" by Fichiers: a drop falls into the label, then the label and the badge bounce.
+ */
 @Composable
 fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val accent = LocalAccent.current.start
     val view = LocalView.current
     val haptics = LocalHaptics.current
     val bar = Palette.NavBar
-    val shape = RoundedCornerShape(26.dp)
+    val shape = RoundedCornerShape(28.dp)
     val index = paperTabs.indexOfFirst { it.first == tab }
     val bump = remember { Animatable(0f) }
+    val fall = remember { Animatable(1f) }
     LaunchedEffect(pulse) {
         if (pulse > 0) {
+            fall.snapTo(0f)
+            fall.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
             bump.snapTo(1f)
             bump.animateTo(0f, spring(dampingRatio = 0.35f, stiffness = 260f))
         }
@@ -282,7 +408,7 @@ fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Un
             .padding(horizontal = 12.dp)
             .fillMaxWidth()
             .height(66.dp)
-            .shadow(18.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .shadow(18.dp, shape, ambientColor = bar, spotColor = bar)
             .clip(shape)
             .background(bar)
             .padding(6.dp),
@@ -290,19 +416,30 @@ fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Un
         val segment = maxWidth / paperTabs.size
         val offset by animateDpAsState(segment * index.coerceAtLeast(0), spring(dampingRatio = 0.72f, stiffness = 380f), label = "paperPill")
         val pillAlpha by animateFloatAsState(if (index >= 0) 1f else 0f, label = "paperPillAlpha")
+        // The pill stretches a little while it travels, then settles.
+        val stretch = remember { Animatable(0f) }
+        LaunchedEffect(index) {
+            stretch.snapTo(0f)
+            stretch.animateTo(1f, tween(140))
+            stretch.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = 300f))
+        }
         Box(
             Modifier
                 .offset(x = offset)
                 .width(segment)
                 .fillMaxHeight()
-                .graphicsLayer { alpha = pillAlpha }
-                .clip(RoundedCornerShape(20.dp))
-                .background(PaperInkText),
+                .graphicsLayer {
+                    alpha = pillAlpha
+                    scaleX = 1f + 0.08f * stretch.value
+                    scaleY = 1f - 0.06f * stretch.value
+                }
+                .clip(RoundedCornerShape(22.dp))
+                .background(PaperCream),
         )
         Row(Modifier.fillMaxSize()) {
             paperTabs.forEach { (item, label) ->
                 val selected = item == tab
-                val color by animateColorAsState(if (selected) bar else PaperInkText.copy(alpha = 0.62f), label = "paperNavText")
+                val color by animateColorAsState(if (selected) bar else PaperCream.copy(alpha = 0.62f), label = "paperNavText")
                 Box(
                     Modifier
                         .weight(1f)
@@ -313,6 +450,19 @@ fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Un
                         },
                     contentAlignment = Alignment.Center,
                 ) {
+                    if (item == Tab.DOWNLOADS) {
+                        // The drop falls from the top of the bar into the label and is swallowed (shrinks, fades).
+                        val dropColor = if (selected) accent else PaperCream
+                        Canvas(Modifier.matchParentSize()) {
+                            val t = fall.value
+                            if (t < 1f) {
+                                val side = 9.dp.toPx()
+                                val y = side * 0.6f + (size.height / 2 - side * 0.6f) * t
+                                val shrink = if (t < 0.7f) 1f else 1f - (t - 0.7f) / 0.3f
+                                drawPaperDrop(Offset(size.width / 2, y), side * shrink, dropColor)
+                            }
+                        }
+                    }
                     Text(
                         label,
                         color = color,
@@ -323,7 +473,7 @@ fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Un
                             Modifier.graphicsLayer {
                                 val b = bump.value
                                 scaleX = 1f + b * 0.3f
-                                scaleY = 1f + b * 0.3f
+                                scaleY = 1f + b * 0.22f
                                 translationY = -b * 5.dp.toPx()
                             }
                         } else {
@@ -342,6 +492,12 @@ fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Un
                         ) {
                             Box(
                                 Modifier
+                                    .graphicsLayer {
+                                        val b = bump.value
+                                        scaleX = 1f + b * 0.45f
+                                        scaleY = 1f + b * 0.45f
+                                        translationY = -b * 4.dp.toPx()
+                                    }
                                     .sizeIn(minWidth = 18.dp, minHeight = 18.dp)
                                     .clip(CircleShape)
                                     .background(accent)
@@ -360,7 +516,7 @@ fun PaperBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Un
 
 // MARK: - Link field
 
-/** White card: grey field with the detected platform logo, then "Coller le lien" or paste + "Analyser". */
+/** White card (rises in): cream field with the detected platform logo, then "Coller le lien" or ink paste + "Analyser". */
 @Composable
 fun PaperLinkCard(
     pane: LinkPane,
@@ -385,6 +541,7 @@ fun PaperLinkCard(
 
     Column(
         Modifier
+            .staggeredEntrance(0, baseDelay = 60)
             .fillMaxWidth()
             .paperCard()
             .padding(14.dp),
@@ -452,16 +609,7 @@ fun PaperLinkCard(
                 PaperButton("Coller le lien", Modifier.fillMaxWidth(), icon = Icons.Rounded.ContentPaste, enabled = enabled, onClick = paste)
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(
-                        Modifier
-                            .bounceClick(pressedScale = 0.9f, onClick = paste)
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Palette.Surface2),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Rounded.ContentPaste, contentDescription = "Coller", tint = Palette.TextPrimary, modifier = Modifier.size(24.dp))
-                    }
+                    PaperInkButton(Icons.Rounded.ContentPaste, "Coller", onClick = paste)
                     PaperButton(
                         "Analyser",
                         Modifier.weight(1f),
@@ -487,26 +635,32 @@ fun PaperGuide(platform: Platform) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(
             Modifier
+                .staggeredEntrance(0, key = platform, baseDelay = 40)
                 .fillMaxWidth()
                 .paperCard()
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                "Comment faire",
-                color = Palette.TextPrimary,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontFamily = LocalTokens.current.display,
-                letterSpacing = (-0.3).sp,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Comment faire",
+                    color = Palette.TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = LocalTokens.current.display,
+                    letterSpacing = (-0.3).sp,
+                    modifier = Modifier.weight(1f),
+                )
+                // The mouth, waiting for a link.
+                GulpMark(26.dp, style = GulpStyle.bare(drop = accent, mouth = Palette.TextPrimary))
+            }
             guideSteps(platform).forEachIndexed { index, step ->
                 Row(Modifier.staggeredEntrance(index, key = platform, baseDelay = 80), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(
                         Modifier
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(Palette.TextPrimary),
+                            .background(if (index == 0) accent else Palette.TextPrimary),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text((index + 1).toString(), color = PaperInkText, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)

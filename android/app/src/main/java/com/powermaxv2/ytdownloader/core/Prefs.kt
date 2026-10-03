@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Selectable look of the whole app (Réglages → Interface). */
 enum class Skin(val title: String, val subtitle: String) {
-    CLASSIC("Classique", "Sombre, accent par onglet"),
-    PAPER("Papier", "Clair, typographie magazine"),
-    TERMINAL("Terminal", "Console vert fluo"),
+    CLASSIC("Gulp", "Sombre, dégradé rouge orangé"),
+    PAPER("Papier", "Clair, crème et encre"),
+    TERMINAL("Terminal", "Console orange phosphore"),
 }
 
 data class Settings(

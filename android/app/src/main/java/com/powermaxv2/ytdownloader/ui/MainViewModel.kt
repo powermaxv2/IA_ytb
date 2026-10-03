@@ -389,7 +389,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             appUpdateMessage = try {
                 val release = updater.check(force = true)
                 if (release == null) {
-                    "YT Downloader est à jour (version ${updater.currentVersion})."
+                    "Gulp est à jour (version ${updater.currentVersion})."
                 } else {
                     dismissedUpdate = null
                     "Version ${release.version} disponible : touchez « Mettre à jour » en haut de l'écran."

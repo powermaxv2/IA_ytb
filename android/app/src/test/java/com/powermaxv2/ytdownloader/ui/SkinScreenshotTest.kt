@@ -1,6 +1,19 @@
 package com.powermaxv2.ytdownloader.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import com.powermaxv2.ytdownloader.R
+import com.powermaxv2.ytdownloader.ui.brand.GulpColors
+import com.powermaxv2.ytdownloader.ui.brand.GulpIntro
+import com.powermaxv2.ytdownloader.ui.brand.GulpLockup
+import com.powermaxv2.ytdownloader.ui.brand.GulpMarkStatic
+import com.powermaxv2.ytdownloader.ui.brand.GulpStyle
+import com.powermaxv2.ytdownloader.ui.skin.ClassicTokens
+import com.powermaxv2.ytdownloader.ui.skin.TerminalTokens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -58,6 +71,45 @@ class SkinScreenshotTest {
     @Test fun classicSettingsInterface() = settings(Skin.CLASSIC, "classic")
     @Test fun paperSettingsInterface() = settings(Skin.PAPER, "paper")
     @Test fun terminalSettingsInterface() = settings(Skin.TERMINAL, "terminal")
+
+    /** Launch animation mid-way (mark swallowing, letters rising) and the brand marks. */
+    @Test fun gulpIntro() {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, Skin.CLASSIC) {
+                GulpIntro(ClassicTokens.background, ClassicTokens.textPrimary, onFinished = {})
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(820)
+        composeRule.onRoot().captureRoboImage("build/outputs/roborazzi/gulp_intro.png")
+    }
+
+    @Test fun gulpBrand() {
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, Skin.CLASSIC) {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .background(GulpColors.Cream)
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    Image(painterResource(R.drawable.ic_splash), contentDescription = null, modifier = Modifier.size(160.dp))
+                    GulpLockup(64.dp, GulpColors.Ink)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        GulpMarkStatic(72.dp)
+                        Box(Modifier.size(72.dp).background(TerminalTokens.background)) {
+                            GulpMarkStatic(72.dp, style = GulpStyle.outline(GulpColors.Orange))
+                        }
+                        Box(Modifier.size(72.dp).background(GulpColors.brush)) {
+                            GulpMarkStatic(72.dp, style = GulpStyle.bare(androidx.compose.ui.graphics.Color.White, GulpColors.Ink))
+                        }
+                    }
+                }
+            }
+        }
+        capture("gulp_brand")
+    }
 
     private fun idle(skin: Skin, name: String) {
         val pane = LinkPane(Platform.YOUTUBE, Tab.YOUTUBE, "YouTube")

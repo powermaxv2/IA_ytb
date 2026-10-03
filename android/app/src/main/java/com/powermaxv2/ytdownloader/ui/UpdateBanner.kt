@@ -112,7 +112,7 @@ private fun UpdateCard(state: AppUpdateState, vm: MainViewModel) {
             is AppUpdateState.Downloading -> ProgressBar(state.progress)
             is AppUpdateState.NeedsPermission -> {
                 Text(
-                    "Android doit autoriser YT Downloader à installer ses propres mises à jour. Activez " +
+                    "Android doit autoriser Gulp à installer ses propres mises à jour. Activez " +
                         "« Autoriser cette source », puis revenez : l'installation reprend toute seule.",
                     color = Palette.TextSecondary,
                     fontSize = 13.sp,

@@ -256,7 +256,7 @@ class AppUpdater(private val context: Context, private val prefs: Prefs, private
             ?: throw IOException("Le fichier téléchargé n'est pas une app Android valide.")
         val installed = pm.getPackageInfo(context.packageName, flags)
         if (candidate.packageName != context.packageName) {
-            throw SecurityException("Ce fichier n'est pas YT Downloader : mise à jour refusée.")
+            throw SecurityException("Ce fichier n'est pas Gulp : mise à jour refusée.")
         }
         if (PackageInfoCompat.getLongVersionCode(candidate) <= PackageInfoCompat.getLongVersionCode(installed)) {
             throw IOException("Cette version n'est pas plus récente que celle installée.")

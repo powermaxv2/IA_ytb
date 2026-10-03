@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
@@ -61,12 +62,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
@@ -88,6 +93,9 @@ import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.Phase
 import com.powermaxv2.ytdownloader.ui.Tab
 import com.powermaxv2.ytdownloader.ui.bounceClick
+import com.powermaxv2.ytdownloader.ui.brand.GulpColors
+import com.powermaxv2.ytdownloader.ui.brand.GulpMark
+import com.powermaxv2.ytdownloader.ui.brand.GulpStyle
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.skin.classic.SHARE_TIP
 import com.powermaxv2.ytdownloader.ui.skin.classic.guideFeatures
@@ -95,10 +103,14 @@ import com.powermaxv2.ytdownloader.ui.skin.classic.guideFootnote
 import com.powermaxv2.ytdownloader.ui.skin.classic.guideSteps
 import com.powermaxv2.ytdownloader.ui.staggeredEntrance
 import com.powermaxv2.ytdownloader.ui.tick
+import kotlinx.coroutines.delay
 
-// "Terminal" skin: near-black console, green grid, one neon accent, JetBrains Mono + Archivo Black titles.
+// "Terminal" skin, the Gulp console: warm near-black, orange phosphor grid, one neon accent per tab,
+// JetBrains Mono + Archivo Black titles.
 
-private val Amber = Color(0xFFFFB020)
+/** Shell prompt of the header, typed once: user part in accent, path part dimmed. */
+private const val PROMPT_USER = "gulp@android"
+private const val PROMPT_PATH = ":~$"
 
 // MARK: - Shared helpers
 
@@ -118,6 +130,26 @@ internal fun Modifier.blinking(periodMs: Int = 1060): Modifier {
     return graphicsLayer { alpha = if (phase.value < 0.5f) 1f else 0f }
 }
 
+/**
+ * Number of characters of [text] typed so far: a linear typewriter restarted when [key] changes
+ * ([charMs] per character, at most [maxMs] in all, after [delayMs]).
+ */
+@Composable
+internal fun rememberTyped(
+    text: String,
+    key: Any? = text,
+    charMs: Int = 30,
+    maxMs: Int = 1200,
+    delayMs: Long = 0L,
+): State<Int> {
+    val typed = remember(key) { Animatable(0f) }
+    LaunchedEffect(key) {
+        if (delayMs > 0L) delay(delayMs)
+        typed.animateTo(text.length.toFloat(), tween((text.length * charMs).coerceIn(1, maxMs), easing = LinearEasing))
+    }
+    return remember(key) { derivedStateOf { typed.value.toInt() } }
+}
+
 /** Almost square panel with a 1dp outline. */
 @Composable
 internal fun Modifier.termPanel(): Modifier {
@@ -128,10 +160,17 @@ internal fun Modifier.termPanel(): Modifier {
         .border(1.dp, Palette.Stroke, shape)
 }
 
-/** Small uppercase mono label, e.g. "> LIEN". */
+/** Small uppercase mono label, e.g. "> LIEN"; [typed]: types itself in behind an accent block caret. */
 @Composable
-internal fun TermLabel(text: String, modifier: Modifier = Modifier, color: Color = Palette.TextTertiary) {
-    Text(text, color = color, fontSize = 12.sp, letterSpacing = 1.5.sp, maxLines = 1, modifier = modifier)
+internal fun TermLabel(text: String, modifier: Modifier = Modifier, color: Color = Palette.TextTertiary, typed: Boolean = true) {
+    val count by rememberTyped(text, charMs = 28)
+    val typing = typed && count < text.length
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Text(if (typed) text.take(count) else text, color = color, fontSize = 12.sp, letterSpacing = 1.5.sp, maxLines = 1)
+        if (typing) {
+            Text("▌", color = LocalAccent.current.start, fontSize = 12.sp, maxLines = 1)
+        }
+    }
 }
 
 /**
@@ -208,11 +247,20 @@ internal fun TermButton(
 
 // MARK: - Background
 
-/** Near-black with a faint accent grid every 28dp and a soft glow at the top. */
+/**
+ * Near-black with a faint warm grid every 28dp, an accent glow at the top, an ember glow at the bottom and
+ * a CRT scanline band slowly sweeping down.
+ */
 @Composable
 fun TerminalBackground(modifier: Modifier = Modifier) {
     val accent = LocalAccent.current.start
     val base = Palette.Background
+    // Grid half-way between the tab accent and the Gulp orange: always a little warm.
+    val grid = lerp(accent, GulpColors.Orange, 0.5f).copy(alpha = 0.05f)
+    val ember = GulpColors.Red.copy(alpha = 0.06f)
+    val transition = rememberInfiniteTransition(label = "termScan")
+    // Read in the draw phase only: the sweep redraws without recomposing.
+    val sweep = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "termScanY")
     Canvas(modifier.fillMaxSize()) {
         drawRect(base)
         drawRect(
@@ -222,19 +270,38 @@ fun TerminalBackground(modifier: Modifier = Modifier) {
                 radius = size.maxDimension * 0.7f,
             ),
         )
+        drawRect(
+            Brush.radialGradient(
+                listOf(ember, Color.Transparent),
+                center = Offset(size.width * 0.5f, size.height * 1.05f),
+                radius = size.maxDimension * 0.6f,
+            ),
+        )
         val step = 28.dp.toPx()
-        val line = accent.copy(alpha = 0.05f)
         val stroke = 1.dp.toPx()
         var x = 0f
         while (x <= size.width) {
-            drawLine(line, Offset(x, 0f), Offset(x, size.height), stroke)
+            drawLine(grid, Offset(x, 0f), Offset(x, size.height), stroke)
             x += step
         }
         var y = 0f
         while (y <= size.height) {
-            drawLine(line, Offset(0f, y), Offset(size.width, y), stroke)
+            drawLine(grid, Offset(0f, y), Offset(size.width, y), stroke)
             y += step
         }
+        // Scanline: a soft band whose bright lower edge travels from above the top to below the bottom.
+        val band = 140.dp.toPx()
+        val edge = sweep.value * (size.height + band)
+        drawRect(
+            Brush.verticalGradient(
+                listOf(Color.Transparent, accent.copy(alpha = 0.045f)),
+                startY = edge - band,
+                endY = edge,
+            ),
+            topLeft = Offset(0f, edge - band),
+            size = Size(size.width, band),
+        )
+        drawLine(accent.copy(alpha = 0.09f), Offset(0f, edge), Offset(size.width, edge), stroke)
     }
 }
 
@@ -246,22 +313,24 @@ private fun terminalTitle(platform: Platform) = when (platform) {
     else -> "AUTRES"
 }
 
-/** Engine line with a coloured dot, typewriter title with a blinking accent underscore, menu square. */
+/**
+ * Gulp prompt (outlined mark that swallows, "gulp@android:~$" typed once, block cursor) with the engine state,
+ * typewriter title with a glowing blinking underscore, menu square.
+ */
 @Composable
 fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit) {
     val accent = LocalAccent.current.start
     val tokens = LocalTokens.current
     val title = terminalTitle(platform)
-    val typed = remember(platform) { Animatable(0f) }
-    LaunchedEffect(platform) {
-        typed.animateTo(title.length.toFloat(), tween(title.length * 55, easing = LinearEasing))
-    }
-    val count by remember(platform) { derivedStateOf { typed.value.toInt() } }
+    val count by rememberTyped(title, key = platform, charMs = 55)
+    val prompt by rememberTyped(PROMPT_USER + PROMPT_PATH, key = Unit, charMs = 32, delayMs = 150L)
+    val markStyle = remember(accent) { GulpStyle.outline(accent) }
 
     val (dotColor, engineText) = when (engineState) {
-        EngineState.Ready -> accent to "MOTEUR PRÊT · YT-DLP"
-        EngineState.Starting -> Amber to "DÉMARRAGE · YT-DLP"
-        is EngineState.Failed -> Palette.Danger to "MOTEUR EN ÉCHEC · YT-DLP"
+        // Short words: the prompt line has to fit next to the menu square on a 360dp screen.
+        EngineState.Ready -> accent to "PRÊT"
+        EngineState.Starting -> Palette.TextSecondary to "DÉMARRAGE"
+        is EngineState.Failed -> Palette.Danger to "ÉCHEC"
     }
     val dot by animateColorAsState(dotColor, label = "termEngineDot")
     val dotPhase = rememberBlink(900)
@@ -275,16 +344,42 @@ fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () 
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                GulpMark(18.dp, style = markStyle)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    PROMPT_USER.take(prompt),
+                    color = accent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+                Text(
+                    PROMPT_PATH.take((prompt - PROMPT_USER.length).coerceAtLeast(0)),
+                    color = Palette.TextSecondary,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+                Spacer(Modifier.width(3.dp))
                 Box(
                     Modifier
-                        .size(7.dp)
+                        .size(width = 7.dp, height = 13.dp)
+                        .blinking()
+                        .background(accent),
+                )
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    Modifier
+                        .size(6.dp)
                         .graphicsLayer { alpha = if (starting && dotPhase.value >= 0.5f) 0.25f else 1f }
                         .clip(CircleShape)
                         .background(dot),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
                 AnimatedContent(
                     targetState = engineText,
+                    modifier = Modifier.weight(1f, fill = false),
                     transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(120)) },
                     label = "termEngine",
                 ) {
@@ -302,6 +397,7 @@ fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () 
                     maxLines = 1,
                     softWrap = false,
                 )
+                // Phosphor glow on the cursor only.
                 Text(
                     "_",
                     color = accent,
@@ -309,6 +405,7 @@ fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () 
                     lineHeight = 44.sp,
                     fontFamily = tokens.display,
                     maxLines = 1,
+                    style = TextStyle(shadow = Shadow(color = accent.copy(alpha = 0.7f), offset = Offset.Zero, blurRadius = 18f)),
                     modifier = Modifier.blinking(),
                 )
             }
@@ -338,7 +435,8 @@ private val terminalTabs = listOf(
 
 /**
  * Flat full-width bar flush with the bottom edge (its fill runs under the navigation bar, [bottomInset]);
- * a lighter cell and a 2dp accent top line slide to the selected tab.
+ * a lighter cell and a 2dp accent top line slide to the selected tab. When a download is queued ([pulse]),
+ * a "▼" drops into FICHIERS and gets swallowed, then the [n] counter flashes and bumps.
  */
 @Composable
 fun TerminalBottomBar(
@@ -355,8 +453,13 @@ fun TerminalBottomBar(
     val stroke = Palette.Stroke
     val index = terminalTabs.indexOfFirst { it.first == tab }
     val bump = remember { Animatable(0f) }
+    // 1 = no drop on screen.
+    val drop = remember { Animatable(1f) }
     LaunchedEffect(pulse) {
         if (pulse > 0) {
+            bump.snapTo(0f)
+            drop.snapTo(0f)
+            drop.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
             bump.snapTo(1f)
             bump.animateTo(0f, spring(dampingRatio = 0.35f, stiffness = 260f))
         }
@@ -428,15 +531,39 @@ fun TerminalBottomBar(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
-                                    modifier = Modifier.graphicsLayer {
-                                        val b = bump.value
-                                        scaleX = 1f + b * 0.35f
-                                        scaleY = 1f + b * 0.35f
-                                        translationY = -b * 4.dp.toPx()
-                                    },
+                                    modifier = Modifier
+                                        .graphicsLayer {
+                                            val b = bump.value
+                                            scaleX = 1f + b * 0.35f
+                                            scaleY = 1f + b * 0.35f
+                                            translationY = -b * 4.dp.toPx()
+                                        }
+                                        // Phosphor flash behind the counter.
+                                        .drawBehind {
+                                            val b = bump.value.coerceIn(0f, 1f)
+                                            if (b > 0f) drawRect(accent.copy(alpha = b * 0.3f))
+                                        },
                                 )
                             }
                         }
+                    }
+                    if (item == Tab.DOWNLOADS) {
+                        // The queued download: falls from the top edge into the label, shrinking and fading out.
+                        Text(
+                            "▼",
+                            color = accent,
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .graphicsLayer {
+                                    val p = drop.value
+                                    alpha = if (p >= 1f) 0f else 1f - p * p
+                                    translationY = (-6f + p * 22f).dp.toPx()
+                                    scaleX = 1f - p * 0.5f
+                                    scaleY = 1f - p * 0.5f
+                                },
+                        )
                     }
                 }
             }
@@ -446,7 +573,9 @@ fun TerminalBottomBar(
 
 // MARK: - Link field
 
-/** "> LIEN" panel: "$" prompt field with a blinking block cursor, then terminal buttons. */
+private const val LINK_HINT = "https://…"
+
+/** "> LIEN" panel: "$" prompt field with a blinking block cursor and a typed hint, then terminal buttons. */
 @Composable
 fun TerminalLinkCard(
     pane: LinkPane,
@@ -506,6 +635,8 @@ fun TerminalLinkCard(
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (empty) {
+                            // Retyped each time the field empties.
+                            val hint by rememberTyped(LINK_HINT, key = Unit, charMs = 45, delayMs = 250L)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     Modifier
@@ -514,7 +645,7 @@ fun TerminalLinkCard(
                                         .background(accent),
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("https://…", color = Palette.TextTertiary, fontSize = 14.sp, maxLines = 1)
+                                Text(LINK_HINT.take(hint), color = Palette.TextTertiary, fontSize = 14.sp, maxLines = 1)
                             }
                         }
                         inner()
@@ -592,7 +723,8 @@ fun TerminalGuide(platform: Platform) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TermLabel("> COMMENT FAIRE")
-            guideSteps(platform).forEachIndexed { index, step ->
+            val steps = guideSteps(platform)
+            steps.forEachIndexed { index, step ->
                 Row(Modifier.staggeredEntrance(index, key = platform, baseDelay = 80)) {
                     Text(
                         (index + 1).toString().padStart(2, '0'),
@@ -610,7 +742,8 @@ fun TerminalGuide(platform: Platform) {
                     .height(1.dp)
                     .background(Palette.Stroke),
             )
-            Row {
+            // The tip lands right after the last step.
+            Row(Modifier.staggeredEntrance(steps.size, key = platform, baseDelay = 80)) {
                 Text("# ", color = accent, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
                 Text(SHARE_TIP, color = Palette.TextSecondary, fontSize = 12.5.sp, lineHeight = 18.sp)
             }
@@ -629,7 +762,15 @@ fun TerminalGuide(platform: Platform) {
             }
         }
         guideFootnote(platform)?.let {
-            Text("// $it", color = Palette.TextTertiary, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(horizontal = 4.dp))
+            Text(
+                "// $it",
+                color = Palette.TextTertiary,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                modifier = Modifier
+                    .staggeredEntrance(0, key = platform, baseDelay = 420)
+                    .padding(horizontal = 4.dp),
+            )
         }
     }
 }

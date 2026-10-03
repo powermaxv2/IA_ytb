@@ -56,8 +56,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -108,16 +111,29 @@ private fun Equalizer(modifier: Modifier = Modifier) {
     }
 }
 
+/** Thumbnail seen through a CRT: fine scanlines over the image, thin phosphor outline. */
 @Composable
 private fun TermThumbnail(url: String?) {
+    val accent = LocalAccent.current.start
+    val shape = RoundedCornerShape(2.dp)
     Box(
         Modifier
             .size(width = 116.dp, height = 66.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .background(Palette.Surface2),
+            .clip(shape)
+            .background(Palette.Surface2)
+            .border(1.dp, accent.copy(alpha = 0.35f), shape),
     ) {
         Equalizer(Modifier.fillMaxSize())
         RemoteImage(url, Modifier.fillMaxSize())
+        Canvas(Modifier.fillMaxSize()) {
+            val line = Color.Black.copy(alpha = 0.18f)
+            val gap = 3.dp.toPx()
+            var y = 0f
+            while (y < size.height) {
+                drawLine(line, Offset(0f, y), Offset(size.width, y), 1f)
+                y += gap
+            }
+        }
     }
 }
 
@@ -352,15 +368,28 @@ fun TerminalVideoCard(
                     .staggeredEntrance(0, key = info.id),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(
-                    info.title,
-                    color = Palette.TextPrimary,
-                    fontSize = 15.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // Typed in over an invisible full copy, so the card keeps its final height.
+                val typed by rememberTyped(info.title, key = info.id, charMs = 12, maxMs = 900, delayMs = 120L)
+                Box {
+                    Text(
+                        info.title,
+                        color = Color.Transparent,
+                        fontSize = 15.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        info.title.take(typed),
+                        color = Palette.TextPrimary,
+                        fontSize = 15.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 val meta = listOfNotNull(info.uploader, info.duration?.let { Fmt.duration(it) }).joinToString(" · ")
                 if (meta.isNotEmpty()) {
                     Text(meta, color = Palette.TextSecondary, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -408,7 +437,9 @@ fun TerminalVideoCard(
         }
         TermButton(
             "TÉLÉCHARGER ↓",
-            Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .staggeredEntrance(2, key = info.id),
             big = true,
             subtitle = if (mode == MediaMode.VIDEO) {
                 "${quality?.label ?: "Max"} · ${container.title}".uppercase()
@@ -423,7 +454,10 @@ fun TerminalVideoCard(
 
 // MARK: - Recent download line
 
-/** Discrete accent blocks; negative [progress] = a short run of blocks sweeping across. */
+/**
+ * Discrete accent blocks; negative [progress] = a short run of blocks sweeping across. While determinate,
+ * the next block to fill blinks like a cursor.
+ */
 @Composable
 private fun BlockProgress(progress: Float, modifier: Modifier = Modifier) {
     val accent = LocalAccent.current.start
@@ -447,14 +481,19 @@ private fun BlockProgress(progress: Float, modifier: Modifier = Modifier) {
         val h = size.height - inset * 2
         val run = 5
         val head = (phase * (count + run)).toInt()
+        val filled = (animated * count).toInt()
         for (i in 0 until count) {
-            val on = if (indeterminate) i in (head - run) until head else i < (animated * count).toInt()
+            val on = if (indeterminate) i in (head - run) until head else i < filled
             if (on) drawRect(accent, topLeft = Offset(inset + i * (block + gap), inset), size = Size(block, h))
+        }
+        // Blinking cursor block (2 blinks per sweep period).
+        if (!indeterminate && filled < count && (phase * 4f).toInt() % 2 == 0) {
+            drawRect(accent.copy(alpha = 0.45f), topLeft = Offset(inset + filled * (block + gap), inset), size = Size(block, h))
         }
     }
 }
 
-/** "[file] title" + status, then a block progress bar while active; tap opens Fichiers. */
+/** "[file] title" + status (with a blinking cursor while active), then a block progress bar; tap opens Fichiers. */
 @Composable
 fun TerminalRecentDownload(vm: MainViewModel) {
     val accent = LocalAccent.current.start
@@ -484,7 +523,10 @@ fun TerminalRecentDownload(vm: MainViewModel) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "[file] " + current.title,
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = accent)) { append("[file] ") }
+                        append(current.title)
+                    },
                     color = Palette.TextSecondary,
                     fontSize = 12.5.sp,
                     maxLines = 1,
@@ -500,6 +542,9 @@ fun TerminalRecentDownload(vm: MainViewModel) {
                     else -> "en cours" to accent
                 }
                 Text(status, color = color, fontSize = 12.5.sp, maxLines = 1)
+                if (current.isActive) {
+                    Text("_", color = color, fontSize = 12.5.sp, maxLines = 1, modifier = Modifier.blinking(700))
+                }
             }
             if (current.isActive) {
                 BlockProgress(if (current.state == JobState.QUEUED) 0f else current.progress)

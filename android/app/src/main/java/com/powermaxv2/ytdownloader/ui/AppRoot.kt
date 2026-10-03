@@ -43,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.powermaxv2.ytdownloader.ui.brand.GulpIntro
+import com.powermaxv2.ytdownloader.ui.brand.LocalGulpPulse
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
+import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
 import com.powermaxv2.ytdownloader.ui.skin.SkinBottomBar
 import kotlinx.coroutines.delay
@@ -73,7 +77,11 @@ fun AppRoot(vm: MainViewModel) {
         // Switching skin crossfades the whole app; each side draws with its own skin's theme.
         Crossfade(targetState = settings.skin, animationSpec = tween(350), label = "skin") { skin ->
             AppTheme(vm.accentPlatform, skin) {
-                CompositionLocalProvider(LocalHaptics provides settings.haptics, LocalDownloadGate provides gate) {
+                CompositionLocalProvider(
+                    LocalHaptics provides settings.haptics,
+                    LocalDownloadGate provides gate,
+                    LocalGulpPulse provides vm.queuedPulse,
+                ) {
                     Box(Modifier.fillMaxSize()) {
                         SkinBackground()
                         val contentPadding = PaddingValues(
@@ -115,6 +123,12 @@ fun AppRoot(vm: MainViewModel) {
             .padding(bottom = insets.calculateBottomPadding() + 98.dp, start = 24.dp, end = 24.dp)
         AppTheme(vm.accentPlatform, settings.skin) {
             ToastHost(vm.toasts, toastModifier)
+        }
+        // Gulp launch animation, once per launch (not again on rotation).
+        var introDone by rememberSaveable { mutableStateOf(false) }
+        if (!introDone) {
+            val tokens = tokensFor(settings.skin)
+            GulpIntro(tokens.background, tokens.textPrimary, onFinished = { introDone = true })
         }
     }
 }

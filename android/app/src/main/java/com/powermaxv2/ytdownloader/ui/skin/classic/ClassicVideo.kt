@@ -1,6 +1,8 @@
 package com.powermaxv2.ytdownloader.ui.skin.classic
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,24 +59,37 @@ import com.powermaxv2.ytdownloader.ui.SegmentedControl
 import com.powermaxv2.ytdownloader.ui.SelectableTile
 import com.powermaxv2.ytdownloader.ui.TileGrid
 import com.powermaxv2.ytdownloader.ui.modeIcon
+import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.resultCard
 import com.powermaxv2.ytdownloader.ui.staggeredEntrance
 
-/** Thumbnail with the platform logo and the duration. */
+/** Thumbnail with the platform logo and the duration; the image settles from a slight zoom when it appears. */
 @Composable
-private fun HeroThumbnail(url: String?, duration: Double?, platform: Platform) {
+private fun HeroThumbnail(url: String?, duration: Double?, platform: Platform, modifier: Modifier = Modifier) {
+    val zoom = remember(url) { Animatable(1.08f) }
+    LaunchedEffect(url) { zoom.animateTo(1f, tween(1100, easing = FastOutSlowInEasing)) }
+    val shade = Palette.Background
     Box(
-        Modifier
+        modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(18.dp))
             .background(Palette.Surface2),
     ) {
-        RemoteImage(url, Modifier.fillMaxSize())
+        RemoteImage(
+            url,
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = zoom.value
+                    scaleY = zoom.value
+                },
+        )
+        // Warm shade at the bottom, in the background colour of the skin.
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.45f))),
+                .background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to shade.copy(alpha = 0.6f))),
         )
         Box(
             Modifier
@@ -120,14 +137,16 @@ fun ClassicVideoCard(
     val platform = Links.platform(sourceUrl)
 
     Column(Modifier.resultCard(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        HeroThumbnail(info.thumbnail, info.duration, platform)
-        Column(Modifier.staggeredEntrance(0, key = info.id), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        HeroThumbnail(info.thumbnail, info.duration, platform, Modifier.staggeredEntrance(0, key = info.id))
+        Column(Modifier.staggeredEntrance(1, key = info.id), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
                 info.title,
                 color = Palette.TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 23.sp,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontFamily = LocalTokens.current.display,
+                letterSpacing = (-0.2).sp,
+                lineHeight = 24.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -141,7 +160,7 @@ fun ClassicVideoCard(
                 label = { it.title },
                 icon = ::modeIcon,
                 onSelect = { mode = it },
-                modifier = Modifier.staggeredEntrance(1, key = info.id),
+                modifier = Modifier.staggeredEntrance(2, key = info.id),
             )
         }
         AnimatedContent(
@@ -192,7 +211,9 @@ fun ClassicVideoCard(
             "Télécharger",
             Modifier
                 .fillMaxWidth()
-                .padding(top = 2.dp),
+                .padding(top = 2.dp)
+                .staggeredEntrance(3, key = info.id)
+                .sheen(),
             icon = Icons.Rounded.Download,
             subtitle = if (mode == MediaMode.VIDEO) "${quality?.label ?: "Max"} · ${container.title}" else "Audio · ${audioFormat.title}",
         ) {

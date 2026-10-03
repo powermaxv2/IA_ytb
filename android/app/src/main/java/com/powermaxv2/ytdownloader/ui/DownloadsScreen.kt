@@ -171,7 +171,7 @@ private fun EmptyDownloads(onStart: () -> Unit) {
         Text("Aucun téléchargement", color = Palette.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Les vidéos arrivent dans Films › YT Downloader, la musique dans Musique et les photos dans Images.",
+            "Les vidéos arrivent dans Films › ${MediaExporter.FOLDER}, la musique dans Musique et les photos dans Images.",
             color = Palette.TextSecondary,
             fontSize = 13.5.sp,
             lineHeight = 19.sp,
@@ -183,7 +183,7 @@ private fun EmptyDownloads(onStart: () -> Unit) {
     }
 }
 
-/** "Movies/YT Downloader" → "Films › YT Downloader": the names the phone's apps show. */
+/** "Movies/Gulp" → "Films › Gulp": the names the phone's apps show. */
 private fun SavedFile.place(): String {
     val top = location.substringBefore('/')
     val name = when (top) {
