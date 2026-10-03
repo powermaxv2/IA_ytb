@@ -38,6 +38,10 @@ import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
 import com.powermaxv2.ytdownloader.ui.hub.HomeContent
 import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
+import com.powermaxv2.ytdownloader.ui.tools.FileDropZone
+import com.powermaxv2.ytdownloader.ui.tools.ToolScaffold
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.foundation.layout.PaddingValues
 import com.powermaxv2.ytdownloader.ui.skin.SkinBottomBar
 import com.powermaxv2.ytdownloader.ui.skin.SkinGuide
@@ -74,6 +78,15 @@ class SkinScreenshotTest {
     @Test fun classicHome() = home(Skin.CLASSIC, "classic")
     @Test fun paperHome() = home(Skin.PAPER, "paper")
     @Test fun terminalHome() = home(Skin.TERMINAL, "terminal")
+
+    // The home screen is taller than the phone: the file tools' cards, rendered on their own.
+    @Test fun classicHomeFileTools() = homeFileTools(Skin.CLASSIC, "classic")
+    @Test fun paperHomeFileTools() = homeFileTools(Skin.PAPER, "paper")
+    @Test fun terminalHomeFileTools() = homeFileTools(Skin.TERMINAL, "terminal")
+
+    @Test fun classicToolScaffold() = toolScaffold(Skin.CLASSIC, "classic")
+    @Test fun paperToolScaffold() = toolScaffold(Skin.PAPER, "paper")
+    @Test fun terminalToolScaffold() = toolScaffold(Skin.TERMINAL, "terminal")
 
     @Test fun classicSettingsInterface() = settings(Skin.CLASSIC, "classic")
     @Test fun paperSettingsInterface() = settings(Skin.PAPER, "paper")
@@ -155,6 +168,50 @@ class SkinScreenshotTest {
             }
         }
         capture("${name}_home")
+    }
+
+    /** The Convertisseur and Aperçu cards (and the "À venir" one), without the downloader card above them. */
+    private fun homeFileTools(skin: Skin, name: String) {
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, skin) {
+                Box(Modifier.fillMaxSize()) {
+                    SkinBackground()
+                    HomeContent(
+                        tools = ToolRegistry.tools.filter { it.id != ToolRegistry.DOWNLOADER },
+                        onOpen = {},
+                        onSettings = {},
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                    )
+                }
+            }
+        }
+        capture("${name}_home_file_tools")
+    }
+
+    /** Shared frame of the file tools: top bar and the "Choisir un fichier" drop zone. */
+    private fun toolScaffold(skin: Skin, name: String) {
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, skin) {
+                Box(Modifier.fillMaxSize()) {
+                    SkinBackground()
+                    ToolScaffold(
+                        title = "Convertisseur",
+                        command = "convert",
+                        subtitle = "Change le format d'une photo, d'un son, d'une vidéo ou d'un document.",
+                        onHome = {},
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                    ) {
+                        FileDropZone(
+                            title = "Choisir un fichier",
+                            hint = "Photo, son, vidéo ou document",
+                            icon = Icons.Rounded.UploadFile,
+                            onClick = {},
+                        )
+                    }
+                }
+            }
+        }
+        capture("${name}_tool_scaffold")
     }
 
     private fun settings(skin: Skin, name: String) {

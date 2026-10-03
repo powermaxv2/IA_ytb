@@ -72,15 +72,18 @@ fun AppRoot(vm: MainViewModel) {
     val gate = rememberDownloadGate()
     // Back: settings tab → previous tab, a tool → home screen, home settings → home screen; home → leaves the app.
     BackHandler(enabled = vm.place != Place.HOME) {
-        if (vm.place == Place.TOOL && vm.tab != Tab.SETTINGS) vm.goHome() else vm.closeSettings()
+        // (The Réglages tab only belongs to the downloader: from any other tool, back goes home.)
+        val inDownloaderSettings = vm.toolId == ToolRegistry.DOWNLOADER && vm.tab == Tab.SETTINGS
+        if (vm.place == Place.TOOL && !inDownloaderSettings) vm.goHome() else vm.closeSettings()
     }
 
     val insets = WindowInsets.systemBars.asPaddingValues()
     Box(Modifier.fillMaxSize()) {
         // Switching skin crossfades the whole app; each side draws with its own skin's theme.
         Crossfade(targetState = settings.skin, animationSpec = tween(350), label = "skin") { skin ->
-            // The home screen wears the Gulp colours; a tool wears its own (the downloader: the current tab's).
-            AppTheme(if (vm.place == Place.TOOL) vm.accentPlatform else Platform.YOUTUBE, skin) {
+            // The home screen and the file tools wear the Gulp colours; the downloader wears its current tab's.
+            val inDownloader = vm.place == Place.TOOL && vm.toolId == ToolRegistry.DOWNLOADER
+            AppTheme(if (inDownloader) vm.accentPlatform else Platform.YOUTUBE, skin) {
                 CompositionLocalProvider(
                     LocalHaptics provides settings.haptics,
                     LocalDownloadGate provides gate,

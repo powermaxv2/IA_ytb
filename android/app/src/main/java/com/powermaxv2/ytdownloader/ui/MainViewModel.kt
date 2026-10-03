@@ -144,6 +144,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         place = Place.HOME
     }
 
+    /**
+     * File handed to a tool from outside (Partager → "Convertir avec Gulp" / "Aperçu avec Gulp", Ouvrir avec),
+     * waiting for that tool's screen to take it with [consumePendingFile]. Never persisted.
+     */
+    var pendingFile by mutableStateOf<Uri?>(null)
+        private set
+
+    /** Opens the tool [id] with [uri] (a content:// URI) waiting for it in [pendingFile]. */
+    fun openToolWithFile(id: String, uri: Uri) {
+        if (ToolRegistry.find(id) == null) return
+        pendingFile = uri
+        openTool(id)
+    }
+
+    /** The waiting file, once: the tool screen calls it when it appears (and on each new [pendingFile]). */
+    fun consumePendingFile(): Uri? = pendingFile.also { pendingFile = null }
+
     /** From the home screen: settings over the home screen; inside the downloader: its Réglages tab. */
     fun openSettings() {
         if (place != Place.TOOL) {

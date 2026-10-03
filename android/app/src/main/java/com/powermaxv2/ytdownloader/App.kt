@@ -8,6 +8,7 @@ import com.powermaxv2.ytdownloader.core.Instagram
 import com.powermaxv2.ytdownloader.core.Notifications
 import com.powermaxv2.ytdownloader.core.Prefs
 import com.powermaxv2.ytdownloader.core.UpdateCheckJob
+import com.powermaxv2.ytdownloader.core.files.WorkDir
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,6 +35,8 @@ class App : Application() {
         // Leftovers of downloads interrupted by a crash or a force-stop.
         File(cacheDir, "jobs").deleteRecursively()
         File(cacheDir, "analyze").deleteRecursively()
+        // Copies of the files given to the tools (Convertisseur, Aperçu) never outlive a launch.
+        WorkDir.wipeAll(this)
         // The Instagram login is gone (1.4.0): the session it stored on the phone is deleted.
         Instagram.purgeAccountData(this)
 

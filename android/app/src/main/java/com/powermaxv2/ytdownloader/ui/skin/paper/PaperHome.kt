@@ -183,6 +183,21 @@ fun PaperToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
                 fontFamily = LocalTokens.current.display,
                 letterSpacing = (-1.5).sp,
             )
+            val icon = tool.icon
+            if (tool.platforms.isEmpty() && icon != null) {
+                Spacer(Modifier.width(12.dp))
+                // The tool's symbol next to its number, floating on the cream.
+                Box(
+                    Modifier
+                        .bob(index, amplitude = 2.5.dp)
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Palette.Background),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(24.dp))
+                }
+            }
             Spacer(Modifier.weight(1f))
             PaperStamp("PRÊT", accent, tilt = -7f, delayMs = 650)
         }

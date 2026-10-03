@@ -188,7 +188,22 @@ fun ClassicToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GulpMark(60.dp)
+                val icon = tool.icon
+                if (tool.platforms.isEmpty() && icon != null) {
+                    // A tool that is not about a website wears its own symbol on a gradient tile, floating.
+                    Box(
+                        Modifier
+                            .bob(index, amplitude = 3.dp)
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(accent.brush),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(icon, contentDescription = null, tint = Palette.OnAccent, modifier = Modifier.size(30.dp))
+                    }
+                } else {
+                    GulpMark(60.dp)
+                }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

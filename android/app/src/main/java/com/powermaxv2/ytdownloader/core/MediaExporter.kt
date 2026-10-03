@@ -9,6 +9,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
+import com.powermaxv2.ytdownloader.core.files.MimeTypes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -22,7 +23,7 @@ data class SavedFile(val uri: Uri, val mime: String, val name: String, val size:
 
 /**
  * Copies a finished file into the phone's public folders so it shows up in the Gallery / Music apps:
- * videos → Movies/Gulp, music → Music/Gulp, photos → Pictures/Gulp.
+ * videos → Movies/Gulp, music → Music/Gulp, photos → Pictures/Gulp, documents and anything else → Download/Gulp.
  */
 object MediaExporter {
     const val FOLDER = "Gulp"
@@ -36,16 +37,14 @@ object MediaExporter {
         OTHER(Environment.DIRECTORY_DOWNLOADS),
     }
 
-    private val fallbackMimes = mapOf(
-        "mp4" to "video/mp4", "m4v" to "video/mp4", "mkv" to "video/x-matroska", "webm" to "video/webm",
-        "mov" to "video/quicktime", "m4a" to "audio/mp4", "mp3" to "audio/mpeg", "opus" to "audio/ogg",
-        "ogg" to "audio/ogg", "flac" to "audio/flac", "wav" to "audio/wav", "jpg" to "image/jpeg",
-        "jpeg" to "image/jpeg", "png" to "image/png", "webp" to "image/webp", "heic" to "image/heic",
-    )
-
+    /**
+     * Type of a file to save, from its name: Android's table first, then [MimeTypes.byExtension] (video, audio,
+     * images incl. gif / bmp / tiff / avi, and documents: pdf, html, json, csv, md, txt, zip). Anything that is
+     * not video / audio / image lands in Download/Gulp.
+     */
     fun mimeOf(name: String): String {
         val ext = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: fallbackMimes[ext] ?: "application/octet-stream"
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: MimeTypes.byExtension[ext] ?: MimeTypes.OCTET_STREAM
     }
 
     private fun kindOf(mime: String): Kind = when {
