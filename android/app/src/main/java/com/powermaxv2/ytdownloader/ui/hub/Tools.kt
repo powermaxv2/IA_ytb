@@ -2,7 +2,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Preview
-import androidx.compose.material.icons.rounded.Transform
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -62,14 +62,14 @@ object ToolRegistry {
             name = "Convertisseur",
             tagline = "Change le format d'une photo, d'un son, d'une vidéo ou d'un document, sur le téléphone.",
             tags = listOf("Photo · Son · Vidéo", "Hors ligne", "Partager → Gulp"),
-            icon = Icons.Rounded.Transform,
+            icon = Icons.Rounded.SwapHoriz,
             screen = { vm -> ConverterTool(vm) },
         ),
         GulpTool(
             id = PREVIEW,
             name = "Aperçu",
             tagline = "Ouvre une image, un PDF, un texte ou une archive ZIP pour voir ce qu'il y a dedans.",
-            tags = listOf("Image · PDF · Texte", "Contenu des ZIP", "Ouvrir avec Gulp"),
+            tags = listOf("Image · PDF · Texte", "ZIP", "Ouvrir avec Gulp"),
             icon = Icons.Rounded.Preview,
             screen = { vm -> PreviewTool(vm) },
         ),
