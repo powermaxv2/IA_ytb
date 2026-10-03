@@ -46,6 +46,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Entry of the "Mise à jour disponible" notification: not exported, so other apps cannot start an update. -->
+        <activity-alias
+            android:name=".UpdateEntry"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+
         <service
             android:name=".core.DownloadService"
             android:exported="false"

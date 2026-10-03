@@ -36,6 +36,9 @@ import com.powermaxv2.ytdownloader.core.Skin
 import com.powermaxv2.ytdownloader.core.VideoFormat
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
+import com.powermaxv2.ytdownloader.ui.hub.HomeContent
+import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
+import androidx.compose.foundation.layout.PaddingValues
 import com.powermaxv2.ytdownloader.ui.skin.SkinBottomBar
 import com.powermaxv2.ytdownloader.ui.skin.SkinGuide
 import com.powermaxv2.ytdownloader.ui.skin.SkinHeader
@@ -67,6 +70,10 @@ class SkinScreenshotTest {
     @Test fun classicYoutubeVideo() = video(Skin.CLASSIC, "classic")
     @Test fun paperYoutubeVideo() = video(Skin.PAPER, "paper")
     @Test fun terminalYoutubeVideo() = video(Skin.TERMINAL, "terminal")
+
+    @Test fun classicHome() = home(Skin.CLASSIC, "classic")
+    @Test fun paperHome() = home(Skin.PAPER, "paper")
+    @Test fun terminalHome() = home(Skin.TERMINAL, "terminal")
 
     @Test fun classicSettingsInterface() = settings(Skin.CLASSIC, "classic")
     @Test fun paperSettingsInterface() = settings(Skin.PAPER, "paper")
@@ -132,6 +139,24 @@ class SkinScreenshotTest {
         capture("${name}_youtube_video")
     }
 
+    /** Home screen of the hub with the real list of tools (the downloader + the "À venir" ones). */
+    private fun home(skin: Skin, name: String) {
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, skin) {
+                Box(Modifier.fillMaxSize()) {
+                    SkinBackground()
+                    HomeContent(
+                        tools = ToolRegistry.tools,
+                        onOpen = {},
+                        onSettings = {},
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                    )
+                }
+            }
+        }
+        capture("${name}_home")
+    }
+
     private fun settings(skin: Skin, name: String) {
         composeRule.setContent {
             AppTheme(Platform.YOUTUBE, skin) {
@@ -170,7 +195,8 @@ class SkinScreenshotTest {
                         .padding(horizontal = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    SkinHeader(Platform.YOUTUBE, EngineState.Ready, onSettings = {})
+                    // As inside the hub: the logo leads back to the home screen.
+                    SkinHeader(Platform.YOUTUBE, EngineState.Ready, onSettings = {}, onHome = {})
                     SkinLinkCard(pane, enabled = true, onPaste = {}, onAnalyze = {}, onReset = {})
                     content()
                 }

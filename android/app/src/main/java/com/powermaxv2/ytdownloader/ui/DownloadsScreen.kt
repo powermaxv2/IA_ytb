@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.Inbox
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PriorityHigh
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
@@ -92,6 +93,8 @@ fun DownloadsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
             ScreenTitle("Téléchargements", summary, Modifier.weight(1f))
             Spacer(Modifier.width(10.dp))
+            IconCircleButton(Icons.Rounded.GridView, contentDescription = "Accueil", onClick = vm::goHome)
+            Spacer(Modifier.width(8.dp))
             IconCircleButton(Icons.Rounded.Settings, contentDescription = "Réglages", onClick = vm::openSettings)
         }
         UpdateBanner(vm, Modifier.padding(top = 14.dp))

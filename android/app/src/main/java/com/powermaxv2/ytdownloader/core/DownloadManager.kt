@@ -166,6 +166,7 @@ class DownloadManager(
 
     private suspend fun runYtDlp(id: String, request: DownloadRequest, workDir: File): List<File> {
         val outDir = File(workDir, "out").apply { mkdirs() }
+        val outRoot = outDir.canonicalPath + File.separator
         val tracker = ProgressTracker(request.mode)
         val tail = ArrayDeque<String>()
         val produced = mutableListOf<File>()
@@ -176,7 +177,10 @@ class DownloadManager(
                 val line = raw.trim()
                 if (line.isEmpty()) return@execute
                 when {
-                    line.startsWith("[FILE]") -> synchronized(produced) { produced += File(line.removePrefix("[FILE]").trim()) }
+                    // Only files inside this job's folder: anything else printed after [FILE] is ignored.
+                    line.startsWith("[FILE]") -> runCatching { File(line.removePrefix("[FILE]").trim()).canonicalFile }.getOrNull()
+                        ?.takeIf { it.path.startsWith(outRoot) }
+                        ?.let { synchronized(produced) { produced += it } }
                     line.startsWith("[FMT]") -> tracker.onFormats(line.removePrefix("[FMT]"))
                     line.startsWith("[PROG]") -> {
                         val progress = tracker.onProgress(line.removePrefix("[PROG]")) ?: return@execute

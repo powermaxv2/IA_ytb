@@ -59,7 +59,10 @@ jobs:
           path: ~/.android/debug.keystore
           key: android-debug-keystore-v1
 
+      # The release key only reaches tag builds: a branch or pull request build (whose Gradle scripts anyone with
+      # push access can change) never sees it and is signed with the debug key.
       - name: Decode release keystore
+        if: env.IS_RELEASE == 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -73,19 +76,23 @@ jobs:
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
             echo "Signature : clé de release"
-          elif [ "$IS_RELEASE" = true ]; then
+          else
             echo "::error::Une release doit être signée : ajoutez les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD."
             exit 1
-          else
-            echo "Signature : clé de debug (ajoutez ANDROID_KEYSTORE_BASE64 pour une signature permanente)"
           fi
 
       - name: Build APKs
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon --stacktrace assembleRelease
+          ANDROID_KEYSTORE_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/android-v') && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          ANDROID_KEY_ALIAS: ${{ startsWith(github.ref, 'refs/tags/android-v') && secrets.ANDROID_KEY_ALIAS || '' }}
+          ANDROID_KEY_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/android-v') && secrets.ANDROID_KEY_PASSWORD || '' }}
+        run: |
+          [ "$IS_RELEASE" = true ] || echo "Signature : clé de debug (build de test ; seules les releases utilisent la clé de release)"
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Remove release keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
 
       - name: Check signature and collect APKs
         env:

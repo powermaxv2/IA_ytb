@@ -1,5 +1,6 @@
 package com.powermaxv2.ytdownloader.ui.skin.terminal
 
+import com.powermaxv2.ytdownloader.ui.hub.HomeLink
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -318,7 +319,7 @@ private fun terminalTitle(platform: Platform) = when (platform) {
  * typewriter title with a glowing blinking underscore, menu square.
  */
 @Composable
-fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit) {
+fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit, onHome: (() -> Unit)? = null) {
     val accent = LocalAccent.current.start
     val tokens = LocalTokens.current
     val title = terminalTitle(platform)
@@ -344,7 +345,7 @@ fun TerminalHeader(platform: Platform, engineState: EngineState, onSettings: () 
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GulpMark(18.dp, style = markStyle)
+                HomeLink(onHome, accent, chevron = 18.dp) { GulpMark(18.dp, style = markStyle) }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     PROMPT_USER.take(prompt),

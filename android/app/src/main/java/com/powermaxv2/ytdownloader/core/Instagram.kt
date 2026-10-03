@@ -84,7 +84,8 @@ object Instagram {
         val items = nodes.mapNotNull(::media)
         if (items.all { it.isVideo }) return null
         return InstagramPost(
-            shortcode = shortcode(url) ?: json.str("id") ?: "post",
+            // Part of the file names: the id given by yt-dlp is reduced to safe characters.
+            shortcode = shortcode(url) ?: json.str("id")?.replace(Regex("[^A-Za-z0-9._-]"), "_")?.take(64)?.trim('.') ?: "post",
             sourceUrl = url,
             owner = json.str("channel") ?: nodes.firstNotNullOfOrNull { it.str("channel") },
             caption = json.str("description") ?: nodes.firstNotNullOfOrNull { it.str("description") },

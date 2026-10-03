@@ -14,9 +14,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -61,22 +60,27 @@ import com.powermaxv2.ytdownloader.ui.brand.LocalGulpPulse
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
-import com.powermaxv2.ytdownloader.ui.skin.SkinBottomBar
+import com.powermaxv2.ytdownloader.core.Platform
+import com.powermaxv2.ytdownloader.ui.hub.HomeScreen
+import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 
 @Composable
 fun AppRoot(vm: MainViewModel) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
-    val jobs by vm.downloads.jobs.collectAsStateWithLifecycle()
     val gate = rememberDownloadGate()
-    BackHandler(enabled = vm.tab == Tab.SETTINGS) { vm.closeSettings() }
+    // Back: settings tab → previous tab, a tool → home screen, home settings → home screen; home → leaves the app.
+    BackHandler(enabled = vm.place != Place.HOME) {
+        if (vm.place == Place.TOOL && vm.tab != Tab.SETTINGS) vm.goHome() else vm.closeSettings()
+    }
 
     val insets = WindowInsets.systemBars.asPaddingValues()
     Box(Modifier.fillMaxSize()) {
         // Switching skin crossfades the whole app; each side draws with its own skin's theme.
         Crossfade(targetState = settings.skin, animationSpec = tween(350), label = "skin") { skin ->
-            AppTheme(vm.accentPlatform, skin) {
+            // The home screen wears the Gulp colours; a tool wears its own (the downloader: the current tab's).
+            AppTheme(if (vm.place == Place.TOOL) vm.accentPlatform else Platform.YOUTUBE, skin) {
                 CompositionLocalProvider(
                     LocalHaptics provides settings.haptics,
                     LocalDownloadGate provides gate,
@@ -84,35 +88,31 @@ fun AppRoot(vm: MainViewModel) {
                 ) {
                     Box(Modifier.fillMaxSize()) {
                         SkinBackground()
-                        val contentPadding = PaddingValues(
-                            top = insets.calculateTopPadding() + 16.dp,
-                            bottom = insets.calculateBottomPadding() + 104.dp,
-                        )
                         AnimatedContent(
-                            targetState = vm.tab,
+                            targetState = vm.place,
                             transitionSpec = {
-                                val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                                (slideInHorizontally(spring(dampingRatio = 0.92f, stiffness = 380f)) { it * direction / 6 } + fadeIn(tween(240))) togetherWith
-                                    (slideOutHorizontally(tween(200)) { -it * direction / 6 } + fadeOut(tween(160)))
+                                // Into a tool: the home screen grows past the viewer while the tool comes up from
+                                // slightly smaller, like walking through a door; out of it: the reverse.
+                                val forward = targetState.ordinal > initialState.ordinal
+                                val enter = scaleIn(spring(dampingRatio = 0.86f, stiffness = 320f), initialScale = if (forward) 0.9f else 1.08f) +
+                                    fadeIn(tween(260, delayMillis = 60))
+                                val exit = scaleOut(tween(260), targetScale = if (forward) 1.08f else 0.92f) + fadeOut(tween(200))
+                                enter togetherWith exit
                             },
-                            label = "tabs",
-                        ) { tab ->
-                            when (tab) {
-                                Tab.YOUTUBE -> LinkScreen(vm, vm.youtube, contentPadding)
-                                Tab.INSTAGRAM -> LinkScreen(vm, vm.insta, contentPadding)
-                                Tab.OTHER -> LinkScreen(vm, vm.other, contentPadding)
-                                Tab.DOWNLOADS -> DownloadsScreen(vm, contentPadding)
-                                Tab.SETTINGS -> SettingsScreen(vm, contentPadding)
+                            label = "hub",
+                        ) { place ->
+                            when (place) {
+                                Place.HOME -> HomeScreen(vm, insets)
+                                Place.SETTINGS -> SettingsScreen(
+                                    vm,
+                                    PaddingValues(top = insets.calculateTopPadding() + 16.dp, bottom = insets.calculateBottomPadding() + 32.dp),
+                                )
+                                Place.TOOL -> {
+                                    val tool = ToolRegistry.find(vm.toolId)
+                                    if (tool?.screen != null) tool.screen.invoke(vm) else HomeScreen(vm, insets)
+                                }
                             }
                         }
-                        SkinBottomBar(
-                            tab = vm.tab,
-                            activeCount = jobs.count { it.isActive },
-                            pulse = vm.queuedPulse,
-                            onSelect = vm::selectTab,
-                            bottomInset = insets.calculateBottomPadding(),
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                        )
                     }
                 }
             }

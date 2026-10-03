@@ -68,13 +68,17 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         when (intent?.action) {
             Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let(viewModel::onSharedText)
-            ACTION_SHOW_DOWNLOADS -> viewModel.selectTab(Tab.DOWNLOADS)
-            ACTION_APP_UPDATE -> viewModel.startAppUpdate()
+            ACTION_SHOW_DOWNLOADS -> viewModel.showInDownloader(Tab.DOWNLOADS)
+            // Only from our own notification (non-exported alias): MainActivity is exported for the launcher and Partager.
+            ACTION_APP_UPDATE -> if (intent.component?.className == UPDATE_ENTRY) viewModel.startAppUpdate()
         }
     }
 
     companion object {
         const val ACTION_SHOW_DOWNLOADS = "com.powermaxv2.ytdownloader.SHOW_DOWNLOADS"
         const val ACTION_APP_UPDATE = "com.powermaxv2.ytdownloader.APP_UPDATE"
+
+        /** activity-alias of the manifest that the update notification opens. */
+        const val UPDATE_ENTRY = "com.powermaxv2.ytdownloader.UpdateEntry"
     }
 }

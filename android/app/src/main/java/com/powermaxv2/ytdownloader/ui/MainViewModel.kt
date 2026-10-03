@@ -32,6 +32,7 @@ import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.core.commonArguments
 import com.powermaxv2.ytdownloader.core.str
+import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
 import com.yausername.youtubedl_android.YoutubeDLException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,9 @@ import java.util.Locale
 
 /** Settings is not in the bottom bar: it opens from the gear in each screen header. */
 enum class Tab { YOUTUBE, INSTAGRAM, OTHER, DOWNLOADS, SETTINGS }
+
+/** Where the hub is: the home screen (list of tools), a tool, or the settings opened from the home screen. */
+enum class Place { HOME, TOOL, SETTINGS }
 
 sealed interface Phase {
     data object Idle : Phase
@@ -81,6 +85,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val youtube = LinkPane(Platform.YOUTUBE, Tab.YOUTUBE, "YouTube")
     val insta = LinkPane(Platform.INSTAGRAM, Tab.INSTAGRAM, "Instagram")
     val other = LinkPane(Platform.OTHER, Tab.OTHER, "Autres")
+
+    /** Every launch starts on the home screen. */
+    var place by mutableStateOf(Place.HOME)
+        private set
+
+    /** Tool shown when [place] is [Place.TOOL]. */
+    var toolId by mutableStateOf(ToolRegistry.DOWNLOADER)
+        private set
 
     var tab by mutableStateOf(Tab.YOUTUBE)
         private set
@@ -121,13 +133,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Opens a tool of the hub; ignored for an unknown tool or one that is not out yet. */
+    fun openTool(id: String) {
+        if (ToolRegistry.find(id) == null) return
+        toolId = id
+        place = Place.TOOL
+    }
+
+    fun goHome() {
+        place = Place.HOME
+    }
+
+    /** From the home screen: settings over the home screen; inside the downloader: its Réglages tab. */
     fun openSettings() {
+        if (place != Place.TOOL) {
+            place = Place.SETTINGS
+            return
+        }
         if (tab != Tab.SETTINGS) tabBeforeSettings = tab
         tab = Tab.SETTINGS
     }
 
     fun closeSettings() {
+        if (place == Place.SETTINGS) {
+            place = Place.HOME
+            return
+        }
         selectTab(tabBeforeSettings)
+    }
+
+    /** Opens the downloader on [value] (notification "Fichiers", shared link). */
+    fun showInDownloader(value: Tab) {
+        openTool(ToolRegistry.DOWNLOADER)
+        selectTab(value)
     }
 
     /** Back to the last link tab (from the empty Files screen). */
@@ -155,7 +193,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun show(pane: LinkPane) {
-        selectTab(pane.tab)
+        showInDownloader(pane.tab)
     }
 
     fun onSharedText(text: String) {
