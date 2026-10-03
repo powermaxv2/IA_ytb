@@ -19,7 +19,7 @@ sdk=${ANDROID_SDK_ROOT:-/home/claude/android-sdk}
 apksigner="$sdk/build-tools/35.0.0/apksigner"
 aapt2="$sdk/aapt2-qemu/aapt2"
 # Signing key of the APKs already installed: Android refuses an update signed with another key.
-signer=31f90285155aba5d3ae69ee17cee4799188109a97827bde61aecd3d0ef77496a
+signer=3c68a4957a1a1d90274c540a1f25c12be2e1259c3a295ea761b234e3d096f4f5
 
 if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
   echo "La release $tag existe déjà : augmentez android/VERSION." >&2

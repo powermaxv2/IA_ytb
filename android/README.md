@@ -49,6 +49,10 @@ Sans ces secrets, les builds de branche utilisent la clé de debug du CI (gardé
 `ANDROID_SIGNER_SHA256` (empreinte SHA-256 du certificat des APK déjà installés) fait échouer une release signée
 avec une autre clé, que les téléphones refuseraient.
 
+Depuis la version qui suit la 1.5.1, l'app est signée avec une nouvelle clé (certificat SHA-256
+`3c68a495…96f4f5`) : la mise à jour depuis la 1.5.1 ou une version plus ancienne demande de désinstaller l'app
+une fois, puis d'installer le nouvel APK. Les suivantes s'installent ensuite par-dessus.
+
 ## Mises à jour automatiques (depuis 1.3.0)
 
 L'app cherche les nouvelles versions dans les **Releases** GitHub nommées `android-vX.Y.Z` : à l'ouverture
