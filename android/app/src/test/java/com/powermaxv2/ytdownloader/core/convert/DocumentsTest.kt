@@ -101,6 +101,9 @@ class DocumentsTest {
             assertEquals(Nesting.MESSAGE, e.message)
         }
         assertEquals(3, Nesting.markdownDepth("> > - texte"))
+        assertEquals(2, Nesting.markdownDepth("- a\n  - b"))
+        assertEquals(0, Nesting.markdownDepth("        code indenté"))
+        assertEquals(2, Nesting.markdownDepth("1. un\n   1) deux"))
         assertTrue(MarkdownHtml.render("> citation\n\n- a\n  - b\n", "x").contains("<blockquote>"))
     }
 

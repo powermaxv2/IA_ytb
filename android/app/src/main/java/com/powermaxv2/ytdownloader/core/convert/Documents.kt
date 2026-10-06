@@ -225,37 +225,44 @@ object Nesting {
 
     /**
      * Rough deepest block nesting of Markdown: on each line, the container markers before the text
-     * (">" quotes, "-", "*", "+" or "1." list items) plus indentation in steps of two spaces. Generous on
+     * (">" quotes, "-", "*", "+" or "1." list items) plus the indentation before each marker in steps of two
+     * spaces (the single space after a marker does not count, nor the spaces before the text). Generous on
      * purpose: it only has to catch hostile files, not to measure real ones exactly.
      */
     fun markdownDepth(text: String): Int {
         var max = 0
         for (line in text.lineSequence()) {
             var depth = 0
+            var indent = 0
             var spaces = 0
             var i = 0
             while (i < line.length) {
                 val c = line[i]
-                when {
-                    c == ' ' -> spaces++
-                    c == '\t' -> spaces += 4
-                    c == '>' -> depth++
-                    (c == '-' || c == '*' || c == '+') && i + 1 < line.length && line[i + 1] == ' ' -> depth++
+                val marker = when {
+                    c == ' ' -> { spaces++; false }
+                    c == '\t' -> { spaces += 4; false }
+                    c == '>' -> true
+                    (c == '-' || c == '*' || c == '+') && i + 1 < line.length && line[i + 1] == ' ' -> true
                     c.isDigit() -> {
                         var j = i
                         while (j < line.length && line[j].isDigit()) j++
                         if (j < line.length && (line[j] == '.' || line[j] == ')')) {
-                            depth++
                             i = j
+                            true
                         } else {
                             break
                         }
                     }
                     else -> break
                 }
+                if (marker) {
+                    depth++
+                    indent += spaces / 2
+                    spaces = 0
+                }
                 i++
             }
-            val total = depth + spaces / 2
+            val total = depth + indent
             if (total > max) max = total
         }
         return max
