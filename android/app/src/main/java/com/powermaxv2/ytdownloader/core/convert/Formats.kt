@@ -47,7 +47,7 @@ enum class Target(val ext: String, val label: String, val family: Family, val de
     WEBM("webm", "WebM", Family.VIDEO, "VP9 · Opus"),
     MOV("mov", "MOV", Family.VIDEO, "H.264 · AAC"),
     AVI("avi", "AVI", Family.VIDEO, "MPEG-4 · MP3"),
-    GIF("gif", "GIF", Family.VIDEO, "Animé, sans son, 30 s"),
+    GIF("gif", "GIF", Family.VIDEO, "Animé, muet, 30 s"),
     MP3("mp3", "MP3", Family.AUDIO, "Lu partout"),
     M4A("m4a", "M4A", Family.AUDIO, "AAC"),
     OPUS("opus", "Opus", Family.AUDIO, "Très léger"),

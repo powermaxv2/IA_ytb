@@ -162,6 +162,19 @@ internal fun MainButton(
 internal fun SideButton(text: String, icon: ImageVector?, modifier: Modifier = Modifier, onClick: () -> Unit) {
     when (LocalSkin.current) {
         Skin.TERMINAL -> TermButton(text.uppercase(), modifier, solid = false, onClick = onClick)
+        // Papier: a white card on the cream page (the tonal cream button would vanish into it).
+        Skin.PAPER -> Row(
+            modifier
+                .bounceClick(onClick = onClick)
+                .paperCard(RoundedCornerShape(18.dp))
+                .height(50.dp)
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            icon?.let { Icon(it, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(19.dp)) }
+            Text(text, color = Palette.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         else -> TonalButton(text, icon, modifier, onClick = onClick)
     }
 }
@@ -358,11 +371,11 @@ internal fun FormatTile(label: String, detail: String, selected: Boolean, index:
                 )
             }
             Text(
-                if (skin == Skin.TERMINAL) "# ${detail.lowercase()}" else detail,
+                if (skin == Skin.TERMINAL) detail.lowercase() else detail,
                 color = detailColor,
                 fontSize = if (skin == Skin.TERMINAL) 10.5.sp else 11.5.sp,
                 lineHeight = 14.sp,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
         }
