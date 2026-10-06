@@ -77,6 +77,31 @@ class DocumentsTest {
         assertTrue(html.contains("&lt;script&gt;"))
         assertFalse(html.contains("javascript:"))
         assertTrue(html.contains("Content-Security-Policy"))
+        // No remote fetches from the page: images only as data: URIs.
+        assertTrue(html.contains("img-src data:;"))
+        assertFalse(html.contains("https:;"))
+    }
+
+    @Test fun deeplyNestedJsonIsRefusedNotCrashing() {
+        assertRefused { CsvJson.jsonToCsv("[".repeat(100_000) + "]".repeat(100_000)) }
+        assertRefused { CsvJson.jsonToCsv("{\"a\":".repeat(50_000) + "1" + "}".repeat(50_000)) }
+        // Brackets inside strings do not count.
+        assertEquals("a\r\n[[[[[[\r\n", CsvJson.jsonToCsv("[{\"a\":\"[[[[[[\"}]"))
+        assertEquals(150, Nesting.jsonDepth("[".repeat(150) + "]".repeat(150)))
+        assertEquals(1, Nesting.jsonDepth("[\"\\\"[[\"]"))
+    }
+
+    @Test fun deeplyNestedMarkdownIsRefusedNotCrashing() {
+        assertRefused { MarkdownHtml.render(">".repeat(100_000) + " fond", "x") }
+        assertRefused { MarkdownHtml.render((0 until 5_000).joinToString("\n") { "  ".repeat(it) + "- item" }, "x") }
+        // Inline nesting the pre-check does not see: either it renders or the overflow becomes a DocumentError.
+        try {
+            MarkdownHtml.render("*_".repeat(5_000) + "x" + "_*".repeat(5_000), "x")
+        } catch (e: DocumentError) {
+            assertEquals(Nesting.MESSAGE, e.message)
+        }
+        assertEquals(3, Nesting.markdownDepth("> > - texte"))
+        assertTrue(MarkdownHtml.render("> citation\n\n- a\n  - b\n", "x").contains("<blockquote>"))
     }
 
     private fun assertRefused(block: () -> Unit) {

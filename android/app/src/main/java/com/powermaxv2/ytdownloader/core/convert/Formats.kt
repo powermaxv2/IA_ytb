@@ -198,7 +198,7 @@ object Formats {
     /** Short line under a tile; a few depend on the source ("Une image par page" from a PDF). */
     fun detail(category: Category, target: Target, multiple: Boolean = false): String = when {
         category == Category.PDF -> "Une image par page"
-        category == Category.IMAGE && target == Target.PDF -> if (multiple) "Une photo par page" else "Page A4"
+        category == Category.IMAGE && target == Target.PDF -> if (multiple) "$MAX_PDF_PHOTOS photos au plus" else "Page A4"
         else -> target.detail
     }
 
@@ -254,6 +254,19 @@ object Formats {
         }
     }
 
+    /** Most photos in one PDF: PdfDocument keeps every page in memory until the file is written. */
+    const val MAX_PDF_PHOTOS = 24
+
+    /**
+     * Name of one page rendered from a PDF: "<base> - page 007.jpg", the base shortened so the whole name stays
+     * within [SafeNames.MAX_LENGTH] and the page number is never cut.
+     */
+    fun pageName(base: String, number: String, ext: String): String {
+        val suffix = " - page $number.$ext"
+        val room = (SafeNames.MAX_LENGTH - suffix.length).coerceAtLeast(1)
+        return base.take(room).trimEnd('.', ' ').ifEmpty { "page" } + suffix
+    }
+
     /** Name of the converted file: the source name with the target's extension ("Vacances.mkv" → "Vacances.mp4"). */
     fun outputName(inputName: String, target: Target): String = SafeNames.withExtension(inputName, target.ext)
 }
@@ -270,12 +283,29 @@ object FfmpegArgs {
         "-protocol_whitelist", "file,pipe", "-i", input,
     )
 
-    /** Full arguments to turn [input] into [output] as [target]. */
-    fun build(input: String, output: String, target: Target, options: ConvertOptions): List<String> {
-        require(input.startsWith("/") && output.startsWith("/")) { "Chemins absolus attendus" }
+    /**
+     * Full arguments to turn [input] into [output] as [target]. Both paths must be absolute, normalised and inside
+     * [root] (the tools' work dir, `cacheDir/gulp-work`): FFmpeg never touches anything else.
+     */
+    fun build(root: String, input: String, output: String, target: Target, options: ConvertOptions): List<String> {
+        require(isInside(root, input) && isInside(root, output)) { "Chemins hors du dossier de travail" }
         require(input != output) { "Entrée et sortie identiques" }
         return prefix(input) + codec(target, options) + output
     }
+
+    /** [path] is absolute, has no "." / ".." / empty segment, and lies strictly under the absolute [root]. */
+    fun isInside(root: String, path: String): Boolean {
+        val base = root.trimEnd('/')
+        if (!base.startsWith("/") || base.length < 2 || !path.startsWith("$base/")) return false
+        val segments = path.substring(1).split('/')
+        return segments.none { it.isEmpty() || it == "." || it == ".." }
+    }
+
+    /**
+     * Extension for the fixed work names FFmpeg sees ("input.mkv", "output.mp4"): the user's name never reaches
+     * FFmpeg, so a "%d" in it cannot turn into an image-sequence pattern. Anything odd becomes "bin".
+     */
+    fun safeExt(ext: String): String = ext.lowercase().takeIf { it.matches(Regex("[a-z0-9]{1,8}")) } ?: "bin"
 
     /** Longest output for [target], in seconds (FFmpeg `-t`), or null. */
     fun maxSeconds(target: Target): Int? = if (target == Target.GIF) Formats.GIF_MAX_SECONDS else null
@@ -348,5 +378,19 @@ object FfmpegArgs {
         return "fps=${quality.gifFps}," +
             "scale='if(gt(iw,ih),min($side,iw),-2)':'if(gt(iw,ih),-2,min($side,ih))':flags=lanczos," +
             "split[a][b];[a]palettegen=stats_mode=single[p];[b][p]paletteuse=new=1:dither=bayer:bayer_scale=4"
+    }
+}
+
+/** Pure arithmetic of the bounded photo decodes (unit tested). */
+object ImageMath {
+    /**
+     * Power-of-two BitmapFactory sample size so that the decoded image's longest side is at most [maxSide]
+     * (a 8000 px photo with maxSide 4096 → 2, i.e. 4000 px).
+     */
+    fun sampleSize(width: Int, height: Int, maxSide: Int): Int {
+        val longest = maxOf(width, height)
+        var sample = 1
+        while (longest / sample > maxSide) sample *= 2
+        return sample
     }
 }

@@ -31,8 +31,12 @@ object Images {
     /** Longest side of a decoded photo. */
     const val MAX_SIDE = 4096
 
-    /** Longest side of a photo placed on a PDF page (about 150 dpi on A4: sharp, and the PDF stays reasonable). */
-    const val PDF_IMAGE_SIDE = 1754
+    /**
+     * Longest side of a photo placed on a PDF page (about 150 dpi across A4). PdfDocument keeps every page's pixels
+     * until writeTo(): drawn as RGB_565, a page holds at most 1240 × 1240 × 2 ≈ 3 MB, so with
+     * [Formats.MAX_PDF_PHOTOS] (24) photos the worst case is ≈ 74 MB (≈ 148 MB if Skia kept them as ARGB).
+     */
+    const val PDF_IMAGE_SIDE = 1240
 
     /** Longest side of a rendered PDF page. */
     const val PDF_PAGE_SIDE = 2048
@@ -81,8 +85,7 @@ object Images {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-        var sample = 1
-        while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSide) sample *= 2
+        val sample = ImageMath.sampleSize(bounds.outWidth, bounds.outHeight, maxSide)
         val options = BitmapFactory.Options().apply {
             inSampleSize = sample
             inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -161,11 +164,20 @@ object Images {
      * [onPage] gets the number of pages done.
      */
     suspend fun imagesToPdf(images: List<File>, out: File, onPage: (Int) -> Unit) {
+        require(images.size <= Formats.MAX_PDF_PHOTOS)
         val document = PdfDocument()
         try {
             images.forEachIndexed { index, file ->
                 coroutineContext.ensureActive()
-                val bitmap = decode(file, PDF_IMAGE_SIDE)
+                val decoded = decode(file, PDF_IMAGE_SIDE)
+                // Half the memory per page (photos on paper do not need an alpha channel); white under transparency.
+                val bitmap = Bitmap.createBitmap(decoded.width, decoded.height, Bitmap.Config.RGB_565).also { copy ->
+                    Canvas(copy).apply {
+                        drawColor(Color.WHITE)
+                        drawBitmap(decoded, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
+                    }
+                    decoded.recycle()
+                }
                 try {
                     val landscape = bitmap.width > bitmap.height
                     val pageW = if (landscape) A4_LONG else A4_SHORT
@@ -232,7 +244,7 @@ object Images {
                         bitmap.eraseColor(Color.WHITE)
                         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         val number = (index + 1).toString().padStart(digits, '0')
-                        val file = File(outDir, "$baseName - page $number.${target.ext}")
+                        val file = File(outDir, Formats.pageName(baseName, number, target.ext))
                         encode(bitmap, target, quality, file)
                         outputs.add(file)
                     } finally {

@@ -5,9 +5,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val ROOT = "/data/user/0/app/cache/gulp-work"
+private const val W = "$ROOT/abc"
+
 class FfmpegArgsTest {
-    private val input = "/data/user/0/app/cache/gulp-work/abc/Vacances.mkv"
-    private val out = "/data/user/0/app/cache/gulp-work/abc/out/Vacances.mp4"
+    private val input = "$W/input.mkv"
+    private val out = "$W/output.mp4"
     private val prefix = listOf(
         "-nostdin", "-hide_banner", "-y", "-nostats", "-progress", "pipe:1",
         "-protocol_whitelist", "file,pipe", "-i", input,
@@ -18,7 +21,7 @@ class FfmpegArgsTest {
     private val scale1080 = "scale='if(gt(iw,ih),-2,trunc(min(1080,iw)/2)*2)':'if(gt(iw,ih),trunc(min(1080,ih)/2)*2,-2)'"
 
     private fun args(target: Target, options: ConvertOptions = defaults, output: String = out) =
-        FfmpegArgs.build(input, output, target, options)
+        FfmpegArgs.build(ROOT, input, output, target, options)
 
     @Test fun mp4H264Aac() {
         assertEquals(
@@ -32,7 +35,7 @@ class FfmpegArgsTest {
     }
 
     @Test fun movIsH264InQuickTime() {
-        val o = "/w/out/a.mov"
+        val o = "$W/out/a.mov"
         assertEquals(
             prefix + firstVideo + listOf(
                 "-vf", scaleOriginal,
@@ -44,7 +47,7 @@ class FfmpegArgsTest {
     }
 
     @Test fun mkvH265() {
-        val o = "/w/out/a.mkv"
+        val o = "$W/out/a.mkv"
         assertEquals(
             prefix + firstVideo + listOf(
                 "-vf", FfmpegArgs.scale(Resolution.P720),
@@ -56,7 +59,7 @@ class FfmpegArgsTest {
     }
 
     @Test fun mkvCopyRemuxesWithoutEncoding() {
-        val o = "/w/out/a.mkv"
+        val o = "$W/out/a.mkv"
         assertEquals(
             prefix + listOf("-map", "0:v", "-map", "0:a?", "-c", "copy", o),
             args(Target.MKV, defaults.copy(copyStreams = true, resolution = Resolution.P480), o),
@@ -64,7 +67,7 @@ class FfmpegArgsTest {
     }
 
     @Test fun webmVp9Opus() {
-        val o = "/w/out/a.webm"
+        val o = "$W/out/a.webm"
         assertEquals(
             prefix + firstVideo + listOf(
                 "-vf", scaleOriginal,
@@ -77,7 +80,7 @@ class FfmpegArgsTest {
     }
 
     @Test fun aviMpeg4Mp3() {
-        val o = "/w/out/a.avi"
+        val o = "$W/out/a.avi"
         assertEquals(
             prefix + firstVideo + listOf(
                 "-vf", FfmpegArgs.scale(Resolution.P480),
@@ -89,7 +92,7 @@ class FfmpegArgsTest {
     }
 
     @Test fun gifPaletteFrameByFrameAndCapped() {
-        val o = "/w/out/a.gif"
+        val o = "$W/out/a.gif"
         assertEquals(
             prefix + listOf(
                 "-map", "0:v:0", "-an", "-t", "30",
@@ -106,21 +109,21 @@ class FfmpegArgsTest {
 
     @Test fun audioTargets() {
         val audio = listOf("-map", "0:a:0")
-        assertEquals(prefix + audio + listOf("-c:a", "libmp3lame", "-b:a", "192k", "-ac", "2", "/w/a.mp3"), args(Target.MP3, output = "/w/a.mp3"))
-        assertEquals(prefix + audio + listOf("-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", "/w/a.m4a"), args(Target.M4A, defaults.copy(audioBitrate = AudioBitrate.K320), "/w/a.m4a"))
-        assertEquals(prefix + audio + listOf("-c:a", "libopus", "-b:a", "128k", "-ac", "2", "/w/a.opus"), args(Target.OPUS, defaults.copy(audioBitrate = AudioBitrate.K128), "/w/a.opus"))
-        assertEquals(prefix + audio + listOf("-c:a", "libvorbis", "-b:a", "192k", "/w/a.ogg"), args(Target.OGG, output = "/w/a.ogg"))
-        assertEquals(prefix + audio + listOf("-c:a", "flac", "/w/a.flac"), args(Target.FLAC, output = "/w/a.flac"))
-        assertEquals(prefix + audio + listOf("-c:a", "pcm_s16le", "/w/a.wav"), args(Target.WAV, output = "/w/a.wav"))
+        assertEquals(prefix + audio + listOf("-c:a", "libmp3lame", "-b:a", "192k", "-ac", "2", "$W/a.mp3"), args(Target.MP3, output = "$W/a.mp3"))
+        assertEquals(prefix + audio + listOf("-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", "$W/a.m4a"), args(Target.M4A, defaults.copy(audioBitrate = AudioBitrate.K320), "$W/a.m4a"))
+        assertEquals(prefix + audio + listOf("-c:a", "libopus", "-b:a", "128k", "-ac", "2", "$W/a.opus"), args(Target.OPUS, defaults.copy(audioBitrate = AudioBitrate.K128), "$W/a.opus"))
+        assertEquals(prefix + audio + listOf("-c:a", "libvorbis", "-b:a", "192k", "$W/a.ogg"), args(Target.OGG, output = "$W/a.ogg"))
+        assertEquals(prefix + audio + listOf("-c:a", "flac", "$W/a.flac"), args(Target.FLAC, output = "$W/a.flac"))
+        assertEquals(prefix + audio + listOf("-c:a", "pcm_s16le", "$W/a.wav"), args(Target.WAV, output = "$W/a.wav"))
     }
 
     @Test fun stillImagesFromPng() {
-        val png = "/w/photo.png"
+        val png = "$W/input.png"
         val pre = listOf("-nostdin", "-hide_banner", "-y", "-nostats", "-progress", "pipe:1", "-protocol_whitelist", "file,pipe", "-i", png)
-        assertEquals(pre + listOf("-frames:v", "1", "-update", "1", "-c:v", "bmp", "/w/out/photo.bmp"), FfmpegArgs.build(png, "/w/out/photo.bmp", Target.BMP, defaults))
+        assertEquals(pre + listOf("-frames:v", "1", "-update", "1", "-c:v", "bmp", "$W/out/photo.bmp"), FfmpegArgs.build(ROOT, png, "$W/out/photo.bmp", Target.BMP, defaults))
         assertEquals(
-            pre + listOf("-frames:v", "1", "-update", "1", "-c:v", "tiff", "-compression_algo", "lzw", "/w/out/photo.tiff"),
-            FfmpegArgs.build(png, "/w/out/photo.tiff", Target.TIFF, defaults),
+            pre + listOf("-frames:v", "1", "-update", "1", "-c:v", "tiff", "-compression_algo", "lzw", "$W/out/photo.tiff"),
+            FfmpegArgs.build(ROOT, png, "$W/out/photo.tiff", Target.TIFF, defaults),
         )
     }
 
@@ -132,22 +135,37 @@ class FfmpegArgsTest {
         }
     }
 
-    @Test fun refusesRelativePathsAndOptionLookingNames() {
-        assertThrows { FfmpegArgs.build("-i", out, Target.MP4, defaults) }
-        assertThrows { FfmpegArgs.build("video.mkv", out, Target.MP4, defaults) }
-        assertThrows { FfmpegArgs.build(input, "-f", Target.MP4, defaults) }
-        assertThrows { FfmpegArgs.build(input, input, Target.MP4, defaults) }
+    @Test fun refusesPathsOutsideTheWorkDir() {
+        assertThrows { FfmpegArgs.build(ROOT, "-i", out, Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, "video.mkv", out, Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, input, "-f", Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, input, input, Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, "/sdcard/DCIM/a.mp4", out, Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, input, "/data/user/0/app/files/x.mp4", Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, "$W/../../files/secret.db", out, Target.MP4, defaults) }
+        assertThrows { FfmpegArgs.build(ROOT, input, "$ROOT-2/x.mp4", Target.MP4, defaults) }
         // Formats made without FFmpeg.
         assertThrows { args(Target.JPG) }
         assertThrows { args(Target.HTML) }
     }
 
-    @Test fun noArgumentStartsWithDashAfterTheOutputPosition() {
-        Target.entries.filter { it.family == Family.VIDEO || it.family == Family.AUDIO }.forEach { t ->
-            val a = args(t, output = "/w/out/x.${t.ext}")
-            assertEquals("/w/out/x.${t.ext}", a.last())
-            assertFalse(a.contains("-f"))
-        }
+    @Test fun insideChecks() {
+        assertTrue(FfmpegArgs.isInside(ROOT, "$W/input.mkv"))
+        assertTrue(FfmpegArgs.isInside("$ROOT/", "$W/out/a.mp4"))
+        assertFalse(FfmpegArgs.isInside(ROOT, ROOT))
+        assertFalse(FfmpegArgs.isInside(ROOT, "$ROOT/"))
+        assertFalse(FfmpegArgs.isInside(ROOT, "$W/./input.mkv"))
+        assertFalse(FfmpegArgs.isInside(ROOT, "$W//input.mkv"))
+        assertFalse(FfmpegArgs.isInside(ROOT, "$W/../abc/input.mkv"))
+        assertFalse(FfmpegArgs.isInside("relative/root", "relative/root/a"))
+        assertFalse(FfmpegArgs.isInside("/", "/etc/passwd"))
+    }
+
+    @Test fun fixedWorkNamesUseSafeExtensions() {
+        assertEquals("mkv", FfmpegArgs.safeExt("MKV"))
+        assertEquals("bin", FfmpegArgs.safeExt("mp%d"))
+        assertEquals("bin", FfmpegArgs.safeExt(""))
+        assertEquals("bin", FfmpegArgs.safeExt("toolongext"))
     }
 
     private fun assertThrows(block: () -> Unit) {

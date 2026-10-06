@@ -133,7 +133,13 @@ fun ConverterTool(vm: MainViewModel) {
         if (uris.isNotEmpty() && !controller.pick(uris)) vm.toast("Une conversion est en cours.", success = false)
     }
     // Android 9 and older: saving to Movies / Music / Download needs the storage permission.
-    val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { controller.convert() }
+    val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            controller.convert()
+        } else {
+            vm.toast("Gulp a besoin de l'accès au stockage pour enregistrer le fichier converti.", success = false)
+        }
+    }
 
     val actions = remember(controller) {
         ConverterActions(

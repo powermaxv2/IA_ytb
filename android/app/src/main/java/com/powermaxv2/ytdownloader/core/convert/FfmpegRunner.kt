@@ -40,7 +40,11 @@ class FfmpegRunner(private val context: Context, private val engine: Engine) {
             val builder = ProcessBuilder(listOf(executable.absolutePath) + args)
                 .directory(output.parentFile)
             builder.environment()["LD_LIBRARY_PATH"] = libraryPath
-            val process = builder.start()
+            val process = try {
+                builder.start()
+            } catch (e: Exception) {
+                throw ConversionError("Le moteur de conversion n'a pas pu démarrer. Redémarrez Gulp et réessayez.", e.toString())
+            }
             runCatching { process.outputStream.close() }
             val tail = ArrayDeque<String>()
             val logDuration = AtomicReference<Double?>(null)

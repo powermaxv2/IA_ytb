@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
 
 /** The file(s) given to the converter: one file, or several photos. */
@@ -134,7 +136,9 @@ class ConverterController(
                 )
             }
             val input = ConvertInput(files.map { it.first }, FileKind.IMAGE, Category.IMAGE)
-            return ConverterUiState(ConvertPhase.Ready, input, Formats.defaultTarget(Category.IMAGE, input.name, multiple = true))
+            // Too many photos for one PDF: start on JPG (the PDF tile then explains its limit).
+            val target = if (files.size > Formats.MAX_PDF_PHOTOS) Target.JPG else Formats.defaultTarget(Category.IMAGE, input.name, multiple = true)
+            return ConverterUiState(ConvertPhase.Ready, input, target)
         }
         val (info, kind) = files.single()
         val refusal = Formats.refusal(kind, info.name)
@@ -169,64 +173,85 @@ class ConverterController(
     }
 
     fun cancel() {
+        generation.incrementAndGet()
         convertJob?.cancel()
-        convertJob = null
         _state.update { if (it.phase is ConvertPhase.Converting) it.copy(phase = ConvertPhase.Ready) else it }
     }
+
+    /**
+     * Each conversion gets a number; a job only writes the state while its number is the current one, so a
+     * cancelled job still finishing a blocking step (decode, copy) never overwrites the next conversion.
+     */
+    private val generation = AtomicInteger(0)
 
     fun convert() {
         val current = _state.value
         val input = current.input ?: return
         val target = current.target ?: return
         if (busy || current.phase is ConvertPhase.Reading) return
+        if (input.multiple && target == Target.PDF && input.files.size > Formats.MAX_PDF_PHOTOS) {
+            _state.update { it.copy(phase = ConvertPhase.Failed("Un PDF réunit ${Formats.MAX_PDF_PHOTOS} photos au plus : choisissez-en moins, ou un autre format.")) }
+            return
+        }
         val options = current.options
+        val token = generation.incrementAndGet()
         _state.update { it.copy(phase = ConvertPhase.Converting(-1f, "Préparation…")) }
+        val previous = convertJob
         convertJob = scope.launch(Dispatchers.IO) {
+            // A cancelled conversion may still be leaving a blocking step: let it finish before starting.
+            previous?.cancelAndJoin()
             val dir = try {
                 WorkDir.create(context)
             } catch (e: IOException) {
-                fail(e.message ?: "Impossible de préparer la conversion.")
+                fail(token, e.message ?: "Impossible de préparer la conversion.")
                 return@launch
             }
             try {
-                val outputs = Conversion(context, engine, dir, ::progress).run(input, target, options)
+                val outputs = Conversion(context, engine, dir) { value, step -> progress(token, value, step) }.run(input, target, options)
                 val saved = ArrayList<SavedFile>(outputs.size)
                 outputs.forEachIndexed { index, file ->
                     coroutineContext.ensureActive()
-                    progress(-1f, if (outputs.size > 1) "Enregistrement ${index + 1} sur ${outputs.size}…" else "Enregistrement…")
+                    progress(token, -1f, if (outputs.size > 1) "Enregistrement ${index + 1} sur ${outputs.size}…" else "Enregistrement…")
                     saved.add(MediaExporter.export(context, file))
                 }
-                _state.update { it.copy(phase = ConvertPhase.Done(saved)) }
+                update(token) { it.copy(phase = ConvertPhase.Done(saved)) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ConversionError) {
-                fail(e.message ?: FfmpegErrors.GENERIC, e.debug)
+                fail(token, e.message ?: FfmpegErrors.GENERIC, e.debug)
             } catch (e: DocumentError) {
-                fail(e.message ?: FfmpegErrors.GENERIC)
+                fail(token, e.message ?: FfmpegErrors.GENERIC)
             } catch (e: FileTooLarge) {
-                fail(e.message ?: "Fichier trop volumineux.")
+                fail(token, e.message ?: "Fichier trop volumineux.")
             } catch (e: UnsupportedSource) {
-                fail(e.message ?: "Ce fichier ne peut pas être ouvert.")
+                fail(token, e.message ?: "Ce fichier ne peut pas être ouvert.")
             } catch (e: SecurityException) {
-                fail("Gulp n'a plus le droit de lire ce fichier : choisissez-le à nouveau.", e.toString())
+                fail(token, "Android a refusé l'accès : choisissez le fichier à nouveau, ou autorisez le stockage.", e.toString())
             } catch (e: IOException) {
-                fail("Lecture ou écriture impossible : vérifiez l'espace libre et réessayez.", e.toString())
+                fail(token, "Lecture ou écriture impossible : vérifiez l'espace libre et réessayez.", e.toString())
             } catch (e: OutOfMemoryError) {
-                fail("Pas assez de mémoire pour ce fichier.", e.toString())
-            } catch (e: Exception) {
-                fail(FfmpegErrors.GENERIC, e.toString())
+                fail(token, "Pas assez de mémoire pour ce fichier.", e.toString())
+            } catch (e: StackOverflowError) {
+                fail(token, Nesting.MESSAGE, e.toString())
+            } catch (e: Throwable) {
+                // Nothing a file does may take the app (and the running downloads) down with it.
+                fail(token, FfmpegErrors.GENERIC, e.toString())
             } finally {
                 withContext(NonCancellable) { WorkDir.delete(context, dir) }
             }
         }
     }
 
-    private fun progress(value: Float, step: String) {
-        _state.update { if (it.phase is ConvertPhase.Converting) it.copy(phase = ConvertPhase.Converting(value, step)) else it }
+    private inline fun update(token: Int, crossinline change: (ConverterUiState) -> ConverterUiState) {
+        _state.update { if (generation.get() == token) change(it) else it }
     }
 
-    private fun fail(message: String, debug: String? = null) {
-        _state.update { it.copy(phase = ConvertPhase.Failed(message, debug)) }
+    private fun progress(token: Int, value: Float, step: String) {
+        update(token) { if (it.phase is ConvertPhase.Converting) it.copy(phase = ConvertPhase.Converting(value, step)) else it }
+    }
+
+    private fun fail(token: Int, message: String, debug: String? = null) {
+        update(token) { it.copy(phase = ConvertPhase.Failed(message, debug)) }
     }
 }
 
@@ -245,38 +270,43 @@ private class Conversion(
         return when (Formats.method(category, target)) {
             Method.FFMPEG -> {
                 progress(-1f, "Copie du fichier…")
-                val source = FileIntake.copyToWork(context, single.uri, FileIntake.MEDIA_MAX_BYTES, dir)
-                val out = FileIntake.uniqueFile(outDir, Formats.outputName(single.name, target))
+                val copy = FileIntake.copyToWork(context, single.uri, FileIntake.MEDIA_MAX_BYTES, dir)
+                // FFmpeg only ever sees fixed names ("input.mkv" → "output.mp4"), never the user's.
+                val source = rename(copy, "input.${Formats.safeExt(SafeNames.extensionOf(single.name))}")
+                val work = File(dir, "output.${target.ext}")
                 progress(0f, "Conversion…")
                 FfmpegRunner(context, engine).run(
-                    FfmpegArgs.build(source.absolutePath, out.absolutePath, target, options),
-                    out,
+                    FfmpegArgs.build(root, source.absolutePath, work.absolutePath, target, options),
+                    work,
                     target,
                     mediaDuration(source),
                 ) { progress(it, "Conversion…") }
-                listOf(out)
+                source.delete()
+                listOf(publish(work, Formats.outputName(single.name, target)))
             }
             Method.BITMAP, Method.BITMAP_FFMPEG -> input.files.mapIndexed { index, file ->
                 coroutineContext.ensureActive()
                 val step = if (input.multiple) "Photo ${index + 1} sur ${input.files.size}" else "Conversion…"
                 progress(index.toFloat() / input.files.size, step)
                 val source = FileIntake.copyToWork(context, file.uri, IMAGE_MAX_BYTES, dir)
-                val out = FileIntake.uniqueFile(outDir, Formats.outputName(file.name, target))
+                val name = Formats.outputName(file.name, target)
                 val bitmap = Images.decode(source)
-                try {
+                val out = try {
                     if (target == Target.BMP || target == Target.TIFF) {
-                        val png = FileIntake.uniqueFile(dir, SafeNames.withExtension(source.name, "png"))
+                        val png = File(dir, "input.png").also { it.delete() }
                         Images.encode(bitmap, Target.PNG, 100, png)
                         bitmap.recycle()
+                        val work = File(dir, "output.${target.ext}").also { it.delete() }
                         FfmpegRunner(context, engine).run(
-                            FfmpegArgs.build(png.absolutePath, out.absolutePath, target, options),
-                            out,
+                            FfmpegArgs.build(root, png.absolutePath, work.absolutePath, target, options),
+                            work,
                             target,
                             null,
                         ) { }
                         png.delete()
+                        publish(work, name)
                     } else {
-                        Images.encode(bitmap, target, options.quality.imageQuality, out)
+                        FileIntake.uniqueFile(outDir, name).also { Images.encode(bitmap, target, options.quality.imageQuality, it) }
                     }
                 } finally {
                     if (!bitmap.isRecycled) bitmap.recycle()
@@ -319,6 +349,27 @@ private class Conversion(
                 listOf(out)
             }
         }
+    }
+
+    /** The tools' work root, the only place FFmpeg may read or write ([FfmpegArgs.build] checks it). */
+    private val root: String = WorkDir.root(context).absolutePath
+
+    private fun rename(file: File, name: String): File {
+        val target = File(file.parentFile, name)
+        if (file.absolutePath == target.absolutePath) return file
+        target.delete()
+        if (!file.renameTo(target)) throw ConversionError("Impossible de préparer le fichier pour la conversion.")
+        return target
+    }
+
+    /** Moves FFmpeg's fixed-name output to `out/` under the name the user will see. */
+    private fun publish(work: File, name: String): File {
+        val dest = FileIntake.uniqueFile(outDir, name)
+        if (!work.renameTo(dest)) {
+            dest.delete()
+            throw ConversionError("Impossible d'enregistrer le fichier converti.")
+        }
+        return dest
     }
 
     /** Length of a video / song in seconds, read from its container (null when unknown). */

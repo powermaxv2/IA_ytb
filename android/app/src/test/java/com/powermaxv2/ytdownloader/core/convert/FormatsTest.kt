@@ -101,7 +101,7 @@ class FormatsTest {
 
     @Test fun details() {
         assertEquals("Une image par page", Formats.detail(Category.PDF, Target.JPG))
-        assertEquals("Une photo par page", Formats.detail(Category.IMAGE, Target.PDF, multiple = true))
+        assertEquals("24 photos au plus", Formats.detail(Category.IMAGE, Target.PDF, multiple = true))
         assertEquals("H.264 · AAC", Formats.detail(Category.VIDEO, Target.MP4))
     }
 
@@ -133,5 +133,29 @@ class FormatsTest {
         assertTrue(q.zipWithNext().all { (a, b) -> a.mpeg4Q < b.mpeg4Q && a.imageQuality > b.imageQuality && a.gifSide > b.gifSide })
         assertEquals(listOf(320, 192, 128), AudioBitrate.entries.map { it.kbps })
         assertEquals(listOf(null, 2160, 1080, 720, 480), Resolution.entries.map { it.height })
+    }
+
+    @Test fun pdfPageNamesStayWithinTheCap() {
+        assertEquals("Cours - page 007.jpg", Formats.pageName("Cours", "007", "jpg"))
+        val long = "x".repeat(119)
+        val a = Formats.pageName(long, "001", "png")
+        val b = Formats.pageName(long, "002", "png")
+        assertTrue(a.length <= 120)
+        assertTrue(a.endsWith(" - page 001.png"))
+        assertTrue(a != b)
+        assertEquals("page - page 001.jpg", Formats.pageName("", "001", "jpg"))
+    }
+
+    @Test fun legacySampleSizeKeepsTheLongestSideWithinTheBound() {
+        assertEquals(1, ImageMath.sampleSize(4096, 3000, 4096))
+        assertEquals(2, ImageMath.sampleSize(4097, 3000, 4096))
+        assertEquals(2, ImageMath.sampleSize(8000, 6000, 4096))
+        assertEquals(2, ImageMath.sampleSize(6000, 8192, 4096))
+        assertEquals(4, ImageMath.sampleSize(8194, 100, 4096))
+        assertEquals(8, ImageMath.sampleSize(30000, 20000, 4096))
+        listOf(1, 4095, 4097, 8191, 8193, 12000, 16385, 65000).forEach { side ->
+            val s = ImageMath.sampleSize(side, side / 2, 4096)
+            assertTrue("$side / $s", side / s <= 4096)
+        }
     }
 }

@@ -16,18 +16,24 @@ class DocumentError(message: String) : Exception(message)
 object MarkdownHtml {
     /**
      * A standalone HTML page from [markdown]: raw HTML in the source is shown as text (escapeHtml), links and
-     * images with dangerous schemes (javascript:…) are neutralised (sanitizeUrls), and the page forbids scripts
-     * (Content-Security-Policy). [title] goes in the tab name.
+     * images with dangerous schemes (javascript:…) are neutralised (sanitizeUrls), and the page forbids scripts and
+     * remote fetches (Content-Security-Policy: only inline styles and data: images). [title] goes in the tab name.
+     * A source nested too deeply (blockquotes, lists) is refused instead of overflowing the stack.
      */
     fun render(markdown: String, title: String): String {
+        if (Nesting.markdownDepth(markdown) > Nesting.MAX_DEPTH) throw DocumentError(Nesting.MESSAGE)
         val parser = Parser.builder().build()
         val renderer = HtmlRenderer.builder().escapeHtml(true).sanitizeUrls(true).build()
-        val body = renderer.render(parser.parse(markdown))
+        val body = try {
+            renderer.render(parser.parse(markdown))
+        } catch (e: StackOverflowError) {
+            throw DocumentError(Nesting.MESSAGE)
+        }
         return buildString {
             append("<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n")
             append("<meta charset=\"utf-8\">\n")
             append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
-            append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src https: data:; style-src 'unsafe-inline'\">\n")
+            append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src data:; style-src 'unsafe-inline'\">\n")
             append("<title>").append(escape(title)).append("</title>\n")
             append("<style>\n").append(CSS).append("</style>\n")
             append("</head>\n<body>\n<main>\n")
@@ -137,6 +143,16 @@ object CsvJson {
     private fun readItems(text: String): List<Any?> {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) throw DocumentError("Ce JSON est vide.")
+        // org.json parses nested values recursively: refuse absurd nesting before it overflows the stack.
+        if (Nesting.jsonDepth(trimmed) > Nesting.MAX_DEPTH) throw DocumentError(Nesting.MESSAGE)
+        return try {
+            parseItems(trimmed)
+        } catch (e: StackOverflowError) {
+            throw DocumentError(Nesting.MESSAGE)
+        }
+    }
+
+    private fun parseItems(trimmed: String): List<Any?> {
         val whole = try {
             val tokener = JSONTokener(trimmed)
             val value = tokener.nextValue()
@@ -170,5 +186,78 @@ object CsvJson {
         null, JSONObject.NULL -> ""
         is JSONObject, is JSONArray -> value.toString()
         else -> value.toString()
+    }
+}
+
+/** Nesting limits of the document parsers (pure, unit tested). */
+object Nesting {
+    /** Deepest nesting accepted (real files stay far below; thousands overflow a thread's stack). */
+    const val MAX_DEPTH = 200
+
+    const val MESSAGE = "Ce fichier est imbriqué beaucoup trop profondément : Gulp refuse de le convertir."
+
+    /** Deepest [ / { nesting of JSON text, brackets inside strings ignored. */
+    fun jsonDepth(text: String): Int {
+        var depth = 0
+        var max = 0
+        var inString = false
+        var escaped = false
+        for (c in text) {
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    c == '\\' -> escaped = true
+                    c == '"' -> inString = false
+                }
+                continue
+            }
+            when (c) {
+                '"' -> inString = true
+                '[', '{' -> {
+                    depth++
+                    if (depth > max) max = depth
+                }
+                ']', '}' -> if (depth > 0) depth--
+            }
+        }
+        return max
+    }
+
+    /**
+     * Rough deepest block nesting of Markdown: on each line, the container markers before the text
+     * (">" quotes, "-", "*", "+" or "1." list items) plus indentation in steps of two spaces. Generous on
+     * purpose: it only has to catch hostile files, not to measure real ones exactly.
+     */
+    fun markdownDepth(text: String): Int {
+        var max = 0
+        for (line in text.lineSequence()) {
+            var depth = 0
+            var spaces = 0
+            var i = 0
+            while (i < line.length) {
+                val c = line[i]
+                when {
+                    c == ' ' -> spaces++
+                    c == '\t' -> spaces += 4
+                    c == '>' -> depth++
+                    (c == '-' || c == '*' || c == '+') && i + 1 < line.length && line[i + 1] == ' ' -> depth++
+                    c.isDigit() -> {
+                        var j = i
+                        while (j < line.length && line[j].isDigit()) j++
+                        if (j < line.length && (line[j] == '.' || line[j] == ')')) {
+                            depth++
+                            i = j
+                        } else {
+                            break
+                        }
+                    }
+                    else -> break
+                }
+                i++
+            }
+            val total = depth + spaces / 2
+            if (total > max) max = total
+        }
+        return max
     }
 }
