@@ -272,7 +272,7 @@ private class Conversion(
                 progress(-1f, "Copie du fichier…")
                 val copy = FileIntake.copyToWork(context, single.uri, FileIntake.MEDIA_MAX_BYTES, dir)
                 // FFmpeg only ever sees fixed names ("input.mkv" → "output.mp4"), never the user's.
-                val source = rename(copy, "input.${Formats.safeExt(SafeNames.extensionOf(single.name))}")
+                val source = rename(copy, "input.${FfmpegArgs.safeExt(SafeNames.extensionOf(single.name))}")
                 val work = File(dir, "output.${target.ext}")
                 progress(0f, "Conversion…")
                 FfmpegRunner(context, engine).run(
