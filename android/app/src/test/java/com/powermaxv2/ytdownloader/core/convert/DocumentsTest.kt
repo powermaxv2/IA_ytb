@@ -1,0 +1,91 @@
+package com.powermaxv2.ytdownloader.core.convert
+
+import org.json.JSONArray
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/** org.json is Android's: these run under Robolectric. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = android.app.Application::class)
+class DocumentsTest {
+    @Test fun csvToJsonUsesTheHeader() {
+        val json = JSONArray(CsvJson.csvToJson("nom;âge;ville\nLéa;31;Nice\nTom;28\n"))
+        assertEquals(2, json.length())
+        val lea = json.getJSONObject(0)
+        assertEquals("Léa", lea.getString("nom"))
+        assertEquals("31", lea.getString("âge"))
+        assertEquals("Nice", lea.getString("ville"))
+        // Missing cells are empty text.
+        assertEquals("", json.getJSONObject(1).getString("ville"))
+        // Field order follows the columns.
+        assertEquals(listOf("nom", "âge", "ville"), lea.keys().asSequence().toList())
+    }
+
+    @Test fun headerNamesAreUniqueAndNeverBlank() {
+        assertEquals(listOf("a", "colonne 2", "a (2)", "colonne 4"), CsvJson.headerNames(listOf("a", " ", "a"), 4))
+    }
+
+    @Test fun emptyCsvIsRefused() {
+        assertRefused { CsvJson.csvToJson("\n\n") }
+    }
+
+    @Test fun jsonToCsvTakesEveryKeyInOrder() {
+        val csv = CsvJson.jsonToCsv("""[{"nom":"Léa","age":31},{"nom":"Tom","ville":"Nice, France","tags":["a","b"],"x":null}]""")
+        assertEquals(
+            "nom,age,ville,tags,x\r\nLéa,31,,,\r\nTom,,\"Nice, France\",\"[\"\"a\"\",\"\"b\"\"]\",\r\n",
+            csv,
+        )
+    }
+
+    @Test fun jsonLinesAndSingleObjectAndScalars() {
+        assertEquals("a\r\n1\r\n2\r\n", CsvJson.jsonToCsv("{\"a\":1}\n{\"a\":2}\n"))
+        assertEquals("a,b\r\n1,true\r\n", CsvJson.jsonToCsv("{\"a\":1,\"b\":true}"))
+        assertEquals("valeur\r\n1\r\ndeux\r\n", CsvJson.jsonToCsv("[1,\"deux\"]"))
+        assertEquals("a\r\n1\r\n", CsvJson.jsonToCsv("﻿[{\"a\":1}]"))
+    }
+
+    @Test fun badJsonIsRefusedWithAClearMessage() {
+        assertRefused { CsvJson.jsonToCsv("") }
+        assertRefused { CsvJson.jsonToCsv("[]") }
+        assertRefused { CsvJson.jsonToCsv("42") }
+        assertRefused { CsvJson.jsonToCsv("{\"a\":") }
+    }
+
+    @Test fun csvJsonRoundTrip() {
+        val csv = "id,texte\r\n1,\"Bonjour, \"\"ami\"\"\"\r\n2,é\r\n"
+        assertEquals(csv, CsvJson.jsonToCsv(CsvJson.csvToJson(csv)))
+    }
+
+    @Test fun markdownPageIsStandaloneAndSafe() {
+        val html = MarkdownHtml.render(
+            "# Titre\n\nDu **gras**, [un lien](https://example.org) et [piège](javascript:alert(1)).\n\n<script>alert('x')</script>\n",
+            "Notes <de> \"cours\"",
+        )
+        assertTrue(html.startsWith("<!DOCTYPE html>"))
+        assertTrue(html.contains("<meta charset=\"utf-8\">"))
+        assertTrue(html.contains("<title>Notes &lt;de&gt; &quot;cours&quot;</title>"))
+        assertTrue(html.contains("<h1>Titre</h1>"))
+        assertTrue(html.contains("<strong>gras</strong>"))
+        assertTrue(html.contains("href=\"https://example.org\""))
+        // Raw HTML is shown as text, dangerous links are neutralised, scripts are forbidden by the page itself.
+        assertFalse(html.contains("<script>"))
+        assertTrue(html.contains("&lt;script&gt;"))
+        assertFalse(html.contains("javascript:"))
+        assertTrue(html.contains("Content-Security-Policy"))
+    }
+
+    private fun assertRefused(block: () -> Unit) {
+        try {
+            block()
+        } catch (e: DocumentError) {
+            assertTrue(e.message!!.isNotBlank())
+            return
+        }
+        throw AssertionError("DocumentError attendue")
+    }
+}
