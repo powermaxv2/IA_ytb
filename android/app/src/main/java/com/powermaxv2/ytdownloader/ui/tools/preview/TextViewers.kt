@@ -112,7 +112,9 @@ internal fun CodeViewer(body: PreviewBody.Code, modifier: Modifier = Modifier) {
     val digits = lines.toString().length.coerceAtLeast(2)
     val charW = charWidthPx(codeStyle)
     val density = LocalDensity.current
-    ViewerFrame(modifier) {
+    // A short file gets a frame its size; a long one scrolls inside about 60 % of the screen.
+    val height = minOf(viewerHeight(), (52 + lines * 19).dp).coerceAtLeast(140.dp)
+    ViewerFrame(modifier, height = height) {
         Column(Modifier.fillMaxSize()) {
             ViewerStrip("${body.lang.label} · ${lineCount(lines)} · ${body.charset}")
             BoxWithConstraints(Modifier.fillMaxSize()) {

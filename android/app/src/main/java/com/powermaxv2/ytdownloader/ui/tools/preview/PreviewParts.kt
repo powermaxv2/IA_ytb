@@ -380,15 +380,18 @@ private fun InfoRow(label: String, value: String, danger: Boolean = false) {
             fontSize = if (terminal) 11.sp else 12.5.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier
-                .width(112.dp)
-                .padding(top = 1.dp),
+                .alignByBaseline()
+                .width(if (terminal) 132.dp else 118.dp)
+                .padding(end = 8.dp),
         )
         Text(
             value,
             color = if (danger) Palette.Danger else Palette.TextPrimary,
             fontSize = 13.5.sp,
             lineHeight = 18.sp,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .alignByBaseline()
+                .weight(1f),
         )
     }
 }
