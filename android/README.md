@@ -6,7 +6,8 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 ## Fonctionnalités
 
 - **Gulp est une boîte à outils** (depuis 1.8.0) : au lancement, la page d'accueil liste les outils, dans les trois
-  interfaces. Le premier est le **Téléchargeur vidéo** décrit ci-dessous ; les cartes « À venir » réservent la
+  interfaces. Le premier est le **Téléchargeur vidéo** décrit ci-dessous ; depuis 1.9.0 s'y ajoutent le
+  **Convertisseur** et l'**Aperçu** (section « Convertisseur et Aperçu ») ; les cartes « À venir » réservent la
   place des suivants. Le logo en haut d'un outil (ou le bouton retour) ramène à l'accueil.
 - Trois onglets séparés, **YouTube**, **Instagram** et **Autres**, chacun avec son champ de lien (un lien collé
   dans le mauvais onglet est ouvert dans le bon) ; les **Réglages** s'ouvrent avec la roue crantée en haut à droite
@@ -26,6 +27,63 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 - **Trois interfaces au choix** dans **Réglages › Interface**, appliquées tout de suite : **Classique** (sombre, accent
   par onglet), **Papier** (clair, typographie magazine) et **Terminal** (console vert fluo). Polices embarquées sous
   licence libre OFL : Bricolage Grotesque, JetBrains Mono et Archivo Black
+
+## Convertisseur et Aperçu (depuis 1.9.0)
+
+Les deux outils travaillent **hors ligne, sur le téléphone** : aucun fichier n'est envoyé nulle part et aucune
+bibliothèque réseau n'est utilisée. On y arrive par la page d'accueil, par **Partager → Convertir avec Gulp** ou
+**Aperçu avec Gulp**, ou en **ouvrant** un fichier avec Gulp depuis un gestionnaire de fichiers (seuls les liens
+`content://` sont acceptés).
+
+### Convertisseur
+
+| Depuis | Vers |
+|---|---|
+| Vidéo | MP4 (H.264), MKV (H.265), WebM (VP9), MOV, AVI, GIF animé muet (30 s au plus), ou le son seul |
+| Son | MP3, M4A, Opus, OGG, FLAC, WAV |
+| Photo | JPG, PNG, WebP, BMP, TIFF ; plusieurs photos (jusqu'à **24**) en un seul **PDF** A4 |
+| PDF | une image JPG ou PNG par page (200 pages au plus) |
+| Markdown | page HTML autonome |
+| CSV / JSON | JSON (liste d'objets) / CSV, dans les deux sens |
+
+La vidéo se règle en résolution (originale, 2160p à 480p) et en qualité (haute, moyenne, légère) ; le son en débit
+(320, 192 ou 128 kbit/s). La conversion vidéo et son passe par FFmpeg, déjà intégré à l'APK. La progression
+s'affiche en direct, **Annuler** arrête la copie du fichier ou la conversion et efface le fichier partiel. Le résultat est enregistré dans la
+Galerie (Films, Musique, Images › Gulp) ou, pour un PDF, un HTML, un JSON ou un CSV, dans
+Téléchargements › Gulp ; on peut ensuite l'ouvrir, le partager ou le voir dans l'Aperçu.
+
+Limites :
+
+- **Pas de Word, Excel ni PowerPoint** vers ou depuis PDF : cela demande un moteur de mise en page que l'app
+  n'embarque pas ; ces fichiers, ainsi que les EPUB, les archives ZIP et les textes bruts, affichent une explication.
+- **Pas de contenu protégé par DRM**.
+- **Pas de photos RAW** d'appareil (DNG, CR2, NEF…).
+- Un PDF protégé par mot de passe n'est pas converti.
+- Une conversion longue peut être **arrêtée par Android si Gulp passe à l'arrière-plan** : gardez l'app ouverte
+  jusqu'à la fin.
+- Tailles maximales : vidéo ou son 2 Gio, photo 64 Mio, PDF 200 Mio, texte (CSV, JSON, Markdown) 20 Mio ; un
+  tableau CSV ou JSON compte au plus 2 000 colonnes et 5 millions de cellules.
+- Le son et la vidéo sont reconnus **d'après le contenu du fichier**, pas d'après son nom ni son type : une liste de
+  lecture (`.m3u`, `.m3u8`) ou un texte présenté comme du son est refusé.
+
+### Aperçu
+
+Montre un fichier sans le modifier (un ZIP, ou un PDF qu'Android ne sait pas lire en place, est copié dans un
+dossier temporaire effacé aussitôt après) : photo (zoom, GIF et WebP animés sous Android 9+),
+vidéo et son (avec forme d'onde sur les premières minutes : 10 au plus, souvent moins selon le format), PDF page par page, texte, code avec coloration
+(Kotlin, Java, JavaScript, TypeScript, Python, C, Shell, XML/HTML, CSS, JSON, YAML), JSON indenté, Markdown, tableau
+CSV et contenu d'une archive **ZIP**. Un ZIP est **seulement listé, jamais extrait** ; les noms dangereux
+(`..`, chemins absolus, barres obliques inverses) sont signalés. Android 14 et plus refuse d'ouvrir une archive qui
+contient `..` ou un chemin absolu : Gulp lit alors lui-même son sommaire (les noms et les tailles, sans rien
+décompresser) et l'indique en tête de liste. La fiche du fichier donne sa nature détectée
+d'après son contenu (avec un avertissement si l'extension ne correspond pas), un aperçu hexadécimal et son
+empreinte SHA-256. Le bouton **Convertir** envoie le fichier vers le Convertisseur quand c'est possible.
+
+Limites : les textes sont lus sur le premier Mo seulement, le CSV sur ses 500 premières lignes ; les liens d'un
+Markdown ne sont pas cliquables, et ni les tableaux ni le barré ne sont rendus ; la lecture vidéo dépend des
+codecs du téléphone (un message l'indique sinon) ; un ZIP de plus de 512 Mio n'est pas listé du tout, et seules les
+5 000 premières entrées d'un ZIP plus long le sont ; un JSON que l'indentation rendrait plus de quatre fois plus long
+s'affiche tel quel.
 
 ## Installer l'APK
 
@@ -131,6 +189,12 @@ Limites :
 
 ## Sécurité
 
+- Convertisseur et Aperçu : fichiers acceptés uniquement via `content://`, copiés dans un dossier de travail
+  temporaire effacé après usage et au lancement de l'app ; tailles limitées, images et pages PDF décodées en taille
+  bornée, FFmpeg lancé sans shell avec des chemins internes seulement, sur des fichiers dont le contenu est du son ou
+  de la vidéo (jamais un texte ni une liste de lecture) et avec une liste fermée de formats d'entrée
+  (`-format_whitelist`), ZIP jamais extrait ; les noms de fichiers sont nettoyés (y compris des caractères qui
+  inversent le sens d'affichage).
 - yt-dlp, Python, FFmpeg et QuickJS sont intégrés à l'APK ([youtubedl-android](https://github.com/JunkFood02/youtubedl-android)).
 - Mises à jour de yt-dlp depuis sa page GitHub officielle, **vérifiées par SHA-256** (`SHA2-256SUMS`) ;
   empreinte recontrôlée à chaque lancement, un fichier modifié est supprimé.
@@ -147,8 +211,12 @@ Limites :
 android/app/src/main/java/com/powermaxv2/ytdownloader/
 ├── App.kt, MainActivity.kt   démarrage, liens partagés
 ├── core/                     moteur yt-dlp, file de téléchargements, Instagram, mises à jour, export Galerie
+│   ├── files/                lecture sûre des fichiers reçus, dossier de travail, détection de type
+│   ├── convert/              Convertisseur (FFmpeg, images, PDF, Markdown, CSV/JSON)
+│   └── preview/              Aperçu (texte, coloration, ZIP, forme d'onde, PDF)
 └── ui/                       écrans Compose et composants animés
     ├── hub/                  accueil et registre des outils (Tools.kt)
+    ├── tools/                écrans du Convertisseur et de l'Aperçu
     └── skin/                 les trois interfaces (classic/, paper/, terminal/)
 ```
 

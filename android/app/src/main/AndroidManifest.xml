@@ -46,6 +46,39 @@
             </intent-filter>
         </activity>
 
+        <!-- "Partager → Convertir avec Gulp": any file, opened in the Convertisseur (MainActivity reads EXTRA_STREAM,
+             content:// only). -->
+        <activity-alias
+            android:name=".ConvertEntry"
+            android:exported="true"
+            android:label="@string/convert_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter android:label="@string/convert_label">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- "Partager → Aperçu avec Gulp" and "Ouvrir avec → Gulp": any file, opened in the Aperçu tool. -->
+        <activity-alias
+            android:name=".PreviewEntry"
+            android:exported="true"
+            android:label="@string/preview_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter android:label="@string/preview_label">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Entry of the "Mise à jour disponible" notification: not exported, so other apps cannot start an update. -->
         <activity-alias
             android:name=".UpdateEntry"

@@ -99,6 +99,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // Markdown → HTML in the Convertisseur (BSD-2-Clause).
+    implementation("org.commonmark:commonmark:0.24.0")
 
     // yt-dlp + Python + FFmpeg + QuickJS packaged for Android.
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")

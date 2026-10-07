@@ -1,9 +1,15 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Preview
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
+import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
 // Adding a tool = one entry in ToolRegistry.tools and one composable for its screen.
@@ -19,6 +25,8 @@ class GulpTool(
     val platforms: List<Platform> = emptyList(),
     /** Short words shown as chips on the card. */
     val tags: List<String> = emptyList(),
+    /** Symbol of the tool, drawn on its home card when it has no [platforms]. */
+    val icon: ImageVector? = null,
     /** The tool's screen, drawn full screen over the skin background; null = "À venir" card, not openable. */
     val screen: (@Composable (MainViewModel) -> Unit)? = null,
 ) {
@@ -27,6 +35,12 @@ class GulpTool(
 
 object ToolRegistry {
     const val DOWNLOADER = "downloader"
+
+    /** File converter (images, audio, video, documents). Also the target of "Partager → Convertir avec Gulp". */
+    const val CONVERTER = "converter"
+
+    /** File preview (images, PDF, text, ZIP contents, media info). Also "Partager → Aperçu avec Gulp" / "Ouvrir avec". */
+    const val PREVIEW = "preview"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -43,8 +57,22 @@ object ToolRegistry {
             tags = listOf("Jusqu'à 4K", "MP4 · MP3", "Partager → Gulp"),
             screen = { vm -> DownloaderTool(vm) },
         ),
-        comingSoon(2),
-        comingSoon(3),
+        GulpTool(
+            id = CONVERTER,
+            name = "Convertisseur",
+            tagline = "Change le format d'une photo, d'un son, d'une vidéo ou d'un document, sur le téléphone.",
+            tags = listOf("Photo · Son · Vidéo", "Hors ligne", "Partager → Gulp"),
+            icon = Icons.Rounded.SwapHoriz,
+            screen = { vm -> ConverterTool(vm) },
+        ),
+        GulpTool(
+            id = PREVIEW,
+            name = "Aperçu",
+            tagline = "Ouvre une image, un PDF, un texte ou une archive ZIP pour voir ce qu'il y a dedans.",
+            tags = listOf("Image · PDF · Texte", "ZIP", "Ouvrir avec Gulp"),
+            icon = Icons.Rounded.Preview,
+            screen = { vm -> PreviewTool(vm) },
+        ),
         comingSoon(4),
     )
 

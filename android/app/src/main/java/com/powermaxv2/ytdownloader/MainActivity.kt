@@ -1,7 +1,9 @@
 package com.powermaxv2.ytdownloader
 
+import android.content.ContentResolver
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -10,10 +12,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.ui.AppRoot
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Tab
+import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
 import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import kotlinx.coroutines.launch
 
@@ -66,6 +70,28 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
+        // A file shared to "Convertir avec Gulp" / "Aperçu avec Gulp" or opened with Gulp: the alias says which tool.
+        val fileTool = when (intent?.component?.className) {
+            CONVERT_ENTRY -> ToolRegistry.CONVERTER
+            PREVIEW_ENTRY -> ToolRegistry.PREVIEW
+            else -> null
+        }
+        if (fileTool != null) {
+            val uri = when (intent?.action) {
+                Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+                    ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+                Intent.ACTION_VIEW -> intent.data
+                else -> null
+            }
+            // content:// only: file:// paths (and anything else) could point into our own private files.
+            if (uri != null && uri.scheme == ContentResolver.SCHEME_CONTENT) {
+                viewModel.openToolWithFile(fileTool, uri)
+            } else {
+                viewModel.openTool(fileTool)
+                if (uri != null) viewModel.toast("Ce fichier ne peut pas être ouvert ici.", success = false)
+            }
+            return
+        }
         when (intent?.action) {
             Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let(viewModel::onSharedText)
             ACTION_SHOW_DOWNLOADS -> viewModel.showInDownloader(Tab.DOWNLOADS)
@@ -80,5 +106,11 @@ class MainActivity : ComponentActivity() {
 
         /** activity-alias of the manifest that the update notification opens. */
         const val UPDATE_ENTRY = "com.powermaxv2.ytdownloader.UpdateEntry"
+
+        /** Exported activity-alias "Convertir avec Gulp" (SEND of any file). */
+        const val CONVERT_ENTRY = "com.powermaxv2.ytdownloader.ConvertEntry"
+
+        /** Exported activity-alias "Aperçu avec Gulp" (SEND of any file, VIEW of a content:// file). */
+        const val PREVIEW_ENTRY = "com.powermaxv2.ytdownloader.PreviewEntry"
     }
 }

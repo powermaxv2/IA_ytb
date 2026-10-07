@@ -180,6 +180,7 @@ fun TerminalToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
         Text(tool.name.uppercase(), color = Palette.TextPrimary, fontSize = 22.sp, lineHeight = 27.sp, fontFamily = LocalTokens.current.display)
         Spacer(Modifier.height(4.dp))
         Text("# ${tool.tagline}", color = Palette.TextSecondary, fontSize = 12.5.sp, lineHeight = 17.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        val icon = tool.icon
         if (tool.platforms.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -194,6 +195,18 @@ fun TerminalToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
                         PlatformGlyph(platform, Modifier.size(19.dp))
                     }
                 }
+            }
+        } else if (icon != null) {
+            // A tool that is not about a website: its symbol in phosphor, floating in its cell.
+            Spacer(Modifier.height(14.dp))
+            Box(
+                Modifier
+                    .bob(index, amplitude = 2.dp)
+                    .size(40.dp)
+                    .termPanel(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
             }
         }
         if (tool.tags.isNotEmpty()) {
