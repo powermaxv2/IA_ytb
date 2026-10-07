@@ -173,7 +173,7 @@ class SkinScreenshotTest {
         capture("${name}_home")
     }
 
-    /** The Convertisseur and Aperçu cards (and the "À venir" one), without the downloader card above them. */
+    /** The whole home screen (every tool, then the "À venir" card), on a screen tall enough to hold it. */
     private fun homeFileTools(skin: Skin, name: String) {
         composeRule.setContent {
             AppTheme(Platform.YOUTUBE, skin) {
