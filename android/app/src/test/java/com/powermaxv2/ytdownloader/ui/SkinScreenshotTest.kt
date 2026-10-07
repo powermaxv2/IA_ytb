@@ -79,9 +79,12 @@ class SkinScreenshotTest {
     @Test fun paperHome() = home(Skin.PAPER, "paper")
     @Test fun terminalHome() = home(Skin.TERMINAL, "terminal")
 
-    // The home screen is taller than the phone: the file tools' cards, rendered on their own.
+    // Tall screen: the whole home screen, downloader included, in one picture.
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
     @Test fun classicHomeFileTools() = homeFileTools(Skin.CLASSIC, "classic")
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
     @Test fun paperHomeFileTools() = homeFileTools(Skin.PAPER, "paper")
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
     @Test fun terminalHomeFileTools() = homeFileTools(Skin.TERMINAL, "terminal")
 
     @Test fun classicToolScaffold() = toolScaffold(Skin.CLASSIC, "classic")
@@ -177,7 +180,7 @@ class SkinScreenshotTest {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     HomeContent(
-                        tools = ToolRegistry.tools.filter { it.id != ToolRegistry.DOWNLOADER },
+                        tools = ToolRegistry.tools,
                         onOpen = {},
                         onSettings = {},
                         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
