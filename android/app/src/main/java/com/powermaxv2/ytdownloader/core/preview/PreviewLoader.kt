@@ -152,7 +152,7 @@ object PreviewLoader {
                 val note = when {
                     pretty != null -> null
                     cut -> "JSON coupé au premier Mo : affiché tel quel."
-                    else -> "JSON non valide ou trop imbriqué : affiché tel quel."
+                    else -> "JSON non valide, trop imbriqué ou trop long à mettre en forme : affiché tel quel."
                 }
                 code(pretty ?: text, CodeLang.JSON, cut, decoded.charset, note)
             }
@@ -189,14 +189,32 @@ object PreviewLoader {
                 return PreviewBody.Notice("Archive trop volumineuse pour l'aperçu : 512 Mo au maximum.")
             }
             coroutineContext.ensureActive()
-            val listing = listZip(copy, Charsets.UTF_8) ?: listZip(copy, Charset.forName("IBM437"))
+            val listing = try {
+                listZip(copy, Charsets.UTF_8) ?: listZip(copy, Charset.forName("IBM437"))
+            } catch (e: DangerousZip) {
+                // Android 14+ will not open it: list the names from the central directory ourselves, flagged.
+                coroutineContext.ensureActive()
+                val read = ZipCentralDirectory.read(copy) ?: return PreviewBody.Notice(DANGEROUS_ZIP)
+                ZipNames.tree(read.entries, read.totalEntries, truncated = read.totalEntries > read.entries.size)
+                    .copy(refusedByAndroid = true)
+            }
             return listing?.let { PreviewBody.Zip(it) } ?: PreviewBody.Notice("Archive illisible ou abîmée.")
         } finally {
             WorkDir.delete(context, dir)
         }
     }
 
-    /** Null when the archive cannot be read with [charset] (names in another encoding, damaged file). */
+    /** Shown when Android refused the archive for its names and our own read of the directory failed too. */
+    const val DANGEROUS_ZIP =
+        "Cette archive contient des chemins dangereux (« .. » ou absolus) : Android refuse de la lister. Ne l'extrayez pas."
+
+    /** Android's ZipFile refused an entry name (ZipPathValidator, Android 14 and later). */
+    private class DangerousZip : Exception()
+
+    /**
+     * Null when the archive cannot be read with [charset] (names in another encoding, damaged file). Throws
+     * [DangerousZip] when Android refuses it for a ".." or absolute entry name.
+     */
     private fun listZip(file: java.io.File, charset: Charset): ZipListing? = try {
         ZipFile(file, charset).use { zip ->
             val total = zip.size()
@@ -209,6 +227,7 @@ object PreviewLoader {
             ZipNames.tree(entries, total, truncated = total > entries.size)
         }
     } catch (e: ZipException) {
+        if (ZipNames.isPathRefusal(e.message) || ZipNames.isPathRefusal(e.cause?.message)) throw DangerousZip()
         null
     } catch (e: IllegalArgumentException) {
         // Malformed names in this charset.

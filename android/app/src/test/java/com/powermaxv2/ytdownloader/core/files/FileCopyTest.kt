@@ -3,6 +3,9 @@ package com.powermaxv2.ytdownloader.core.files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -31,6 +34,22 @@ class FileCopyTest {
         } catch (e: IllegalStateException) {
             // Two 256 Kio blocks copied, then stopped before the third.
             assertEquals(2 * 256 * 1024, out.size())
+        }
+    }
+
+    /** The converter's checkpoint (`{ job.ensureActive() }`): cancelling the job stops the copy at the next block. */
+    @Test fun aCancelledJobStopsTheCopy() {
+        val job = Job()
+        val out = ByteArrayOutputStream()
+        var blocks = 0
+        try {
+            FileIntake.copyCapped(ByteArrayInputStream(ByteArray(10_000_000)), out, Long.MAX_VALUE) {
+                if (++blocks == 2) job.cancel()
+                job.ensureActive()
+            }
+            fail("the copy should have stopped")
+        } catch (e: CancellationException) {
+            assertEquals(256 * 1024, out.size())
         }
     }
 }

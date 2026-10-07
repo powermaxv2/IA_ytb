@@ -120,9 +120,13 @@ jobs:
           [ -f "dist/YT-Downloader-$VERSION-universal.apk" ] || { echo "::error::APK universel absent."; exit 1; }
           (cd dist && sha256sum -- *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
-      # A full artifact storage quota must not hide the tests and screenshots of a branch build (releases stay strict).
-      - uses: actions/upload-artifact@v4
-        continue-on-error: ${{ env.IS_RELEASE != 'true' }}
+      # Branch builds only: a tag publishes the same APKs and SHA256SUMS.txt as release assets (strict, below),
+      # which do not count against the artifact quota. A full quota must not hide the tests and screenshots of a
+      # branch build.
+      - name: Upload APKs
+        if: env.IS_RELEASE != 'true'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: YT-Downloader-Android-${{ steps.version.outputs.version }}
           path: android/dist/

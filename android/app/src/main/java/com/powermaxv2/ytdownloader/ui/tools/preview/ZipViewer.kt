@@ -72,6 +72,9 @@ internal fun ZipViewer(body: PreviewBody.Zip, modifier: Modifier = Modifier) {
                 WarningChip(if (listing.suspicious == 1) "1 nom suspect" else "${listing.suspicious} noms suspects")
             }
         }
+        if (listing.refusedByAndroid) {
+            NoteBanner("Android refuse d'ouvrir cette archive : elle contient des chemins dangereux. Noms lus sans rien décompresser. Ne l'extrayez pas.")
+        }
         if (listing.truncated) {
             NoteBanner("Liste limitée aux ${ZipNames.MAX_ENTRIES} premiers éléments sur ${listing.totalEntries}.")
         }

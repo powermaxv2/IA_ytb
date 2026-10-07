@@ -54,13 +54,25 @@ object Highlighter {
     const val MAX_TOKENS = 300_000
 
     /** Tokens of [text] in order, never overlapping. Line ends are expected as "\n" (see [normalizeLineEnds]). */
-    fun tokenize(text: String, lang: CodeLang): List<Token> = when (lang) {
-        CodeLang.PLAIN -> emptyList()
-        CodeLang.MARKUP -> Markup(text).run()
-        CodeLang.JSON -> JsonScan(text).run()
-        CodeLang.YAML -> YamlScan(text).run()
-        CodeLang.CSS -> CssScan(text).run()
-        else -> CLike(text, specOf(lang)).run()
+    fun tokenize(text: String, lang: CodeLang): List<Token> = scanner(text, lang)?.run() ?: emptyList()
+
+    /**
+     * [tokenize], plus the number of steps the scanner took: every loop turn and every character a search went
+     * through. A linear scanner stays within a small multiple of the text length (tested on pathological inputs).
+     */
+    internal fun tokenizeMetered(text: String, lang: CodeLang): Pair<List<Token>, Long> {
+        val scanner = scanner(text, lang) ?: return emptyList<Token>() to 0L
+        val tokens = scanner.run()
+        return tokens to scanner.steps
+    }
+
+    private fun scanner(text: String, lang: CodeLang): Scanner? = when (lang) {
+        CodeLang.PLAIN -> null
+        CodeLang.MARKUP -> Markup(text)
+        CodeLang.JSON -> JsonScan(text)
+        CodeLang.YAML -> YamlScan(text)
+        CodeLang.CSS -> CssScan(text)
+        else -> CLike(text, specOf(lang))
     }
 
     /** "\r\n" and lone "\r" become "\n". */
@@ -187,20 +199,45 @@ object Highlighter {
         else -> Spec(cWords, listOf("//", "--"), true, false, true, true, true, false, true)
     }
 
-    /** Shared token list with the [MAX_TOKENS] bound. */
-    private open class Scanner(val text: String) {
+    /** Shared token list with the [MAX_TOKENS] bound, and the step counter of [tokenizeMetered]. */
+    private abstract class Scanner(val text: String) {
         val tokens = ArrayList<Token>()
         val full: Boolean get() = tokens.size >= MAX_TOKENS
+
+        /** Loop turns plus characters searched so far (see [tokenizeMetered]). */
+        var steps = 0L
+
+        abstract fun run(): List<Token>
+
+        /** Counts one loop turn; always true (it sits at the head of every loop condition). */
+        fun tick(): Boolean {
+            steps++
+            return true
+        }
+
+        /** [String.indexOf] from [from], counting the characters it went through. */
+        fun find(s: String, from: Int): Int {
+            val at = text.indexOf(s, from)
+            steps += (if (at < 0) text.length else at + s.length) - from.coerceAtMost(text.length)
+            return at
+        }
+
+        fun find(c: Char, from: Int): Int {
+            val at = text.indexOf(c, from)
+            steps += (if (at < 0) text.length else at + 1) - from.coerceAtMost(text.length)
+            return at
+        }
+
         fun add(start: Int, end: Int, type: TokenType) {
             if (end > start && !full) tokens.add(Token(start, end, type))
         }
         fun at(i: Int, s: String): Boolean = text.startsWith(s, i)
-        fun lineEndFrom(i: Int): Int = text.indexOf('\n', i).let { if (it < 0) text.length else it }
+        fun lineEndFrom(i: Int): Int = find('\n', i).let { if (it < 0) text.length else it }
 
         /** End of a quoted string opened at [i] by [quote] (escapes with backslash; stops at the line end unless [multiline]). */
         fun stringEnd(i: Int, quote: Char, multiline: Boolean): Int {
             var j = i + 1
-            while (j < text.length) {
+            while (tick() && j < text.length) {
                 val c = text[j]
                 if (c == '\\') {
                     j += 2
@@ -216,7 +253,7 @@ object Highlighter {
         /** End of a number starting at [i]: digits, letters (hex, suffixes), "_", a dot before a digit, exponent signs. */
         fun numberEnd(i: Int): Int {
             var j = i
-            while (j < text.length) {
+            while (tick() && j < text.length) {
                 val c = text[j]
                 val ok = c.isLetterOrDigit() || c == '_' ||
                     (c == '.' && j + 1 < text.length && text[j + 1].isDigit()) ||
@@ -232,10 +269,10 @@ object Highlighter {
     }
 
     private class CLike(text: String, val spec: Spec) : Scanner(text) {
-        fun run(): List<Token> {
+        override fun run(): List<Token> {
             var i = 0
             var lineStart = true
-            while (i < text.length && !full) {
+            while (tick() && i < text.length && !full) {
                 val c = text[i]
                 if (c == '\n') {
                     lineStart = true
@@ -250,7 +287,7 @@ object Highlighter {
                 lineStart = false
                 // Comments.
                 if (spec.blockComment && at(i, "/*")) {
-                    val end = text.indexOf("*/", i + 2).let { if (it < 0) text.length else it + 2 }
+                    val end = find("*/", i + 2).let { if (it < 0) text.length else it + 2 }
                     add(i, end, TokenType.COMMENT)
                     i = end
                     continue
@@ -274,7 +311,7 @@ object Highlighter {
                 // Strings.
                 if (spec.tripleQuotes && (at(i, "\"\"\"") || at(i, "'''"))) {
                     val q = text.substring(i, i + 3)
-                    val end = text.indexOf(q, i + 3).let { if (it < 0) text.length else it + 3 }
+                    val end = find(q, i + 3).let { if (it < 0) text.length else it + 3 }
                     add(i, end, TokenType.STRING)
                     i = end
                     continue
@@ -292,10 +329,10 @@ object Highlighter {
                         // Only up to the line end: an unclosed "${" must not scan the rest of the file each time.
                         // Bounded walk: stops at '}' or the newline, so each character is visited once.
                         j++
-                        while (j < text.length && text[j] != '}' && text[j] != '\n') j++
+                        while (tick() && j < text.length && text[j] != '}' && text[j] != '\n') j++
                         if (j < text.length && text[j] == '}') j++
                     } else {
-                        while (j < text.length && (isIdentPart(text[j]) || (j == i + 1 && text[j] in "@#?$!*0123456789"))) j++
+                        while (tick() && j < text.length && (isIdentPart(text[j]) || (j == i + 1 && text[j] in "@#?$!*0123456789"))) j++
                     }
                     if (j > i + 1) {
                         add(i, j, TokenType.ATTR)
@@ -305,7 +342,7 @@ object Highlighter {
                 }
                 if (spec.annotations && c == '@' && i + 1 < text.length && isIdentStart(text[i + 1])) {
                     var j = i + 1
-                    while (j < text.length && (isIdentPart(text[j]) || text[j] == '.')) j++
+                    while (tick() && j < text.length && (isIdentPart(text[j]) || text[j] == '.')) j++
                     add(i, j, TokenType.ANNOTATION)
                     i = j
                     continue
@@ -320,7 +357,7 @@ object Highlighter {
                 }
                 if (isIdentStart(c) || (c == '$' && !spec.dollarVars)) {
                     var j = i + 1
-                    while (j < text.length && (isIdentPart(text[j]) || text[j] == '$')) j++
+                    while (tick() && j < text.length && (isIdentPart(text[j]) || text[j] == '$')) j++
                     val word = text.substring(i, j)
                     when {
                         word in spec.keywords -> add(i, j, TokenType.KEYWORD)
@@ -338,17 +375,17 @@ object Highlighter {
     // MARK: - XML / HTML
 
     private class Markup(text: String) : Scanner(text) {
-        fun run(): List<Token> {
+        override fun run(): List<Token> {
             var i = 0
-            while (i < text.length && !full) {
+            while (tick() && i < text.length && !full) {
                 if (at(i, "<!--")) {
-                    val end = text.indexOf("-->", i + 4).let { if (it < 0) text.length else it + 3 }
+                    val end = find("-->", i + 4).let { if (it < 0) text.length else it + 3 }
                     add(i, end, TokenType.COMMENT)
                     i = end
                     continue
                 }
                 if (at(i, "<![CDATA[")) {
-                    val end = text.indexOf("]]>", i).let { if (it < 0) text.length else it + 3 }
+                    val end = find("]]>", i).let { if (it < 0) text.length else it + 3 }
                     add(i, end, TokenType.STRING)
                     i = end
                     continue
@@ -365,10 +402,10 @@ object Highlighter {
         /** A tag from its "<" to its ">": name, attributes, quoted values. Returns where it ends. */
         private fun tag(start: Int): Int {
             var i = start + 1
-            while (i < text.length && text[i] in "/!?") i++
-            while (i < text.length && (text[i].isLetterOrDigit() || text[i] in ":-_.")) i++
+            while (tick() && i < text.length && text[i] in "/!?") i++
+            while (tick() && i < text.length && (text[i].isLetterOrDigit() || text[i] in ":-_.")) i++
             add(start, i, TokenType.TAG)
-            while (i < text.length && !full) {
+            while (tick() && i < text.length && !full) {
                 val c = text[i]
                 when {
                     c == '>' -> {
@@ -380,13 +417,13 @@ object Highlighter {
                         return i + 2
                     }
                     c == '"' || c == '\'' -> {
-                        val end = text.indexOf(c, i + 1).let { if (it < 0) text.length else it + 1 }
+                        val end = find(c, i + 1).let { if (it < 0) text.length else it + 1 }
                         add(i, end, TokenType.STRING)
                         i = end
                     }
                     c.isLetter() || c == '_' || c == ':' || c == '@' -> {
                         var j = i + 1
-                        while (j < text.length && (text[j].isLetterOrDigit() || text[j] in ":-_.")) j++
+                        while (tick() && j < text.length && (text[j].isLetterOrDigit() || text[j] in ":-_.")) j++
                         add(i, j, TokenType.ATTR)
                         i = j
                     }
@@ -401,15 +438,15 @@ object Highlighter {
     // MARK: - JSON
 
     private class JsonScan(text: String) : Scanner(text) {
-        fun run(): List<Token> {
+        override fun run(): List<Token> {
             var i = 0
-            while (i < text.length && !full) {
+            while (tick() && i < text.length && !full) {
                 val c = text[i]
                 when {
                     c == '"' -> {
                         val end = stringEnd(i, '"', multiline = false)
                         var k = end
-                        while (k < text.length && text[k].isWhitespace()) k++
+                        while (tick() && k < text.length && text[k].isWhitespace()) k++
                         add(i, end, if (k < text.length && text[k] == ':') TokenType.ATTR else TokenType.STRING)
                         i = end
                     }
@@ -420,7 +457,7 @@ object Highlighter {
                     }
                     c.isLetter() -> {
                         var j = i
-                        while (j < text.length && text[j].isLetter()) j++
+                        while (tick() && j < text.length && text[j].isLetter()) j++
                         val word = text.substring(i, j)
                         if (word == "true" || word == "false" || word == "null") add(i, j, TokenType.KEYWORD)
                         i = j
@@ -437,9 +474,9 @@ object Highlighter {
     private class YamlScan(text: String) : Scanner(text) {
         private val constants = setOf("true", "false", "null", "yes", "no", "on", "off", "True", "False", "Null", "~")
 
-        fun run(): List<Token> {
+        override fun run(): List<Token> {
             var lineStart = 0
-            while (lineStart < text.length && !full) {
+            while (tick() && lineStart < text.length && !full) {
                 val end = lineEndFrom(lineStart)
                 line(lineStart, end)
                 lineStart = end + 1
@@ -449,7 +486,7 @@ object Highlighter {
 
         private fun line(start: Int, end: Int) {
             var i = start
-            while (i < end && (text[i] == ' ' || text[i] == '\t')) i++
+            while (tick() && i < end && (text[i] == ' ' || text[i] == '\t')) i++
             if (i >= end) return
             if (text[i] == '#' || text[i] == ';') {
                 add(i, end, TokenType.COMMENT)
@@ -463,7 +500,7 @@ object Highlighter {
             if (text[i] == '-' && i + 1 < end && text[i + 1] == ' ') i += 2
             // key: value / key = value
             var j = i
-            while (j < end && text[j] != ':' && text[j] != '=' && text[j] != '#' && text[j] != '"' && text[j] != '\'') j++
+            while (tick() && j < end && text[j] != ':' && text[j] != '=' && text[j] != '#' && text[j] != '"' && text[j] != '\'') j++
             if (j < end && (text[j] == ':' || text[j] == '=') && j > i && (j + 1 >= end || text[j + 1] == ' ' || text[j] == '=')) {
                 add(i, j, TokenType.ATTR)
                 i = j + 1
@@ -473,7 +510,7 @@ object Highlighter {
 
         private fun value(from: Int, end: Int) {
             var i = from
-            while (i < end && !full) {
+            while (tick() && i < end && !full) {
                 val c = text[i]
                 when {
                     c == '#' && (i == from || text[i - 1] == ' ') -> {
@@ -488,7 +525,7 @@ object Highlighter {
                     c == ' ' || c == '\t' -> i++
                     else -> {
                         var j = i
-                        while (j < end && text[j] != ' ' && text[j] != ',' && text[j] != ']' && text[j] != '}') j++
+                        while (tick() && j < end && text[j] != ' ' && text[j] != ',' && text[j] != ']' && text[j] != '}') j++
                         val word = text.substring(i, j)
                         when {
                             word in constants -> add(i, j, TokenType.KEYWORD)
@@ -505,14 +542,14 @@ object Highlighter {
     // MARK: - CSS
 
     private class CssScan(text: String) : Scanner(text) {
-        fun run(): List<Token> {
+        override fun run(): List<Token> {
             var i = 0
             var depth = 0
-            while (i < text.length && !full) {
+            while (tick() && i < text.length && !full) {
                 val c = text[i]
                 when {
                     at(i, "/*") -> {
-                        val end = text.indexOf("*/", i + 2).let { if (it < 0) text.length else it + 2 }
+                        val end = find("*/", i + 2).let { if (it < 0) text.length else it + 2 }
                         add(i, end, TokenType.COMMENT)
                         i = end
                     }
@@ -537,13 +574,13 @@ object Highlighter {
                     }
                     c == '@' -> {
                         var j = i + 1
-                        while (j < text.length && (text[j].isLetterOrDigit() || text[j] == '-')) j++
+                        while (tick() && j < text.length && (text[j].isLetterOrDigit() || text[j] == '-')) j++
                         add(i, j, TokenType.KEYWORD)
                         i = j
                     }
                     c == '#' && depth > 0 -> {
                         var j = i + 1
-                        while (j < text.length && text[j].isLetterOrDigit()) j++
+                        while (tick() && j < text.length && text[j].isLetterOrDigit()) j++
                         add(i, j, TokenType.NUMBER)
                         i = j
                     }
@@ -555,10 +592,10 @@ object Highlighter {
                     }
                     c.isLetter() || c == '-' || c == '_' -> {
                         var j = i + 1
-                        while (j < text.length && (text[j].isLetterOrDigit() || text[j] == '-' || text[j] == '_')) j++
+                        while (tick() && j < text.length && (text[j].isLetterOrDigit() || text[j] == '-' || text[j] == '_')) j++
                         if (depth > 0) {
                             var k = j
-                            while (k < text.length && (text[k] == ' ' || text[k] == '\t')) k++
+                            while (tick() && k < text.length && (text[k] == ' ' || text[k] == '\t')) k++
                             if (k < text.length && text[k] == ':') add(i, j, TokenType.ATTR)
                         } else if (i == 0 || text[i - 1] !in ".#:") {
                             add(i, j, TokenType.TAG)

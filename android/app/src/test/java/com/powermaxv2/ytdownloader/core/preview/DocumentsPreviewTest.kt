@@ -83,4 +83,23 @@ class DocumentsPreviewTest {
     @Test fun reindentHandlesEscapedQuotes() {
         assertEquals("{\n  \"k\": \"a\\\"{,\"\n}", JsonPretty.reindent("{\"k\":\"a\\\"{,\"}"))
     }
+
+    /** A 1 Mio JSON nested 150 deep full of scalars would grow ~150 times when re-indented: it stays raw. */
+    @Test fun reindentIsCappedInMemory() {
+        val depth = 150
+        val body = "1,".repeat(500_000) + "1"
+        val bomb = "[".repeat(depth) + body + "]".repeat(depth)
+        assertNull(JsonPretty.reindent(bomb))
+        assertNull(JsonPretty.format(bomb))
+        // Indentation stops growing at MAX_INDENT_DEPTH levels.
+        val deep = "[".repeat(40) + "1" + "]".repeat(40)
+        val pretty = JsonPretty.reindent(deep)!!
+        val widest = pretty.lines().maxOf { line -> line.length - line.trimStart().length }
+        assertEquals(JsonPretty.MAX_INDENT_DEPTH * 2, widest)
+        assertTrue(JsonPretty.outputLimit(1024 * 1024) <= JsonPretty.MAX_OUTPUT_CHARS)
+        assertEquals(4 * 1024 * 1024, JsonPretty.outputLimit(1024 * 1024))
+        // An ordinary file still fits.
+        val normal = "[" + (1..20_000).joinToString(",") { "{\"id\":$it,\"nom\":\"n$it\"}" } + "]"
+        assertTrue(JsonPretty.format(normal) != null)
+    }
 }

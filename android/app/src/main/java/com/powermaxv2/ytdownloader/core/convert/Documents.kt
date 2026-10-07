@@ -76,14 +76,42 @@ object CsvJson {
     /** Most bytes of a CSV / JSON / Markdown file the converter reads into memory. */
     const val MAX_BYTES: Int = 20 * 1024 * 1024
 
+    /** Most columns of a table converted either way (a header of millions of commas is not a table). */
+    const val MAX_COLUMNS = 2_000
+
+    /** Most cells (rows × columns) of a table converted either way. */
+    const val MAX_CELLS = 5_000_000L
+
+    /** Longest JSON written from a CSV, in characters (every row repeats every column name). */
+    const val MAX_JSON_CHARS = 32L * 1024 * 1024
+
+    const val TOO_WIDE = "Ce tableau a trop de colonnes pour être converti (2 000 au plus)."
+    const val TOO_BIG = "Ce tableau est trop grand pour être converti sur le téléphone."
+
+    /** Refuses a table of [rows] × [columns] past [MAX_COLUMNS] or [MAX_CELLS] (before anything is built). */
+    fun checkSize(rows: Int, columns: Int) {
+        if (columns > MAX_COLUMNS) throw DocumentError(TOO_WIDE)
+        if (rows.toLong() * columns > MAX_CELLS) throw DocumentError(TOO_BIG)
+    }
+
+    /**
+     * Characters of the JSON [csvToJson] would write, roughly: every data row repeats every column name with its
+     * quotes and indentation, plus the values (at most the source text).
+     */
+    fun jsonSizeEstimate(dataRows: Int, header: List<String>, sourceLength: Int): Long =
+        dataRows.toLong() * header.sumOf { it.length.toLong() + 12 } + sourceLength
+
     /**
      * CSV → JSON: the first row names the fields, every other row becomes an object (values kept as text, nothing
-     * guessed). Blank or repeated column names get "colonne N" / "nom (2)". Pretty-printed.
+     * guessed). Blank or repeated column names get "colonne N" / "nom (2)". Pretty-printed. Refused past
+     * [MAX_COLUMNS], [MAX_CELLS] or [MAX_JSON_CHARS].
      */
     fun csvToJson(text: String): String {
         val table = Csv.parse(text)
         if (table.rows.isEmpty()) throw DocumentError("Ce CSV est vide.")
+        checkSize(table.rows.size - 1, table.columnCount)
         val header = headerNames(table.rows.first(), table.columnCount)
+        if (jsonSizeEstimate(table.rows.size - 1, header, text.length) > MAX_JSON_CHARS) throw DocumentError(TOO_BIG)
         val array = JSONArray()
         table.rows.drop(1).forEach { row ->
             val obj = JSONObject()
@@ -108,7 +136,8 @@ object CsvJson {
     /**
      * JSON → CSV: a list of flat objects (or JSON Lines, one object per line) becomes a table whose columns are
      * every key met, in order of appearance. Nested objects / lists are written as JSON text; null as an empty
-     * cell; a list of plain values gives one "valeur" column; a single object gives one row.
+     * cell; a list of plain values gives one "valeur" column; a single object gives one row. Refused past
+     * [MAX_COLUMNS] or [MAX_CELLS].
      */
     fun jsonToCsv(text: String): String {
         val items = readItems(text.removePrefix("﻿"))
@@ -122,7 +151,9 @@ object CsvJson {
             } else {
                 columns.add(scalarColumn)
             }
+            if (columns.size > MAX_COLUMNS) throw DocumentError(TOO_WIDE)
         }
+        checkSize(items.size, columns.size)
         val header = columns.toList()
         val rows = ArrayList<List<String>>(items.size + 1)
         rows.add(header)

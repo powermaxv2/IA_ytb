@@ -121,6 +121,19 @@ class FileKindTest {
         assertEquals(FileKind.AUDIO, FileKind.detect("unknown", null, pad(bytes(0xFF, 0xF3, 0x90, 0x64))))
     }
 
+    @Test fun textBytesWinOverAnAudioOrVideoNameOrType() {
+        val playlist = ascii("#EXTM3U\n#EXTINF:1,\nfile:///data/user/0/x/cache/jobs/a.mp4\n")
+        // Android's own type for .m3u / .m3u8 is audio/x-mpegurl: the bytes say text.
+        assertEquals(FileKind.TEXT, FileKind.detect("liste.m3u8", "audio/x-mpegurl", playlist))
+        assertEquals(FileKind.TEXT, FileKind.detect("liste.m3u", "audio/mpegurl", playlist))
+        assertEquals(FileKind.TEXT, FileKind.detect("faux.mp3", null, playlist))
+        assertEquals(FileKind.TEXT, FileKind.detect("faux.mkv", "video/x-matroska", playlist))
+        // A binary file without a known signature keeps what its name says (WMA: ASF header GUID).
+        val asf = pad(bytes(0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11, 0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C))
+        assertEquals(FileKind.AUDIO, FileKind.detect("chanson.wma", null, asf))
+        assertEquals(FileKind.VIDEO, FileKind.detect("film", "video/x-ms-wmv", asf))
+    }
+
     @Test fun textDetection() {
         assertTrue(FileKind.looksLikeText(ascii("Bonjour\tà tous\r\n")))
         assertTrue(FileKind.looksLikeText("Été déjà là — ok".toByteArray(Charsets.UTF_8)))

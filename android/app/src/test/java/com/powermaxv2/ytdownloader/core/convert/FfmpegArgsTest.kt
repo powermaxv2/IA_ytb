@@ -13,7 +13,7 @@ class FfmpegArgsTest {
     private val out = "$W/output.mp4"
     private val prefix = listOf(
         "-nostdin", "-hide_banner", "-y", "-nostats", "-progress", "pipe:1",
-        "-protocol_whitelist", "file,pipe", "-i", input,
+        "-protocol_whitelist", "file,pipe", "-format_whitelist", FfmpegArgs.FORMAT_WHITELIST, "-i", input,
     )
     private val defaults = ConvertOptions()
     private val firstVideo = listOf("-map", "0:v:0", "-map", "0:a:0?")
@@ -119,7 +119,10 @@ class FfmpegArgsTest {
 
     @Test fun stillImagesFromPng() {
         val png = "$W/input.png"
-        val pre = listOf("-nostdin", "-hide_banner", "-y", "-nostats", "-progress", "pipe:1", "-protocol_whitelist", "file,pipe", "-i", png)
+        val pre = listOf(
+            "-nostdin", "-hide_banner", "-y", "-nostats", "-progress", "pipe:1", "-protocol_whitelist", "file,pipe",
+            "-format_whitelist", FfmpegArgs.FORMAT_WHITELIST, "-i", png,
+        )
         assertEquals(pre + listOf("-frames:v", "1", "-update", "1", "-c:v", "bmp", "$W/out/photo.bmp"), FfmpegArgs.build(ROOT, png, "$W/out/photo.bmp", Target.BMP, defaults))
         assertEquals(
             pre + listOf("-frames:v", "1", "-update", "1", "-c:v", "tiff", "-compression_algo", "lzw", "$W/out/photo.tiff"),
@@ -159,6 +162,48 @@ class FfmpegArgsTest {
         assertFalse(FfmpegArgs.isInside(ROOT, "$W/../abc/input.mkv"))
         assertFalse(FfmpegArgs.isInside("relative/root", "relative/root/a"))
         assertFalse(FfmpegArgs.isInside("/", "/etc/passwd"))
+    }
+
+    @Test fun onlyMediaDemuxersAreWhitelistedBeforeTheInput() {
+        val a = args(Target.MP3)
+        val at = a.indexOf("-format_whitelist")
+        assertTrue(at >= 0 && at < a.indexOf("-i"))
+        val demuxers = a[at + 1].split(',')
+        assertEquals(FfmpegArgs.FORMAT_WHITELIST.split(','), demuxers)
+        // Demuxers that open other files (playlists, manifests, lists) are never allowed.
+        listOf("hls", "applehttp", "dash", "concat", "sdp", "rtsp", "imf", "ffmetadata", "lavfi", "tee", "data", "rawvideo").forEach {
+            assertFalse(it, it in demuxers)
+        }
+        listOf("mov", "matroska", "mp3", "png_pipe").forEach { assertTrue(it, it in demuxers) }
+        assertEquals("file,pipe", a[a.indexOf("-protocol_whitelist") + 1])
+    }
+
+    @Test fun textAndPlaylistsNeverReachFfmpeg() {
+        val ascii = { t: String -> t.toByteArray(Charsets.ISO_8859_1) }
+        val m3u8 = ascii("#EXTM3U\n#EXTINF:1,\nfile:///data/user/0/com.powermaxv2.ytdownloader/cache/jobs/x.mp4\n")
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(m3u8))
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(ascii("ffconcat version 1.0\nfile 'a.mp4'\n")))
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(ascii("v=0\no=- 0 0 IN IP4 127.0.0.1\n")))
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(ascii("<?xml version=\"1.0\"?><MPD></MPD>")))
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + m3u8))
+        // A playlist start followed by binary bytes is still refused.
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(ascii("  #EXTM3U\n") + ByteArray(64)))
+        assertEquals(FfmpegInput.TEXT_REFUSED, FfmpegInput.refusal(ascii("plain words, nothing else")))
+        assertTrue(FfmpegInput.refusal(ByteArray(0)) != null)
+        // Real media heads pass: ID3 MP3, Matroska, a binary container without a known signature (MPEG-TS).
+        assertEquals(null, FfmpegInput.refusal(ascii("ID3") + ByteArray(64)))
+        assertEquals(null, FfmpegInput.refusal(byteArrayOf(0x1A, 0x45, 0xDF.toByte(), 0xA3.toByte()) + ByteArray(60)))
+        assertEquals(null, FfmpegInput.refusal(ByteArray(376) { if (it % 188 == 0) 0x47 else 0 }))
+    }
+
+    @Test fun workNameExtensionComesFromTheBytesOrAMediaName() {
+        val mkv = byteArrayOf(0x1A, 0x45, 0xDF.toByte(), 0xA3.toByte()) + ByteArray(60)
+        assertEquals("mkv", FfmpegInput.workExt(mkv, "liste.m3u8"))
+        val unknownBinary = ByteArray(64) { if (it % 2 == 0) 0x47 else 0 }
+        assertEquals("bin", FfmpegInput.workExt(unknownBinary, "liste.m3u8"))
+        assertEquals("bin", FfmpegInput.workExt(unknownBinary, "notes.txt"))
+        assertEquals("wma", FfmpegInput.workExt(unknownBinary, "chanson.WMA"))
+        assertEquals("bin", FfmpegInput.workExt(unknownBinary, "clip.mp%d"))
     }
 
     @Test fun fixedWorkNamesUseSafeExtensions() {

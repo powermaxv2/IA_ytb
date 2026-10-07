@@ -2,6 +2,7 @@ package com.powermaxv2.ytdownloader.core.preview
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WaveformTest {
@@ -50,5 +51,22 @@ class WaveformTest {
         assertEquals(1f, Waveform.peakFloat(floatArrayOf(3f)), 0f)
         assertEquals(0.5f, Waveform.progress(500, 1000), 0f)
         assertEquals(0f, Waveform.progress(500, 0), 0f)
+    }
+
+    /** A bogus sample rate (raw PCM declared at a few Hz) or lying timestamps cannot grow the series without end. */
+    @Test fun seriesAndSlicesAreCapped() {
+        assertEquals(160, Waveform.sliceFrames(1))
+        assertEquals(160, Waveform.sliceFrames(99))
+        assertEquals(882, Waveform.sliceFrames(44_100))
+        assertEquals(7_680, Waveform.sliceFrames(Int.MAX_VALUE))
+        assertEquals(60_000, Waveform.MAX_SLICES)
+        val s = PeakSeries(16)
+        repeat(1_000_000) { s.add(it * 10L, 0.5f) }
+        assertEquals(Waveform.MAX_SLICES, s.size)
+        assertTrue(s.full)
+        assertEquals((Waveform.MAX_SLICES - 1) * 10L, s.lastTimeUs)
+        val small = PeakSeries(1, maxSize = 3)
+        repeat(10) { small.add(it.toLong(), 1f) }
+        assertEquals(3, small.size)
     }
 }

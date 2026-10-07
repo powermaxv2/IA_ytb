@@ -2,6 +2,11 @@ package com.powermaxv2.ytdownloader.core.preview
 
 // The contents of a ZIP archive as the Aperçu lists them: never extracted, names checked for tricks. Pure.
 
+import java.io.File
+import java.io.IOException
+import java.io.RandomAccessFile
+import java.nio.charset.Charset
+
 /** One entry as the ZIP central directory gives it. Sizes are -1 when unknown. */
 data class ZipEntryInfo(val name: String, val size: Long, val compressedSize: Long, val isDirectory: Boolean)
 
@@ -27,6 +32,11 @@ data class ZipListing(
     val totalSize: Long,
     val totalCompressed: Long,
     val suspicious: Int,
+    /**
+     * Android (14 and later) refused to open the archive because of a dangerous name; the rows come from our own
+     * read of its central directory ([ZipCentralDirectory]).
+     */
+    val refusedByAndroid: Boolean = false,
 ) {
     val files: Int get() = rows.count { !it.isDirectory }
 }
@@ -65,6 +75,12 @@ object ZipNames {
         if ('\\' in name) return "Séparateurs Windows (\\)"
         return null
     }
+
+    /**
+     * Whether a ZipException [message] is Android's refusal of a dangerous entry name ("Invalid zip entry path: …",
+     * thrown by ZipFile and ZipInputStream for apps targeting Android 14+) rather than a damaged archive.
+     */
+    fun isPathRefusal(message: String?): Boolean = message?.contains("Invalid zip entry path") == true
 
     /** [name] made safe to draw: control characters become "\uFFFD", at most [MAX_LABEL_CHARS] characters. */
     fun display(name: String): String = buildString(minOf(name.length, MAX_LABEL_CHARS + 1)) {
@@ -171,4 +187,109 @@ object ZipNames {
         }
         return out
     }
+}
+
+/**
+ * Entry names and sizes read straight from a ZIP's central directory, for archives that `java.util.zip` refuses
+ * to open (Android 14+ throws "Invalid zip entry path" on names with ".." or a leading "/"). Only the directory
+ * records are read: nothing is decompressed, nothing extracted. Same caps as the normal listing. Pure JVM.
+ */
+object ZipCentralDirectory {
+    /** Entries read (at most the cap) and the count the archive declares. */
+    class Result(val entries: List<ZipEntryInfo>, val totalEntries: Int)
+
+    private const val EOCD = 0x06054b50L
+    private const val ZIP64_LOCATOR = 0x07064b50L
+    private const val ZIP64_EOCD = 0x06064b50L
+    private const val CENTRAL = 0x02014b50L
+    private const val EOCD_SIZE = 22
+    private const val CENTRAL_SIZE = 46
+
+    /** Longest name read, in bytes: anything longer is flagged as abnormally long anyway ([ZipNames.warning]). */
+    private const val MAX_NAME_BYTES = 4 * ZipNames.MAX_NAME_CHARS + 4
+
+    /** The entries of [file], at most [maxEntries], or null when it is not a ZIP this reader understands. */
+    fun read(file: File, maxEntries: Int = ZipNames.MAX_ENTRIES): Result? = try {
+        RandomAccessFile(file, "r").use { read(it, maxEntries) }
+    } catch (e: IOException) {
+        null
+    }
+
+    private fun read(raf: RandomAccessFile, maxEntries: Int): Result? {
+        val length = raf.length()
+        if (length < EOCD_SIZE) return null
+        // The end record is in the last 22 bytes, plus a comment of at most 65 535 bytes.
+        val tailSize = minOf(length, (EOCD_SIZE + 0xFFFF).toLong()).toInt()
+        val tail = ByteArray(tailSize)
+        raf.seek(length - tailSize)
+        raf.readFully(tail)
+        var at = tailSize - EOCD_SIZE
+        while (at >= 0 && u32(tail, at) != EOCD) at--
+        if (at < 0) return null
+        val eocdPos = length - tailSize + at
+        var total = u16(tail, at + 10).toLong()
+        var cdSize = u32(tail, at + 12)
+        var cdOffset = u32(tail, at + 16)
+        if (total == 0xFFFFL || cdSize == 0xFFFFFFFFL || cdOffset == 0xFFFFFFFFL) {
+            // ZIP64: the locator sits just before the end record and points at the ZIP64 end record.
+            if (eocdPos < 20) return null
+            val locator = ByteArray(20)
+            raf.seek(eocdPos - 20)
+            raf.readFully(locator)
+            if (u32(locator, 0) != ZIP64_LOCATOR) return null
+            val z64 = u64(locator, 8)
+            if (z64 < 0 || z64 + 56 > length) return null
+            val record = ByteArray(56)
+            raf.seek(z64)
+            raf.readFully(record)
+            if (u32(record, 0) != ZIP64_EOCD) return null
+            total = u64(record, 32)
+            cdSize = u64(record, 40)
+            cdOffset = u64(record, 48)
+        }
+        if (total < 0 || cdSize < 0 || cdOffset < 0 || cdOffset > length || cdSize > length - cdOffset) return null
+        val end = cdOffset + cdSize
+        val count = minOf(total, maxEntries.toLong()).toInt()
+        val entries = ArrayList<ZipEntryInfo>(minOf(count, 1024))
+        val header = ByteArray(CENTRAL_SIZE)
+        var pos = cdOffset
+        for (i in 0 until count) {
+            if (pos + CENTRAL_SIZE > end) break
+            raf.seek(pos)
+            raf.readFully(header)
+            if (u32(header, 0) != CENTRAL) return null
+            val flags = u16(header, 8)
+            val compressed = u32(header, 20)
+            val size = u32(header, 24)
+            val nameLength = u16(header, 28)
+            val extraLength = u16(header, 30)
+            val commentLength = u16(header, 32)
+            if (pos + CENTRAL_SIZE + nameLength > end) return null
+            val nameBytes = ByteArray(minOf(nameLength, MAX_NAME_BYTES))
+            raf.readFully(nameBytes)
+            val name = String(nameBytes, if ((flags and 0x0800) != 0) Charsets.UTF_8 else legacyCharset)
+            entries.add(
+                ZipEntryInfo(
+                    name = name,
+                    // 0xFFFFFFFF: the real size is in a ZIP64 extra field; shown as unknown.
+                    size = if (size == 0xFFFFFFFFL) -1 else size,
+                    compressedSize = if (compressed == 0xFFFFFFFFL) -1 else compressed,
+                    isDirectory = name.endsWith("/"),
+                ),
+            )
+            pos += CENTRAL_SIZE.toLong() + nameLength + extraLength + commentLength
+        }
+        val declared = total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        return Result(entries, maxOf(declared, entries.size))
+    }
+
+    /** Names without the UTF-8 flag are in the old DOS code page (what ZIP tools write by default). */
+    private val legacyCharset: Charset = runCatching { Charset.forName("IBM437") }.getOrDefault(Charsets.ISO_8859_1)
+
+    private fun u16(b: ByteArray, i: Int): Int = (b[i].toInt() and 0xFF) or ((b[i + 1].toInt() and 0xFF) shl 8)
+
+    private fun u32(b: ByteArray, i: Int): Long = (u16(b, i).toLong()) or (u16(b, i + 2).toLong() shl 16)
+
+    /** Negative when the top bit is set (no real archive is that big): callers reject it. */
+    private fun u64(b: ByteArray, i: Int): Long = u32(b, i) or (u32(b, i + 4) shl 32)
 }

@@ -272,15 +272,64 @@ object Formats {
 }
 
 /**
+ * Whether a file may be handed to FFmpeg, decided from its first bytes (never from the MIME type or the name).
+ * Real audio and video are binary; a text file is a playlist or a manifest at best (HLS `#EXTM3U`, `ffconcat`,
+ * SDP, DASH / IMF XML), and FFmpeg's demuxers for those open every file they list. Pure, unit tested.
+ */
+object FfmpegInput {
+    const val TEXT_REFUSED = "Ce fichier n'est pas un son ni une vidéo (texte ou liste de lecture) : Gulp ne le convertit pas."
+
+    /** Starts of playlists and manifests, checked after a byte order mark and blanks, whatever the rest looks like. */
+    private val textMarkers = listOf("#EXT", "ffconcat", "v=0", "<?xml", "<MPD", "<smil", "[playlist]")
+
+    /** French reason to refuse [head] (the first [FileKind.HEAD_SIZE] bytes of the work copy), or null when it may go to FFmpeg. */
+    fun refusal(head: ByteArray): String? {
+        if (head.isEmpty()) return "Ce fichier est vide."
+        if (FileKind.sniff(head)?.let { it.kind == FileKind.AUDIO || it.kind == FileKind.VIDEO } == true) return null
+        if (FileKind.looksLikeText(head) || startsWithMarker(head)) return TEXT_REFUSED
+        return null
+    }
+
+    /**
+     * Extension of the fixed work name ("input.<ext>"): the one the bytes call for when [FileKind.sniff] knows them,
+     * else the user's own only when it is an audio or video extension, else "bin". Never "m3u8", "txt"…
+     */
+    fun workExt(head: ByteArray, name: String): String {
+        FileKind.sniff(head)?.takeIf { it.kind == FileKind.AUDIO || it.kind == FileKind.VIDEO }?.let { return it.ext }
+        val ext = FfmpegArgs.safeExt(SafeNames.extensionOf(name))
+        val kind = FileKind.fromExtension(ext)
+        return if (kind == FileKind.AUDIO || kind == FileKind.VIDEO) ext else "bin"
+    }
+
+    private fun startsWithMarker(head: ByteArray): Boolean {
+        var start = 0
+        val bom = head.size >= 3 &&
+            (head[0].toInt() and 0xFF) == 0xEF && (head[1].toInt() and 0xFF) == 0xBB && (head[2].toInt() and 0xFF) == 0xBF
+        if (bom) start = 3
+        while (start < head.size && (head[start].toInt() == 0x20 || head[start].toInt() in 0x09..0x0D)) start++
+        val text = String(head, start, minOf(16, head.size - start), Charsets.ISO_8859_1)
+        return textMarkers.any { text.startsWith(it, ignoreCase = true) }
+    }
+}
+
+/**
  * FFmpeg command lines (arguments after the executable). Paths are absolute work-dir paths, so none can be read
- * as an option; FFmpeg only reads local files (`-protocol_whitelist file,pipe`) and reports its progress on
- * stdout (`-progress pipe:1`).
+ * as an option; FFmpeg only opens local files (`-protocol_whitelist file,pipe`), only with the demuxers of real
+ * audio, video and still images (`-format_whitelist`, so no playlist or manifest demuxer that would open other
+ * files), and reports its progress on stdout (`-progress pipe:1`).
  */
 object FfmpegArgs {
+    /**
+     * Demuxers FFmpeg may use on our input: containers of the audio / video Gulp accepts, plus image2 / png_pipe for
+     * the PNG we write for BMP / TIFF. Leaves out hls, dash, concat, sdp, imf, ffmetadata and the like.
+     */
+    const val FORMAT_WHITELIST =
+        "mov,mp4,m4a,3gp,3g2,mj2,matroska,webm,avi,asf,flv,mpegts,mpeg,mpegvideo,ogg,wav,w64,mp3,aac,flac,aiff,amr,ac3,eac3,dts,image2,png_pipe"
+
     /** Options before the input: no stdin, overwrite, quiet stats, machine-readable progress on stdout. */
     fun prefix(input: String): List<String> = listOf(
         "-nostdin", "-hide_banner", "-y", "-nostats", "-progress", "pipe:1",
-        "-protocol_whitelist", "file,pipe", "-i", input,
+        "-protocol_whitelist", "file,pipe", "-format_whitelist", FORMAT_WHITELIST, "-i", input,
     )
 
     /**

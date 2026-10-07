@@ -66,13 +66,10 @@ object WorkDir {
     }
 }
 
-/** Reads what the user handed over: description, first bytes, capped text, capped copy into a [WorkDir]. */
+/** Reads what the user handed over: description, first bytes, capped copy into a [WorkDir]. */
 object FileIntake {
     /** Default cap of [copyToWork] (audio / video): 2 Gio. Tools pass smaller caps for images or documents. */
     const val MEDIA_MAX_BYTES: Long = 2L * 1024 * 1024 * 1024
-
-    /** Most text read into memory by [readText]: 1 Mio. */
-    const val TEXT_MAX_BYTES: Int = 1024 * 1024
 
     /** Throws [UnsupportedSource] unless [uri] is a content:// URI. */
     fun requireContent(uri: Uri) {
@@ -104,19 +101,6 @@ object FileIntake {
     fun readHead(context: Context, uri: Uri, max: Int = FileKind.HEAD_SIZE): ByteArray {
         requireContent(uri)
         return open(context, uri).use { input -> readUpTo(input, max) }
-    }
-
-    /**
-     * The file as text, at most [maxBytes] bytes (UTF-8, invalid bytes replaced). Returns the text and whether
-     * it was cut.
-     */
-    fun readText(context: Context, uri: Uri, maxBytes: Int = TEXT_MAX_BYTES): Pair<String, Boolean> {
-        requireContent(uri)
-        return open(context, uri).use { input ->
-            val bytes = readUpTo(input, maxBytes + 1)
-            val cut = bytes.size > maxBytes
-            String(if (cut) bytes.copyOf(maxBytes) else bytes, Charsets.UTF_8) to cut
-        }
     }
 
     /**

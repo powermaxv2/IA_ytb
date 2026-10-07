@@ -6,17 +6,24 @@ import kotlin.math.sqrt
 // Waveform of a sound file: the decoder (WaveformDecoder) measures the loudest sample of every ~20 ms slice;
 // these functions turn the slices into a fixed number of bars. Pure, unit tested.
 
-/** Peaks of the decoded slices: slice i starts at [timesUs][i] and its loudest sample is [peaks][i] (0..1). */
-class PeakSeries(initialCapacity: Int = 1024) {
+/**
+ * Peaks of the decoded slices: slice i starts at [timeAt] (µs) and its loudest sample is [peakAt] (0..1). Holds at
+ * most [maxSize] slices ([Waveform.MAX_SLICES]): further ones are dropped and [full] tells the decoder to stop.
+ */
+class PeakSeries(initialCapacity: Int = 1024, val maxSize: Int = Waveform.MAX_SLICES) {
     var size = 0
         private set
-    private var times = LongArray(initialCapacity.coerceAtLeast(1))
-    private var values = FloatArray(initialCapacity.coerceAtLeast(1))
+    private var times = LongArray(initialCapacity.coerceIn(1, maxSize.coerceAtLeast(1)))
+    private var values = FloatArray(times.size)
+
+    val full: Boolean get() = size >= maxSize
 
     fun add(timeUs: Long, peak: Float) {
+        if (full) return
         if (size == times.size) {
-            times = times.copyOf(size * 2)
-            values = values.copyOf(size * 2)
+            val grown = minOf(size.toLong() * 2, maxSize.toLong()).toInt()
+            times = times.copyOf(grown)
+            values = values.copyOf(grown)
         }
         times[size] = timeUs
         values[size] = peak.coerceIn(0f, 1f)
@@ -40,6 +47,16 @@ object Waveform {
 
     /** Length of a measured slice. */
     const val SLICE_US = 20_000L
+
+    /** Most slices kept: twice what [MAX_DURATION_US] needs (a file whose timestamps lie cannot ask for more). */
+    const val MAX_SLICES = (MAX_DURATION_US / SLICE_US * 2).toInt()
+
+    /** Sample rates used to size a slice: a declared rate outside this range is a damaged or hostile file. */
+    const val MIN_SLICE_RATE = 8_000
+    const val MAX_SLICE_RATE = 384_000
+
+    /** Frames in one ~20 ms slice at [sampleRate], the rate clamped to [MIN_SLICE_RATE]..[MAX_SLICE_RATE]. */
+    fun sliceFrames(sampleRate: Int): Int = (sampleRate.coerceIn(MIN_SLICE_RATE, MAX_SLICE_RATE) * SLICE_US / 1_000_000L).toInt()
 
     /**
      * [n] bars over [durationUs] of sound: each bar is the loudest slice that covers it, a slice longer than a bar

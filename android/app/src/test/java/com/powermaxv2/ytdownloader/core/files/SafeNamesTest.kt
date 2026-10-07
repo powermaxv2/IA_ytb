@@ -16,6 +16,14 @@ class SafeNamesTest {
         assertEquals("tab_nul_.txt", SafeNames.sanitize("tab\tnul\u0000.txt"))
     }
 
+    @Test fun neutralisesBidiControls() {
+        // "facture<RLO>fdp.exe" would be shown as "factureexe.pdf".
+        assertEquals("facture_fdp.exe", SafeNames.sanitize("facture\u202Efdp.exe"))
+        val all = "a\u200Eb\u200Fc\u202Ad\u202Be\u202Cf\u202Dg\u202Eh\u2066i\u2067j\u2068k\u2069l.txt"
+        assertEquals("a_b_c_d_e_f_g_h_i_j_k_l.txt", SafeNames.sanitize(all))
+        assertEquals("rapport_.pdf", SafeNames.withExtension("rapport\u2067.doc", "pdf"))
+    }
+
     @Test fun neverLeavesTraversalOrHiddenNames() {
         val traversal = SafeNames.sanitize("../../data/data/x/shared_prefs/prefs.xml")
         assertFalse(traversal.contains('/'))

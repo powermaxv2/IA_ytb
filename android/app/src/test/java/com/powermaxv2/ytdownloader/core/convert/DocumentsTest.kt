@@ -116,4 +116,40 @@ class DocumentsTest {
         }
         throw AssertionError("DocumentError attendue")
     }
+
+    private fun refusal(block: () -> Unit): String? = try {
+        block()
+        null
+    } catch (e: DocumentError) {
+        e.message
+    }
+
+    @Test fun tooManyColumnsAreRefusedBeforeBuilding() {
+        // A header of commas: thousands of columns from a few kilobytes.
+        val wide = ",".repeat(CsvJson.MAX_COLUMNS + 10) + "\n" + "x\n".repeat(3)
+        assertEquals(CsvJson.TOO_WIDE, refusal { CsvJson.csvToJson(wide) })
+        // Many distinct keys, one per object.
+        val keys = "[" + (1..CsvJson.MAX_COLUMNS + 1).joinToString(",") { "{\"k$it\":1}" } + "]"
+        assertEquals(CsvJson.TOO_WIDE, refusal { CsvJson.jsonToCsv(keys) })
+        // At the limit it still converts.
+        val ok = "[" + (1..50).joinToString(",") { "{\"k$it\":1}" } + "]"
+        assertEquals(51, CsvJson.jsonToCsv(ok).trimEnd().lines().size)
+    }
+
+    @Test fun tooManyCellsAreRefused() {
+        assertEquals(CsvJson.TOO_BIG, refusal { CsvJson.checkSize(5_000, 1_001) })
+        assertEquals(null, refusal { CsvJson.checkSize(2_500, 2_000) })
+        // One object with 2 000 keys, then 2 500 empty ones (JSON Lines): 5 M cells from a ~30 ko file.
+        val wide = "{" + (1..CsvJson.MAX_COLUMNS).joinToString(",") { "\"k$it\":1" } + "}"
+        val json = wide + "\n" + "{}\n".repeat(2_500)
+        assertEquals(CsvJson.TOO_BIG, refusal { CsvJson.jsonToCsv(json) })
+    }
+
+    @Test fun jsonFromCsvIsCappedInSize() {
+        // Long column names repeated on every row: a 2 Mo CSV would give a JSON of ~800 Mo.
+        val header = (1..100).joinToString(",") { "c$it" + "x".repeat(4_000) }
+        val csv = header + "\n" + ",\n".repeat(2_000)
+        assertTrue(CsvJson.jsonSizeEstimate(2_000, header.split(','), csv.length) > CsvJson.MAX_JSON_CHARS)
+        assertEquals(CsvJson.TOO_BIG, refusal { CsvJson.csvToJson(csv) })
+    }
 }

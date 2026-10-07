@@ -267,12 +267,19 @@ private class Conversion(
     suspend fun run(input: ConvertInput, target: Target, options: ConvertOptions): List<File> {
         val category = input.category
         val single = input.files.first()
+        // Annuler stops a copy between two blocks (the next conversion would otherwise wait for it to finish).
+        val job = coroutineContext
+        val checkpoint: () -> Unit = { job.ensureActive() }
         return when (Formats.method(category, target)) {
             Method.FFMPEG -> {
                 progress(-1f, "Copie du fichier…")
-                val copy = FileIntake.copyToWork(context, single.uri, FileIntake.MEDIA_MAX_BYTES, dir)
+                val copy = FileIntake.copyToWork(context, single.uri, FileIntake.MEDIA_MAX_BYTES, dir, checkpoint)
+                // The bytes decide, not the type or the name: a playlist (.m3u8 sent as audio/x-mpegurl) or any
+                // other text never reaches FFmpeg, whose playlist demuxers would open the files it lists.
+                val head = readHead(copy)
+                FfmpegInput.refusal(head)?.let { throw ConversionError(it) }
                 // FFmpeg only ever sees fixed names ("input.mkv" → "output.mp4"), never the user's.
-                val source = rename(copy, "input.${FfmpegArgs.safeExt(SafeNames.extensionOf(single.name))}")
+                val source = rename(copy, "input.${FfmpegInput.workExt(head, single.name)}")
                 val work = File(dir, "output.${target.ext}")
                 progress(0f, "Conversion…")
                 FfmpegRunner(context, engine).run(
@@ -288,7 +295,7 @@ private class Conversion(
                 coroutineContext.ensureActive()
                 val step = if (input.multiple) "Photo ${index + 1} sur ${input.files.size}" else "Conversion…"
                 progress(index.toFloat() / input.files.size, step)
-                val source = FileIntake.copyToWork(context, file.uri, IMAGE_MAX_BYTES, dir)
+                val source = FileIntake.copyToWork(context, file.uri, IMAGE_MAX_BYTES, dir, checkpoint)
                 val name = Formats.outputName(file.name, target)
                 val bitmap = Images.decode(source)
                 val out = try {
@@ -320,7 +327,7 @@ private class Conversion(
                 val copies = input.files.mapIndexed { index, file ->
                     coroutineContext.ensureActive()
                     progress(-1f, if (count > 1) "Copie des photos ${index + 1} sur $count…" else "Copie de la photo…")
-                    FileIntake.copyToWork(context, file.uri, IMAGE_MAX_BYTES, dir)
+                    FileIntake.copyToWork(context, file.uri, IMAGE_MAX_BYTES, dir, checkpoint)
                 }
                 val out = FileIntake.uniqueFile(outDir, Formats.outputName(single.name, Target.PDF))
                 progress(0f, "Mise en page…")
@@ -329,14 +336,14 @@ private class Conversion(
             }
             Method.PDF_TO_IMAGES -> {
                 progress(-1f, "Copie du PDF…")
-                val source = FileIntake.copyToWork(context, single.uri, PDF_MAX_BYTES, dir)
+                val source = FileIntake.copyToWork(context, single.uri, PDF_MAX_BYTES, dir, checkpoint)
                 Images.pdfToImages(source, target, options.quality.imageQuality, outDir, SafeNames.baseOf(single.name)) { done, total ->
                     progress(done.toFloat() / total, "Page $done sur $total")
                 }
             }
             Method.MARKDOWN_TO_HTML, Method.CSV_TO_JSON, Method.JSON_TO_CSV -> {
                 progress(-1f, "Lecture…")
-                val source = FileIntake.copyToWork(context, single.uri, CsvJson.MAX_BYTES.toLong(), dir)
+                val source = FileIntake.copyToWork(context, single.uri, CsvJson.MAX_BYTES.toLong(), dir, checkpoint)
                 val text = TextDecode.decode(source.readBytes())
                 progress(-1f, "Conversion…")
                 val result = when (target) {
@@ -353,6 +360,18 @@ private class Conversion(
 
     /** The tools' work root, the only place FFmpeg may read or write ([FfmpegArgs.build] checks it). */
     private val root: String = WorkDir.root(context).absolutePath
+
+    /** First bytes of our own work copy (what FFmpeg would read), for [FfmpegInput]. */
+    private fun readHead(file: File): ByteArray = file.inputStream().use { input ->
+        val out = ByteArray(FileKind.HEAD_SIZE)
+        var read = 0
+        while (read < out.size) {
+            val n = input.read(out, read, out.size - read)
+            if (n < 0) break
+            read += n
+        }
+        out.copyOf(read)
+    }
 
     private fun rename(file: File, name: String): File {
         val target = File(file.parentFile, name)

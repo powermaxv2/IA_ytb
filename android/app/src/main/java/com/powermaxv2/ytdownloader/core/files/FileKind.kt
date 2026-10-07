@@ -7,7 +7,8 @@ import java.util.Locale
  *
  * Detection order in [detect]: the first bytes ([sniff], magic numbers) win over the name, the name's extension
  * over the MIME type given by the sending app, and a last look at the bytes ([looksLikeText]) tells text from
- * binary. Read [HEAD_SIZE] bytes for the head ([FileIntake.readHead] does).
+ * binary (also for a name or type that claims audio / video without a known signature). Read [HEAD_SIZE] bytes
+ * for the head ([FileIntake.readHead] does).
  */
 enum class FileKind {
     IMAGE, VIDEO, AUDIO, PDF, TEXT, CODE, JSON, MARKDOWN, CSV, ZIP, OTHER;
@@ -45,8 +46,11 @@ enum class FileKind {
             }
             // ".ts" is TypeScript or an MPEG transport stream: the bytes decide.
             if (ext == "ts") return if (looksLikeText(head)) CODE else VIDEO
-            fromExtension(ext)?.let { return it }
-            fromMime(mime)?.let { return it }
+            val named = fromExtension(ext) ?: fromMime(mime)
+            // A name or a type only says "sound / video": without a known signature, text bytes win (a .m3u8
+            // playlist sent as audio/x-mpegurl is text, never something to hand to FFmpeg).
+            if (named == AUDIO || named == VIDEO) return if (looksLikeText(head)) TEXT else named
+            named?.let { return it }
             return if (looksLikeText(head)) TEXT else OTHER
         }
 

@@ -201,10 +201,25 @@ object MarkdownBlocks {
 }
 
 object JsonPretty {
+    /** Indentation stops growing past this depth (a deep file would otherwise be mostly spaces). */
+    const val MAX_INDENT_DEPTH = 32
+
+    /** Longest re-indented text, in characters (16 Mo of heap in a StringBuilder). */
+    const val MAX_OUTPUT_CHARS = 8 * 1024 * 1024
+
+    /** Re-indented text may be at most this many times the source (or [MIN_OUTPUT_ROOM] for a small file). */
+    const val MAX_GROWTH = 4
+
+    private const val MIN_OUTPUT_ROOM = 64 * 1024
+
+    /** Most characters [reindent] may write for a source of [length] characters. */
+    fun outputLimit(length: Int): Int = minOf(MAX_OUTPUT_CHARS.toLong(), maxOf(MAX_GROWTH.toLong() * length, MIN_OUTPUT_ROOM.toLong())).toInt()
+
     /**
      * [text] re-indented with [indent] spaces when it is one valid JSON value (checked with org.json, after the
-     * nesting check); null when it is not (invalid, cut, JSON Lines, too deep): show it as it is. The original
-     * text is kept token for token (key order, number spelling, escapes): only whitespace changes.
+     * nesting check); null when it is not (invalid, cut, JSON Lines, too deep) or when the indentation would
+     * blow it up past [outputLimit]: show it as it is. The original text is kept token for token (key order,
+     * number spelling, escapes): only whitespace changes.
      */
     fun format(text: String, indent: Int = 2): String? {
         if (Nesting.jsonDepth(text) > Nesting.MAX_DEPTH) return null
@@ -223,18 +238,23 @@ object JsonPretty {
         return if (valid) reindent(text, indent) else null
     }
 
-    /** Whitespace outside strings replaced by newlines and indentation (no parsing, no recursion). */
-    fun reindent(text: String, indent: Int = 2): String {
-        val sb = StringBuilder(text.length + text.length / 4)
+    /**
+     * Whitespace outside strings replaced by newlines and indentation (no parsing, no recursion). Indentation
+     * stops at [MAX_INDENT_DEPTH] levels; null as soon as the result would pass [outputLimit] characters.
+     */
+    fun reindent(text: String, indent: Int = 2): String? {
+        val limit = outputLimit(text.length)
+        val sb = StringBuilder(minOf(text.length + text.length / 4, limit))
         var depth = 0
         var inString = false
         var escaped = false
         var i = 0
         fun newline() {
             sb.append('\n')
-            repeat(depth * indent) { sb.append(' ') }
+            repeat(minOf(depth, MAX_INDENT_DEPTH) * indent) { sb.append(' ') }
         }
         while (i < text.length) {
+            if (sb.length > limit) return null
             val c = text[i]
             if (inString) {
                 sb.append(c)
@@ -280,6 +300,6 @@ object JsonPretty {
             }
             i++
         }
-        return sb.toString()
+        return if (sb.length > limit) null else sb.toString()
     }
 }

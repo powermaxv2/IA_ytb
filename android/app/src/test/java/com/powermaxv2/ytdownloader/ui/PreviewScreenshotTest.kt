@@ -56,6 +56,15 @@ class PreviewScreenshotTest {
     @Test fun paperZip() = shot(Skin.PAPER, "paper_preview_zip", zip)
     @Test fun terminalZip() = shot(Skin.TERMINAL, "terminal_preview_zip", zip)
 
+    /** Android 14+ refused the archive (a ".." name): the names come from our own read of the central directory. */
+    @Test fun classicZipRefused() = shot(Skin.CLASSIC, "classic_preview_zip_refused", zipRefused)
+    @Test fun paperZipRefused() = shot(Skin.PAPER, "paper_preview_zip_refused", zipRefused)
+    @Test fun terminalZipRefused() = shot(Skin.TERMINAL, "terminal_preview_zip_refused", zipRefused)
+
+    @Test fun classicNotice() = shot(Skin.CLASSIC, "classic_preview_notice", notice)
+    @Test fun paperNotice() = shot(Skin.PAPER, "paper_preview_notice", notice)
+    @Test fun terminalNotice() = shot(Skin.TERMINAL, "terminal_preview_notice", notice)
+
     @Test fun classicInfo() = shot(Skin.CLASSIC, "classic_preview_info", renamed, infoOpen = true)
     @Test fun paperInfo() = shot(Skin.PAPER, "paper_preview_info", renamed, infoOpen = true)
     @Test fun terminalInfo() = shot(Skin.TERMINAL, "terminal_preview_info", renamed, infoOpen = true)
@@ -144,6 +153,12 @@ class PreviewScreenshotTest {
                 PreviewBody.Zip(listing),
             ),
         )
+
+        val zipFile = PreviewFile(Uri.parse("content://sample/zip-refused"), "photos-vacances.zip", 1_204_000, "application/zip", FileKind.ZIP, zipHead, null)
+
+        val zipRefused: PreviewPhase = PreviewPhase.Ready(PreviewDoc(zipFile, PreviewBody.Zip(listing.copy(refusedByAndroid = true))))
+
+        val notice: PreviewPhase = PreviewPhase.Ready(PreviewDoc(zipFile, PreviewBody.Notice(PreviewLoader.DANGEROUS_ZIP)))
 
         /** A Word file renamed ".pdf": the bytes say ZIP. */
         val renamed: PreviewPhase = PreviewPhase.Ready(

@@ -5,6 +5,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 class ArchivesTest {
     @Test fun suspiciousNames() {
@@ -72,5 +75,64 @@ class ArchivesTest {
         val small = ZipNames.tree(listOf(ZipEntryInfo("a/b/c.txt", 1, 1, false)))
         assertEquals(3, small.rows.size)
         assertEquals(false, small.truncated)
+    }
+
+    private fun zipOf(names: List<String>, comment: String? = null): File {
+        val file = File.createTempFile("gulp-test", ".zip").apply { deleteOnExit() }
+        ZipOutputStream(file.outputStream()).use { zip ->
+            comment?.let { zip.setComment(it) }
+            for (name in names) {
+                zip.putNextEntry(ZipEntry(name))
+                if (!name.endsWith("/")) zip.write("bonjour ".repeat(500).toByteArray())
+                zip.closeEntry()
+            }
+        }
+        return file
+    }
+
+    @Test fun androidPathRefusalIsRecognised() {
+        assertTrue(ZipNames.isPathRefusal("Invalid zip entry path: ../../evil.sh"))
+        assertEquals(false, ZipNames.isPathRefusal("invalid END header (bad central directory offset)"))
+        assertEquals(false, ZipNames.isPathRefusal(null))
+    }
+
+    /** The fallback for archives Android 14+ refuses: names read from the central directory, dangerous ones flagged. */
+    @Test fun centralDirectoryListsAndFlagsDangerousNames() {
+        val file = zipOf(listOf("docs/", "docs/a.txt", "../../Android/data/piege.sh", "/etc/passwd", "été.txt"), comment = "un commentaire")
+        val read = readOrFail(ZipCentralDirectory.read(file))
+        assertEquals(5, read.totalEntries)
+        assertEquals(listOf("docs/", "docs/a.txt", "../../Android/data/piege.sh", "/etc/passwd", "été.txt"), read.entries.map { it.name })
+        assertTrue(read.entries[0].isDirectory)
+        assertEquals(4000L, read.entries[1].size)
+        assertTrue(read.entries[1].compressedSize in 1 until 4000)
+        val listing = ZipNames.tree(read.entries, read.totalEntries).copy(refusedByAndroid = true)
+        assertEquals(2, listing.suspicious)
+        assertTrue(listing.rows.take(2).all { it.warning != null })
+        assertTrue(listing.refusedByAndroid)
+    }
+
+    @Test fun centralDirectoryKeepsTheEntryCap() {
+        val file = zipOf((1..30).map { "f$it.txt" })
+        val read = readOrFail(ZipCentralDirectory.read(file, maxEntries = 10))
+        assertEquals(10, read.entries.size)
+        assertEquals(30, read.totalEntries)
+    }
+
+    @Test fun centralDirectoryRefusesWhatIsNotAZip() {
+        val text = File.createTempFile("gulp-test", ".zip").apply { deleteOnExit(); writeText("pas une archive ".repeat(100)) }
+        assertNull(ZipCentralDirectory.read(text))
+        val empty = File.createTempFile("gulp-test", ".zip").apply { deleteOnExit() }
+        assertNull(ZipCentralDirectory.read(empty))
+        // Central directory cut off: the end record points past the end of the file.
+        val whole = zipOf(listOf("a.txt", "b.txt")).readBytes()
+        val eocd = whole.size - 22
+        val cut = File.createTempFile("gulp-test", ".zip").apply { deleteOnExit() }
+        cut.writeBytes(whole.copyOfRange(0, 40) + whole.copyOfRange(eocd, whole.size))
+        assertNull(ZipCentralDirectory.read(cut))
+    }
+
+    private fun readOrFail(value: ZipCentralDirectory.Result?): ZipCentralDirectory.Result {
+        assertNotNull(value)
+        return value!!
     }
 }

@@ -13,11 +13,15 @@ object SafeNames {
     /** Longest extension kept when a name is shortened (".markdown" fits, a 40-char "extension" does not). */
     private const val MAX_EXTENSION = 10
 
-    private val forbidden = Regex("""[\\/:*?"<>|\u0000-\u001F\u007F]""")
+    /**
+     * Path separators, reserved and control characters, and the bidirectional controls (U+200E/U+200F,
+     * U+202A–U+202E, U+2066–U+2069) that could show "facture\u202Efdp.exe" as "facture" + "exe.pdf".
+     */
+    private val forbidden = Regex("""[\\/:*?"<>|\u0000-\u001F\u007F\u200E\u200F\u202A-\u202E\u2066-\u2069]""")
 
     /**
-     * A safe single path segment: path separators, reserved and control characters become `_`, leading dots
-     * are stripped (no hidden files, no `..`), surrounding blanks and trailing dots are trimmed, and the name is
+     * A safe single path segment: path separators, reserved, control and bidi control characters become `_`,
+     * leading dots are stripped (no hidden files, no `..`), surrounding blanks and trailing dots are trimmed, and the name is
      * cut to [MAX_LENGTH] characters keeping its extension. Empty result → [fallback].
      */
     fun sanitize(name: String, fallback: String = "fichier"): String {

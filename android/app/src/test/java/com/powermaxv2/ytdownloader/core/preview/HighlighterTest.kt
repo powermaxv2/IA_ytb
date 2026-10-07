@@ -128,30 +128,29 @@ class HighlighterTest {
         assertEquals(listOf(0), Highlighter.lineStarts("").toList())
     }
 
+    /**
+     * Deterministic linearity check: the scanner counts its steps (loop turns and characters searched), and for
+     * every pathological pattern at 1 MiB the count stays within 8 × the length. The old "${" rescan-to-EOF took
+     * ~n²/2 steps and fails this bound by orders of magnitude. The timeout is only a hang guard.
+     */
     @Test(timeout = 120_000)
     fun pathologicalMegabyteInputsStayLinear() {
-        // Each pattern repeated to ~256 KiB and ~1 MiB. A linear scanner grows ~4x; a rescan-to-EOF
-        // scanner grows ~16x (the old "${" path took seconds at 1 MiB), so both bounds below fail on it.
-        val patterns = listOf("\${\n", "\${", "\"\n", "'\n", "`", "/*", "<a \"", "<!--", "\"\"\"", "a: \"\n", "{\"")
-        fun run(text: String) { for (lang in CodeLang.entries) Highlighter.tokenize(text, lang) }
-        fun bestMs(text: String): Long {
-            var best = Long.MAX_VALUE
-            repeat(3) {
-                val t0 = System.nanoTime()
-                run(text)
-                best = minOf(best, (System.nanoTime() - t0) / 1_000_000)
-            }
-            return best
-        }
+        val patterns = listOf("\${\n", "\${", "\"\n", "'\n", "`", "/*", "<a \"", "<!--", "\"\"\"", "a: \"\n", "{\"", "a", " ", "\n", "1.")
         for (p in patterns) {
-            val small = p.repeat(256 * 1024 / p.length)
-            val large = p.repeat(1024 * 1024 / p.length)
-            run(small) // warm-up
-            val tSmall = bestMs(small)
-            val tLarge = bestMs(large)
-            assertTrue("'$p' 1 MiB took ${tLarge} ms", tLarge < 3_000)
-            val ratio = tLarge.toDouble() / maxOf(tSmall, 50L)
-            assertTrue("'$p' grew ${ratio}x from 256 KiB to 1 MiB ($tSmall -> $tLarge ms)", ratio < 8.0)
+            val text = p.repeat(1024 * 1024 / p.length)
+            for (lang in CodeLang.entries) {
+                val (_, steps) = Highlighter.tokenizeMetered(text, lang)
+                assertTrue("'$p' in $lang took $steps steps for ${text.length} chars", steps <= 8L * text.length)
+            }
+        }
+    }
+
+    @Test fun meteredTokensMatchTokenize() {
+        val sample = "fun a() { \"s\" /* c */ 1 }\n<x y='1'>\n# h\n\${x} \$y\n".repeat(20)
+        for (lang in CodeLang.entries) {
+            val (tokens, steps) = Highlighter.tokenizeMetered(sample, lang)
+            assertEquals(Highlighter.tokenize(sample, lang), tokens)
+            if (lang != CodeLang.PLAIN) assertTrue(steps > 0)
         }
     }
 }

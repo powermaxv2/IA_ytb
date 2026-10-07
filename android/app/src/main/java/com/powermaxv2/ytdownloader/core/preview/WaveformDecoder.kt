@@ -19,7 +19,7 @@ class WaveformData(val bars: FloatArray, val partial: Boolean)
 
 /**
  * Decodes a sound with MediaExtractor + MediaCodec (what the phone already has) to measure its loudness, at most
- * [Waveform.MAX_DURATION_US] of sound or [Waveform.MAX_PCM_BYTES] of PCM. Cancellable between buffers; the codec
+ * [Waveform.MAX_DURATION_US] of sound, [Waveform.MAX_PCM_BYTES] of PCM or [Waveform.MAX_SLICES] slices. Cancellable between buffers; the codec
  * and the extractor are always released. Returns null when the phone cannot decode the file.
  */
 object WaveformDecoder {
@@ -84,8 +84,8 @@ object WaveformDecoder {
                             buffer.position(info.offset)
                             buffer.limit(info.offset + info.size)
                             val ordered = buffer.order(ByteOrder.nativeOrder())
-                            // Slices of ~20 ms: frames × channels samples each.
-                            val sliceFrames = (sampleRate / 50).coerceAtLeast(1)
+                            // Slices of ~20 ms: frames × channels samples each (a bogus rate cannot make them tiny).
+                            val sliceFrames = Waveform.sliceFrames(sampleRate)
                             if (floatPcm) {
                                 val fb = ordered.asFloatBuffer()
                                 val n = fb.remaining()
@@ -104,6 +104,10 @@ object WaveformDecoder {
                         val end = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
                         decoder.releaseOutputBuffer(out, false)
                         if (end) break
+                        if (series.full) {
+                            partial = true
+                            break
+                        }
                         if (info.presentationTimeUs >= Waveform.MAX_DURATION_US || pcmBytes >= Waveform.MAX_PCM_BYTES) {
                             partial = durationUs <= 0 || info.presentationTimeUs < durationUs - 1_000_000
                             break
