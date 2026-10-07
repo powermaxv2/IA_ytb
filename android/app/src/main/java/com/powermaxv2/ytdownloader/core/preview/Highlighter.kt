@@ -290,8 +290,10 @@ object Highlighter {
                     var j = i + 1
                     if (text[j] == '{') {
                         // Only up to the line end: an unclosed "${" must not scan the rest of the file each time.
-                        val lineEnd = lineEndFrom(i)
-                        j = text.indexOf('}', j).let { if (it < 0 || it >= lineEnd) lineEnd else it + 1 }
+                        // Bounded walk: stops at '}' or the newline, so each character is visited once.
+                        j++
+                        while (j < text.length && text[j] != '}' && text[j] != '\n') j++
+                        if (j < text.length && text[j] == '}') j++
                     } else {
                         while (j < text.length && (isIdentPart(text[j]) || (j == i + 1 && text[j] in "@#?$!*0123456789"))) j++
                     }

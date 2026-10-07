@@ -128,22 +128,30 @@ class HighlighterTest {
         assertEquals(listOf(0), Highlighter.lineStarts("").toList())
     }
 
-    @Test(timeout = 20_000)
+    @Test(timeout = 120_000)
     fun pathologicalMegabyteInputsStayLinear() {
-        val inputs = listOf(
-            "\${\n".repeat(330_000),
-            "\"\n".repeat(500_000),
-            "'\n".repeat(500_000),
-            "`".repeat(1_000_000),
-            "/*".repeat(500_000),
-            "<a \"".repeat(250_000),
-            "<!--".repeat(250_000),
-            "\"\"\"".repeat(330_000),
-            "a: \"\n".repeat(200_000),
-            "{\"".repeat(500_000),
-        )
-        for (text in inputs) {
-            for (lang in CodeLang.entries) Highlighter.tokenize(text, lang)
+        // Each pattern repeated to ~256 KiB and ~1 MiB. A linear scanner grows ~4x; a rescan-to-EOF
+        // scanner grows ~16x (the old "${" path took seconds at 1 MiB), so both bounds below fail on it.
+        val patterns = listOf("\${\n", "\${", "\"\n", "'\n", "`", "/*", "<a \"", "<!--", "\"\"\"", "a: \"\n", "{\"")
+        fun run(text: String) { for (lang in CodeLang.entries) Highlighter.tokenize(text, lang) }
+        fun bestMs(text: String): Long {
+            var best = Long.MAX_VALUE
+            repeat(3) {
+                val t0 = System.nanoTime()
+                run(text)
+                best = minOf(best, (System.nanoTime() - t0) / 1_000_000)
+            }
+            return best
+        }
+        for (p in patterns) {
+            val small = p.repeat(256 * 1024 / p.length)
+            val large = p.repeat(1024 * 1024 / p.length)
+            run(small) // warm-up
+            val tSmall = bestMs(small)
+            val tLarge = bestMs(large)
+            assertTrue("'$p' 1 MiB took ${tLarge} ms", tLarge < 3_000)
+            val ratio = tLarge.toDouble() / maxOf(tSmall, 50L)
+            assertTrue("'$p' grew ${ratio}x from 256 KiB to 1 MiB ($tSmall -> $tLarge ms)", ratio < 8.0)
         }
     }
 }
