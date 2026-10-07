@@ -6,6 +6,9 @@ import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
 import com.powermaxv2.ytdownloader.core.files.FileIntake
 import com.powermaxv2.ytdownloader.core.files.FileTooLarge
 import com.powermaxv2.ytdownloader.core.files.WorkDir
@@ -85,25 +88,30 @@ class PdfPages private constructor(
          * Opens [uri] directly when its descriptor can seek, else from a capped copy in a work dir.
          * Throws [PdfUnreadable] with the reason. Blocking: call on a background thread.
          */
-        fun open(context: Context, uri: Uri): PdfPages {
+        fun open(context: Context, uri: Uri, checkpoint: (() -> Unit)? = null): PdfPages {
             FileIntake.requireContent(uri)
             val app = context.applicationContext
             val direct = runCatching { app.contentResolver.openFileDescriptor(uri, "r") }.getOrNull()
             if (direct != null) {
-                try {
-                    return PdfPages(direct, PdfRenderer(direct), null, app)
-                } catch (e: SecurityException) {
-                    runCatching { direct.close() }
-                    throw PdfUnreadable(PASSWORD)
-                } catch (e: Exception) {
-                    // Not seekable (a pipe) or not a PDF: try a copy below.
-                    runCatching { direct.close() }
+                if (isSeekable(direct)) {
+                    try {
+                        return PdfPages(direct, PdfRenderer(direct), null, app)
+                    } catch (e: SecurityException) {
+                        runCatching { direct.close() }
+                        throw PdfUnreadable(PASSWORD)
+                    } catch (e: Exception) {
+                        // A seekable file PdfRenderer refuses is damaged: a copy would not help.
+                        runCatching { direct.close() }
+                        throw PdfUnreadable(UNREADABLE)
+                    }
                 }
+                // A pipe (some providers stream): PdfRenderer needs to seek, so read it from a copy.
+                runCatching { direct.close() }
             }
             val dir = WorkDir.create(app)
             try {
                 val copy = try {
-                    FileIntake.copyToWork(app, uri, MAX_COPY_BYTES, dir)
+                    FileIntake.copyToWork(app, uri, MAX_COPY_BYTES, dir, checkpoint)
                 } catch (e: FileTooLarge) {
                     throw PdfUnreadable("PDF trop volumineux pour l'aperçu : 200 Mo au maximum.")
                 }
@@ -115,13 +123,23 @@ class PdfPages private constructor(
                     throw PdfUnreadable(PASSWORD)
                 } catch (e: Exception) {
                     runCatching { fd.close() }
-                    throw PdfUnreadable("Ce PDF est illisible ou abîmé.")
+                    throw PdfUnreadable(UNREADABLE)
                 }
             } catch (e: Throwable) {
                 WorkDir.delete(app, dir)
                 throw e
             }
         }
+
+        /** Whether [fd] can seek (a real file), unlike a pipe. */
+        private fun isSeekable(fd: ParcelFileDescriptor): Boolean = try {
+            Os.lseek(fd.fileDescriptor, 0L, OsConstants.SEEK_CUR)
+            true
+        } catch (e: ErrnoException) {
+            false
+        }
+
+        private const val UNREADABLE = "Ce PDF est illisible ou abîmé."
 
         private const val PASSWORD = "Ce PDF est protégé par un mot de passe : Gulp ne peut pas l'afficher."
     }

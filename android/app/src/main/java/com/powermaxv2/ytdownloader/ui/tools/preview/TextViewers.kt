@@ -133,7 +133,7 @@ internal fun CodeViewer(body: PreviewBody.Code, modifier: Modifier = Modifier) {
                         contentPadding = PaddingValues(vertical = 8.dp),
                     ) {
                         items(lines) { index ->
-                            val line = remember(body, index) { highlightedLine(body, index, colors) }
+                            val line = remember(body, index, colors) { highlightedLine(body, index, colors) }
                             Row(Modifier.padding(end = 12.dp)) {
                                 Text(
                                     (index + 1).toString().padStart(digits),

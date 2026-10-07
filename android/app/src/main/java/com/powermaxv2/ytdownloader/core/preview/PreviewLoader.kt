@@ -180,9 +180,11 @@ object PreviewLoader {
     /** Lists a ZIP from a capped copy in a work dir (ZipFile needs a real file); nothing is ever extracted. */
     private suspend fun zip(context: Context, file: PreviewFile): PreviewBody {
         val dir = WorkDir.create(context)
+        val job = coroutineContext
         try {
             val copy = try {
-                FileIntake.copyToWork(context, file.uri, ZipNames.MAX_ARCHIVE_BYTES, dir)
+                // Stops as soon as the user opens another file (the job is cancelled).
+                FileIntake.copyToWork(context, file.uri, ZipNames.MAX_ARCHIVE_BYTES, dir) { job.ensureActive() }
             } catch (e: FileTooLarge) {
                 return PreviewBody.Notice("Archive trop volumineuse pour l'aperçu : 512 Mo au maximum.")
             }
@@ -235,10 +237,13 @@ object PreviewLoader {
                 total += n
                 if (total - lastReport >= 2L * 1024 * 1024) {
                     lastReport = total
+                    // A block read after a cancel must not report progress over the next file.
+                    coroutineContext.ensureActive()
                     onProgress(if (size != null && size > 0) (total.toFloat() / size).coerceIn(0f, 1f) else -1f)
                 }
             }
         }
+        coroutineContext.ensureActive()
         onProgress(1f)
         HexDump.hex(digest.digest())
     }

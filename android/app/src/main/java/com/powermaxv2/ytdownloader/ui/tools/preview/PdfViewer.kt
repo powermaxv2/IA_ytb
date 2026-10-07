@@ -62,6 +62,7 @@ import com.powermaxv2.ytdownloader.ui.skin.LocalSkin
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
@@ -85,7 +86,9 @@ internal fun PdfViewer(file: PreviewFile, modifier: Modifier = Modifier) {
     LaunchedEffect(file.uri) {
         val result = withContext(Dispatchers.IO) {
             try {
-                val opened = PdfPages.open(context, file.uri)
+                val job = coroutineContext
+                // The copy (for a provider that cannot seek) stops when the viewer leaves.
+                val opened = PdfPages.open(context, file.uri) { job.ensureActive() }
                 synchronized(holder) {
                     if (holder.disposed) {
                         opened.close()

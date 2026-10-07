@@ -289,7 +289,9 @@ object Highlighter {
                 if (spec.dollarVars && c == '$' && i + 1 < text.length) {
                     var j = i + 1
                     if (text[j] == '{') {
-                        j = text.indexOf('}', j).let { if (it < 0) lineEndFrom(i) else it + 1 }
+                        // Only up to the line end: an unclosed "${" must not scan the rest of the file each time.
+                        val lineEnd = lineEndFrom(i)
+                        j = text.indexOf('}', j).let { if (it < 0 || it >= lineEnd) lineEnd else it + 1 }
                     } else {
                         while (j < text.length && (isIdentPart(text[j]) || (j == i + 1 && text[j] in "@#?$!*0123456789"))) j++
                     }

@@ -122,26 +122,23 @@ object FileIntake {
     /**
      * Copies [uri] into [dir] (a fresh [WorkDir] by default) under its sanitized name and returns the copy.
      * Throws [FileTooLarge] as soon as more than [maxBytes] are read (the partial copy is deleted) or when the
-     * provider already reports a bigger size. Blocking: call off the main thread.
+     * provider already reports a bigger size. [checkpoint] runs before each block and may throw to stop the copy
+     * (pass `{ coroutineContext.ensureActive() }` so a cancelled job stops copying). Blocking: call off the main thread.
      */
-    fun copyToWork(context: Context, uri: Uri, maxBytes: Long = MEDIA_MAX_BYTES, dir: File? = null): File {
+    fun copyToWork(
+        context: Context,
+        uri: Uri,
+        maxBytes: Long = MEDIA_MAX_BYTES,
+        dir: File? = null,
+        checkpoint: (() -> Unit)? = null,
+    ): File {
         val info = describe(context, uri)
         if (info.size != null && info.size > maxBytes) throw FileTooLarge(maxBytes)
         val folder = dir ?: WorkDir.create(context)
         val target = uniqueFile(folder, info.name)
         try {
             open(context, uri).use { input ->
-                target.outputStream().use { output ->
-                    val buffer = ByteArray(256 * 1024)
-                    var total = 0L
-                    while (true) {
-                        val n = input.read(buffer)
-                        if (n < 0) break
-                        total += n
-                        if (total > maxBytes) throw FileTooLarge(maxBytes)
-                        output.write(buffer, 0, n)
-                    }
-                }
+                target.outputStream().use { output -> copyCapped(input, output, maxBytes, checkpoint) }
             }
         } catch (e: Exception) {
             // Only our own new file: uniqueFile never picks an existing name.
@@ -150,6 +147,24 @@ object FileIntake {
             throw e
         }
         return target
+    }
+
+    /**
+     * Copies [input] to [output] in 256 Kio blocks and returns the byte count; throws [FileTooLarge] as soon as more
+     * than [maxBytes] are read. [checkpoint] runs before every block (it throws to stop the copy).
+     */
+    fun copyCapped(input: InputStream, output: java.io.OutputStream, maxBytes: Long, checkpoint: (() -> Unit)? = null): Long {
+        val buffer = ByteArray(256 * 1024)
+        var total = 0L
+        while (true) {
+            checkpoint?.invoke()
+            val n = input.read(buffer)
+            if (n < 0) break
+            total += n
+            if (total > maxBytes) throw FileTooLarge(maxBytes)
+            output.write(buffer, 0, n)
+        }
+        return total
     }
 
     /**

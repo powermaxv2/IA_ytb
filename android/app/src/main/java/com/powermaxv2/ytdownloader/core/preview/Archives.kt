@@ -35,15 +35,29 @@ object ZipNames {
     /** Most entries listed. */
     const val MAX_ENTRIES = 5000
 
+    /** Most rows drawn, implied folders and suspicious entries included. */
+    const val MAX_ROWS = 5000
+
+    /** Deepest path accepted in the tree (deeper names are flagged and listed flat). */
+    const val MAX_DEPTH = 64
+
+    /** Longest name accepted in the tree (longer names are flagged and listed flat). */
+    const val MAX_NAME_CHARS = 1024
+
+    /** Longest label drawn for one row. */
+    const val MAX_LABEL_CHARS = 200
+
     /** Most bytes of an archive copied to the work dir to list it. */
     const val MAX_ARCHIVE_BYTES: Long = 512L * 1024 * 1024
 
     /**
-     * Why [name] would be dangerous to extract, in French, or null when it is a plain relative path: parent
-     * folder jumps (".."), absolute paths ("/etc/…", "C:\…"), backslashes (Windows separators that some tools
-     * follow), control characters.
+     * Why [name] would be dangerous to extract (or to draw), in French, or null when it is a plain relative path:
+     * parent folder jumps (".."), absolute paths ("/etc/…", "C:\…"), backslashes (Windows separators that some
+     * tools follow), control characters, absurd length or depth.
      */
     fun warning(name: String): String? {
+        if (name.length > MAX_NAME_CHARS) return "Nom anormalement long (${name.length} caractères)"
+        if (name.count { it == '/' } > MAX_DEPTH) return "Dossiers imbriqués anormalement profond"
         if (name.any { it.code < 0x20 || it.code == 0x7F }) return "Caractères de contrôle dans le nom"
         if (name.startsWith("/") || name.startsWith("\\")) return "Chemin absolu"
         if (name.length >= 2 && name[0].isLetter() && name[1] == ':') return "Chemin absolu (lecteur Windows)"
@@ -52,70 +66,109 @@ object ZipNames {
         return null
     }
 
-    /** [name] made safe to draw: control characters become "�" (the warning tells why). */
-    fun display(name: String): String = buildString(name.length) {
-        for (c in name) append(if (c.code < 0x20 || c.code == 0x7F) '\uFFFD' else c)
+    /** [name] made safe to draw: control characters become "\uFFFD", at most [MAX_LABEL_CHARS] characters. */
+    fun display(name: String): String = buildString(minOf(name.length, MAX_LABEL_CHARS + 1)) {
+        for (c in name.take(MAX_LABEL_CHARS)) append(if (c.code < 0x20 || c.code == 0x7F) '\uFFFD' else c)
+        if (name.length > MAX_LABEL_CHARS) append('…')
+    }
+
+    /** A folder or file of the tree being built. */
+    private class Node(val name: String, var isDirectory: Boolean) {
+        val children = LinkedHashMap<String, Node>()
+        var size = -1L
+        var compressed = -1L
     }
 
     /**
-     * The tree of [entries]: sorted by path, every folder (also the ones the archive does not list, only implies)
-     * before its contents, [depth] from the number of "/" in the path. Suspicious names are kept as they are, at
-     * the root, with their warning.
+     * The tree of [entries]: every folder (also the ones the archive only implies) before its contents, sub-folders
+     * first then files by name, [ZipRow.depth] from the path. Suspicious names are listed flat, first, with their
+     * warning. At most [MAX_ROWS] rows in all (then [ZipListing.truncated] is set); each name is walked once, so
+     * the work is linear in the size of the names.
      */
     fun tree(entries: List<ZipEntryInfo>, totalEntries: Int = entries.size, truncated: Boolean = false): ZipListing {
-        val rows = LinkedHashMap<String, ZipRow>()
+        val root = Node("", true)
         val odd = ArrayList<ZipRow>()
+        var nodes = 0
+        var capped = false
         var totalSize = 0L
         var totalCompressed = 0L
-        for (e in entries) {
+        entries@ for (e in entries) {
+            if (nodes + odd.size >= MAX_ROWS) {
+                capped = true
+                break
+            }
             if (!e.isDirectory) {
                 if (e.size > 0) totalSize += e.size
                 if (e.compressedSize > 0) totalCompressed += e.compressedSize
             }
             val warning = warning(e.name)
             if (warning != null) {
-                odd.add(ZipRow(e.name, display(e.name), 0, e.isDirectory, e.size, e.compressedSize, warning))
+                odd.add(ZipRow(display(e.name), display(e.name), 0, e.isDirectory, e.size, e.compressedSize, warning))
                 continue
             }
-            val path = e.name.trimEnd('/')
-            if (path.isEmpty()) continue
-            val parts = path.split('/').filter { it.isNotEmpty() && it != "." }
+            val parts = e.name.split('/').filter { it.isNotEmpty() && it != "." }
             if (parts.isEmpty()) continue
-            // Implied parent folders.
-            for (d in 1 until parts.size) {
-                val dir = parts.subList(0, d).joinToString("/")
-                if (dir !in rows) rows[dir] = ZipRow(dir, display(parts[d - 1]), d - 1, true, -1, -1, null)
-            }
-            val clean = parts.joinToString("/")
             val isDir = e.isDirectory || e.name.endsWith("/")
-            if (clean in rows && rows[clean]!!.isDirectory && isDir) continue
-            rows[clean] = ZipRow(clean, display(parts.last()), parts.size - 1, isDir, e.size, e.compressedSize, null)
+            var node = root
+            for (i in parts.indices) {
+                val last = i == parts.lastIndex
+                var child = node.children[parts[i]]
+                if (child == null) {
+                    if (nodes + odd.size >= MAX_ROWS) {
+                        capped = true
+                        break@entries
+                    }
+                    child = Node(parts[i], !last || isDir)
+                    node.children[parts[i]] = child
+                    nodes++
+                } else if (!last || isDir) {
+                    child.isDirectory = true
+                }
+                if (last && !isDir) {
+                    child.size = e.size
+                    child.compressed = e.compressedSize
+                }
+                node = child
+            }
         }
-        val sorted = rows.values.sortedWith { a, b -> comparePaths(a, b) }
         return ZipListing(
-            rows = odd + sorted,
+            rows = odd + flatten(root),
             totalEntries = totalEntries,
-            truncated = truncated,
+            truncated = truncated || capped,
             totalSize = totalSize,
             totalCompressed = totalCompressed,
             suspicious = odd.size,
         )
     }
 
-    /** Folder contents right after the folder; inside a folder, sub-folders first, then files, by name. */
-    private fun comparePaths(a: ZipRow, b: ZipRow): Int {
-        val pa = a.path.split('/')
-        val pb = b.path.split('/')
-        val n = minOf(pa.size, pb.size)
-        for (i in 0 until n) {
-            if (pa[i] == pb[i]) continue
-            // At the first difference: is each side a folder at this level?
-            val aDir = i < pa.size - 1 || a.isDirectory
-            val bDir = i < pb.size - 1 || b.isDirectory
-            if (aDir != bDir) return if (aDir) -1 else 1
-            val c = pa[i].compareTo(pb[i], ignoreCase = true)
-            return if (c != 0) c else pa[i].compareTo(pb[i])
+    /** Depth-first rows of the tree, with an explicit stack (no recursion). */
+    private fun flatten(root: Node): List<ZipRow> {
+        val out = ArrayList<ZipRow>()
+        // (node, depth, path of its parent)
+        val stack = ArrayDeque<Triple<Node, Int, String>>()
+        fun pushChildren(parent: Node, depth: Int, path: String) {
+            val sorted = parent.children.values.sortedWith(
+                compareBy<Node>({ !it.isDirectory }, { it.name.lowercase() }, { it.name }),
+            )
+            for (i in sorted.indices.reversed()) stack.addLast(Triple(sorted[i], depth, path))
         }
-        return pa.size - pb.size
+        pushChildren(root, 0, "")
+        while (stack.isNotEmpty()) {
+            val (node, depth, parentPath) = stack.removeLast()
+            val path = if (parentPath.isEmpty()) node.name else "$parentPath/${node.name}"
+            out.add(
+                ZipRow(
+                    path = path,
+                    label = display(node.name),
+                    depth = depth,
+                    isDirectory = node.isDirectory,
+                    size = if (node.isDirectory) -1 else node.size,
+                    compressedSize = if (node.isDirectory) -1 else node.compressed,
+                    warning = null,
+                ),
+            )
+            if (node.children.isNotEmpty()) pushChildren(node, depth + 1, path)
+        }
+        return out
     }
 }

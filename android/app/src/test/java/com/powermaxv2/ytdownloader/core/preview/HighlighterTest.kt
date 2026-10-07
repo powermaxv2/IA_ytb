@@ -127,4 +127,23 @@ class HighlighterTest {
         assertEquals(emptyList<Token>(), Highlighter.spansIn(tokens, 5, 5))
         assertEquals(listOf(0), Highlighter.lineStarts("").toList())
     }
+
+    @Test(timeout = 20_000)
+    fun pathologicalMegabyteInputsStayLinear() {
+        val inputs = listOf(
+            "\${\n".repeat(330_000),
+            "\"\n".repeat(500_000),
+            "'\n".repeat(500_000),
+            "`".repeat(1_000_000),
+            "/*".repeat(500_000),
+            "<a \"".repeat(250_000),
+            "<!--".repeat(250_000),
+            "\"\"\"".repeat(330_000),
+            "a: \"\n".repeat(200_000),
+            "{\"".repeat(500_000),
+        )
+        for (text in inputs) {
+            for (lang in CodeLang.entries) Highlighter.tokenize(text, lang)
+        }
+    }
 }

@@ -103,6 +103,8 @@ fun PreviewTool(vm: MainViewModel) {
     var phase by remember { mutableStateOf<PreviewPhase>(PreviewPhase.Idle) }
     var hash by remember { mutableStateOf(HashState()) }
     val hashJob = remember { arrayOfNulls<Job>(1) }
+    // Generation of the hash shown: a block finishing after a cancel (another file) never writes over the new one.
+    val hashGeneration = remember { java.util.concurrent.atomic.AtomicInteger(0) }
 
     fun open(uri: Uri) {
         request = OpenRequest(uri, (request?.serial ?: 0) + 1)
@@ -114,6 +116,7 @@ fun PreviewTool(vm: MainViewModel) {
     }
     LaunchedEffect(request) {
         val r = request ?: return@LaunchedEffect
+        hashGeneration.incrementAndGet()
         hashJob[0]?.cancel()
         hash = HashState()
         phase = PreviewPhase.Loading
@@ -138,12 +141,16 @@ fun PreviewTool(vm: MainViewModel) {
             onHash = {
                 val file = (phase as? PreviewPhase.Ready)?.doc?.file
                 if (file != null && hashJob[0]?.isActive != true) {
+                    val token = hashGeneration.get()
+                    // Writes only while this file is still the one shown.
+                    fun current() = hashGeneration.get() == token &&
+                        (phase as? PreviewPhase.Ready)?.doc?.file?.uri == file.uri
                     hashJob[0] = scope.launch {
                         hash = HashState(progress = 0f)
-                        hash = try {
+                        val result = try {
                             val value = PreviewLoader.sha256(context, file.uri, file.size) { p ->
                                 // Called from the reading thread: compose state accepts it.
-                                if (hash.value == null) hash = HashState(progress = p)
+                                if (current() && hash.value == null) hash = HashState(progress = p)
                             }
                             HashState(progress = 1f, value = value)
                         } catch (e: CancellationException) {
@@ -151,6 +158,7 @@ fun PreviewTool(vm: MainViewModel) {
                         } catch (e: Throwable) {
                             HashState(error = "Lecture impossible : l'empreinte n'a pas pu être calculée.")
                         }
+                        if (current()) hash = result
                     }
                 }
             },
