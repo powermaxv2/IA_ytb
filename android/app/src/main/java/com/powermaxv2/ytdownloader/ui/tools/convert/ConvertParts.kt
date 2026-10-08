@@ -65,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -74,6 +75,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -293,6 +295,34 @@ private fun OptionChip(text: String, selected: Boolean, onClick: () -> Unit) {
 
 // MARK: - Format tiles
 
+/** One line that steps its size down (to 60 % at most) until it fits, drawn only once it does: "Équilibré" in a third of a card. */
+@Composable
+private fun FitText(
+    text: String,
+    size: TextUnit,
+    color: Color,
+    fontWeight: FontWeight,
+    modifier: Modifier = Modifier,
+    fontFamily: FontFamily? = null,
+) {
+    var scale by remember(text, size) { mutableStateOf(1f) }
+    var ready by remember(text, size) { mutableStateOf(false) }
+    Text(
+        text,
+        color = color,
+        fontSize = size * scale,
+        lineHeight = size * scale * 1.15f,
+        fontWeight = fontWeight,
+        fontFamily = fontFamily,
+        maxLines = 1,
+        softWrap = false,
+        onTextLayout = { layout ->
+            if (layout.didOverflowWidth && scale > 0.6f) scale = (scale - 0.06f).coerceAtLeast(0.6f) else ready = true
+        },
+        modifier = modifier.drawWithContent { if (ready) drawContent() },
+    )
+}
+
 /** A target format: big label, short detail; the chosen one fills / outlines with the accent and springs. */
 @Composable
 internal fun FormatTile(label: String, detail: String, selected: Boolean, index: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -357,17 +387,16 @@ internal fun FormatTile(label: String, detail: String, selected: Boolean, index:
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(label.uppercase(), color = if (selected) accent.start else titleColor, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    FitText(label.uppercase(), 16.sp, color = if (selected) accent.start else titleColor, fontWeight = FontWeight.Bold)
                 }
-                else -> Text(
+                // The end padding keeps the check badge off the label.
+                else -> FitText(
                     label,
+                    21.sp,
                     color = titleColor,
-                    fontSize = 21.sp,
-                    lineHeight = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
                     fontFamily = tokens.display,
-                    maxLines = 1,
-                    softWrap = false,
+                    modifier = Modifier.padding(end = 16.dp),
                 )
             }
             Text(
