@@ -78,7 +78,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-5").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-6").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
