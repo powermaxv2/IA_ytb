@@ -337,3 +337,94 @@ private fun PaperSoonRow(tool: GulpTool, number: Int) {
         PaperStamp("BIENTÔT", Palette.TextSecondary, tilt = 5f, delayMs = 800L + number * 140L, wiggle = true)
     }
 }
+
+/** Group title of the home screen, in the display face. */
+@Composable
+fun PaperHomeSection(title: String, order: Int) {
+    Text(
+        title,
+        color = Palette.TextPrimary,
+        fontSize = 22.sp,
+        fontWeight = FontWeight.ExtraBold,
+        fontFamily = LocalTokens.current.display,
+        modifier = Modifier
+            .padding(top = 6.dp)
+            .staggeredEntrance(order, baseDelay = 220),
+    )
+}
+
+/**
+ * Small entry of a tool (half a card): accent number and floating symbol, the name in the display face, and a
+ * little ink tile whose arrow pushes forward now and then. The whole entry opens the tool.
+ */
+@Composable
+fun PaperToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+    val accent = LocalAccent.current.start
+    Column(
+        modifier
+            .staggeredEntrance(order, baseDelay = 260)
+            .bounceClick(pressedScale = 0.94f, onClick = onOpen)
+            .paperCard()
+            .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                toolNumber(index + 1),
+                color = accent,
+                fontSize = 28.sp,
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                fontFamily = LocalTokens.current.display,
+                letterSpacing = (-1).sp,
+            )
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier
+                    .bob(order, amplitude = 2.dp)
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Palette.Background),
+                contentAlignment = Alignment.Center,
+            ) {
+                val icon = tool.icon
+                val platform = tool.platforms.firstOrNull()
+                when {
+                    tool.platforms.isEmpty() && icon != null -> Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                    platform != null -> PlatformGlyph(platform, Modifier.size(20.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            tool.name,
+            color = Palette.TextPrimary,
+            fontSize = 18.sp,
+            lineHeight = 21.sp,
+            fontWeight = FontWeight.ExtraBold,
+            fontFamily = LocalTokens.current.display,
+            letterSpacing = (-0.4).sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Ouvrir", color = Palette.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier
+                    .size(30.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Palette.TextPrimary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    tint = GulpColors.Cream,
+                    modifier = Modifier.size(16.dp).nudgeRight(3.dp, periodMs = 2200 + order * 180),
+                )
+            }
+        }
+    }
+}

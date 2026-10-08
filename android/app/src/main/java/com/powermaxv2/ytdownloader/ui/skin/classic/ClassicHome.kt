@@ -359,3 +359,100 @@ private fun ClassicSoonCard(tool: GulpTool, number: Int, modifier: Modifier = Mo
         )
     }
 }
+
+/** Group title of the home screen: bold words then a hairline running to the edge. */
+@Composable
+fun ClassicHomeSection(title: String, order: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(top = 4.dp)
+            .staggeredEntrance(order, baseDelay = 220),
+    ) {
+        Text(title, color = Palette.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = LocalTokens.current.display)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f).height(1.dp).background(Palette.Stroke))
+    }
+}
+
+/**
+ * Small bubble of a tool (half a card): its symbol floats on a gradient tile, a thin gradient outline breathes,
+ * and the arrow pushes forward now and then. The whole bubble opens the tool.
+ */
+@Composable
+fun ClassicToolBubble(tool: GulpTool, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+    val accent = LocalAccent.current
+    val radius = LocalTokens.current.cardRadius
+    val transition = rememberInfiniteTransition(label = "bubble")
+    val rim by transition.animateFloat(
+        0.35f, 0.8f, infiniteRepeatable(tween(1900 + order * 150, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bubbleRim",
+    )
+    Column(
+        modifier
+            .staggeredEntrance(order, baseDelay = 300)
+            .bounceClick(pressedScale = 0.94f, onClick = onOpen)
+            .clip(RoundedCornerShape(radius))
+            .background(Palette.Surface)
+            .drawBehind {
+                val w = 1.5.dp.toPx()
+                drawRoundRect(
+                    accent.horizontal(),
+                    topLeft = androidx.compose.ui.geometry.Offset(w / 2, w / 2),
+                    size = androidx.compose.ui.geometry.Size(size.width - w, size.height - w),
+                    cornerRadius = CornerRadius(radius.toPx()),
+                    alpha = rim,
+                    style = Stroke(w),
+                )
+            }
+            .padding(16.dp),
+    ) {
+        val icon = tool.icon
+        if (tool.platforms.isEmpty() && icon != null) {
+            Box(
+                Modifier
+                    .bob(order, amplitude = 2.5.dp)
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent.brush),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = Palette.OnAccent, modifier = Modifier.size(23.dp))
+            }
+        } else {
+            GulpMark(44.dp, modifier = Modifier.bob(order, amplitude = 2.5.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            tool.name,
+            color = Palette.TextPrimary,
+            fontSize = 16.sp,
+            lineHeight = 19.sp,
+            fontWeight = FontWeight.ExtraBold,
+            fontFamily = LocalTokens.current.display,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LiveDot(Palette.Success)
+            Spacer(Modifier.width(6.dp))
+            Text("Prêt", color = Palette.Success, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(accent.horizontal()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = "Ouvrir",
+                    tint = Palette.OnAccent,
+                    modifier = Modifier.size(17.dp).nudgeRight(3.dp, periodMs = 2200 + order * 180),
+                )
+            }
+        }
+    }
+}

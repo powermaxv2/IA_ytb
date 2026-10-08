@@ -72,4 +72,18 @@ class ToolRegistryTest {
         assertEquals("2 outils prêts", readyText(2))
         assertEquals("03", toolNumber(3))
     }
+
+    @Test fun downloaderIsFeaturedUntilAToolIsUsed() {
+        val ready = ToolRegistry.available
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
+        // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-5").id)
+    }
+
+    @Test fun lastUsedToolIsFeatured() {
+        val ready = ToolRegistry.available
+        assertEquals(ToolRegistry.CHAT_STATS, featuredTool(ready, ToolRegistry.CHAT_STATS).id)
+        assertEquals(ToolRegistry.PREVIEW, featuredTool(ready, ToolRegistry.PREVIEW).id)
+    }
 }
