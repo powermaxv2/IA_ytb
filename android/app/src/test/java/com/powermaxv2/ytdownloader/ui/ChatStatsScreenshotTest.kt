@@ -40,11 +40,11 @@ class ChatStatsScreenshotTest {
     @Test fun terminalIdle() = shot(Skin.TERMINAL, "terminal_chat_idle", ChatPhase.Idle)
 
     // Tall screen: every result card in one picture.
-    @Config(qualifiers = "w411dp-h3900dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h6600dp-xhdpi")
     @Test fun classicResults() = shot(Skin.CLASSIC, "classic_chat_results", ChatExport.sample())
-    @Config(qualifiers = "w411dp-h3900dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h6600dp-xhdpi")
     @Test fun paperResults() = shot(Skin.PAPER, "paper_chat_results", ChatExport.sample())
-    @Config(qualifiers = "w411dp-h3900dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h6600dp-xhdpi")
     @Test fun terminalResults() = shot(Skin.TERMINAL, "terminal_chat_results", ChatExport.sample())
 
     @Test fun classicFailed() = shot(Skin.CLASSIC, "classic_chat_failed", ChatPhase.Failed(ChatExport.NOT_WHATSAPP))

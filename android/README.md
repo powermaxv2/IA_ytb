@@ -33,12 +33,18 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 Analyse d'une discussion **WhatsApp** exportée : qui répond le plus vite ? Dans WhatsApp, discussion ›
 **Exporter la discussion › Sans médias**, puis **Partager → Analyser avec Gulp** pour un `.zip`, ou **Télécharger avec
 Gulp** pour un `.txt` (un fichier texte partagé sans lien ouvre Vu, répondu), ou choisir le fichier depuis l'outil. L'outil affiche le temps de réponse moyen et médian, le podium des plus rapides (temps
-médian, 3 réponses au moins), la course des temps de réponse de chacun, les messages par personne (anneau), la
-répartition des délais, les heures d'activité, les messages les plus répétés et les emojis favoris. Une réponse est
-un message envoyé juste après celui de quelqu'un d'autre ; le réglage « Nouvelle conversation après » (1 h à 24 h,
+moyen, 3 réponses au moins), la course des temps de réponse de chacun, une fiche par personne (médiane, réponse la plus
+lente, part en moins d'une minute, mots par message, conversations lancées, derniers mots, rafale, emojis, nuit,
+stickers…), les messages par personne (anneau), les médias et stickers, la répartition des délais, qui lance et qui
+conclut les conversations, les heures et jours d'activité, les messages les plus répétés et les emojis favoris. Une
+réponse est le premier message envoyé après celui de quelqu'un d'autre ; le réglage « Nouvelle conversation après » (1 h à 24 h,
 ou jamais, 6 h par défaut) écarte les réponses trop tardives.
 
-Formats lus : exports Android et iPhone, dates J/M/A, M/J/A ou A/M/J, heures sur 24 h ou AM/PM. Tout est calculé sur
+Formats lus : exports Android et iPhone, en français ou en anglais, avec ou sans médias, dates J/M/A, M/J/A ou A/M/J,
+heures sur 24 h ou AM/PM. Un export Android ne donne que les minutes : une réponse dans la même minute compte pour 20 s
+(sa valeur moyenne) et non 0 s. Les stickers se comptent avec un export iPhone ou « avec médias » ; un export Android
+« sans médias » écrit « <Médias omis> » pour tous les médias. Les messages système (chiffrement, ajouts, changements
+de sujet) sont écartés. Tout est calculé sur
 le téléphone, rien n'est envoyé ni enregistré ; un `.zip` est lu en mémoire (40 Mo de texte au plus), jamais extrait.
 C'est l'app « Vu, répondu » de Maxime, refaite en natif dans Gulp avec les mêmes calculs.
 
