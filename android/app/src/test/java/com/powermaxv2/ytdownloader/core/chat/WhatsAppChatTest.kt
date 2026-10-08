@@ -27,7 +27,7 @@ class WhatsAppChatTest {
     }
 
     @Test fun iphoneExportWithSecondsAndInvisibleMarks() {
-        val text = "[15/09/2026 21:02:10] Hugo: Salut\n‎[15/09/2026 21:02:28] Inès: ‎Yo"
+        val text = "[15/09/2026 21:02:10] Hugo: Salut\n‎[15/09/2026 21:02:28] ‪Inès‬: Yo‎"
         val m = WhatsAppChat.parse(text)!!
         assertEquals(2, m.size)
         assertEquals(18L, m[1].time - m[0].time)
@@ -90,7 +90,7 @@ class WhatsAppChatTest {
         assertEquals(4, stats.people.size)
         assertTrue(stats.refrains.first().label in listOf("Ok", "Mdr"))
         assertNotNull(stats.emojis.firstOrNull())
-        assertEquals(22, stats.days)
+        assertEquals(23, stats.days) // 15 September to 7 October, both included
     }
 
     @Test fun refrainsIgnoreCaseAndFinalPunctuation() {
