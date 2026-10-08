@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -10,6 +11,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
+import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 
@@ -46,6 +48,9 @@ object ToolRegistry {
 
     /** "Vu, répondu": who answers fastest in a WhatsApp discussion export. Also reached by sharing the export to Gulp. */
     const val CHAT_STATS = "chat-stats"
+
+    /** File compressor (photos, videos, sounds, PDF, or several files in one ZIP). Also "Partager → Compresser avec Gulp". */
+    const val COMPRESSOR = "compressor"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -86,7 +91,15 @@ object ToolRegistry {
             icon = Icons.Rounded.DoneAll,
             screen = { vm -> ChatStatsTool(vm) },
         ),
-        comingSoon(5),
+        GulpTool(
+            id = COMPRESSOR,
+            name = "Compresseur",
+            tagline = "Rend une photo, une vidéo ou un PDF plus léger pour l'envoyer, ou range plusieurs fichiers dans un ZIP.",
+            tags = listOf("Photo · Vidéo · PDF", "ZIP", "Avant / après"),
+            icon = Icons.Rounded.Compress,
+            screen = { vm -> CompressorTool(vm) },
+        ),
+        comingSoon(6),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
