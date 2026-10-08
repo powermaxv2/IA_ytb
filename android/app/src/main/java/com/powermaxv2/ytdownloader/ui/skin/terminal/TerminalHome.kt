@@ -334,7 +334,8 @@ fun TerminalToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifie
         Text(
             tool.name.uppercase(),
             color = Palette.TextPrimary,
-            fontSize = 16.sp,
+            // The wide display face cuts a long word ("CONVERTISSEUR") in two at 16 sp in half a screen.
+            fontSize = if (tool.name.split(' ').maxOf { it.length } > 11) 13.sp else 16.sp,
             lineHeight = 20.sp,
             fontFamily = LocalTokens.current.display,
             maxLines = 2,

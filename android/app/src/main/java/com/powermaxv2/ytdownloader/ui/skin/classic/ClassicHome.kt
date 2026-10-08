@@ -436,6 +436,8 @@ fun ClassicToolBubble(tool: GulpTool, order: Int, modifier: Modifier = Modifier,
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             LiveDot(Palette.Success)
+            Spacer(Modifier.width(6.dp))
+            Text("Prêt", color = Palette.Success, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
             Box(
                 Modifier
