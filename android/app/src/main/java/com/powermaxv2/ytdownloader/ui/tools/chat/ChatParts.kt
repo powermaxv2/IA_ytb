@@ -593,7 +593,7 @@ internal fun Race(replies: ReplyStats, key: Any?) {
                     color = Palette.TextTertiary,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(start = 22.dp),
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

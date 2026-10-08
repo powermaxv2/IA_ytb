@@ -55,6 +55,8 @@ private val ShortDay = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH)
 
 private fun epochDay(day: Long): String = LocalDate.ofEpochDay(day).format(ShortDay)
 
+private fun plural(n: Int, one: String, many: String): String = "${count(n)} ${if (n > 1) many else one}"
+
 private fun one(x: Double?): String = if (x == null) "—" else String.format(Locale.FRANCE, "%.1f", x)
 
 // MARK: - Everyone's file
@@ -131,11 +133,11 @@ private fun Profile(stats: ChatStats, r: ReplyRow, index: Int, key: Any?) {
             }
         }
         val extra = listOfNotNull(
-            if (stats.stickersKnown && p.media > p.stickers) "${count(p.media)} médias" else null,
-            if (p.count(Kind.VOICE) > 0) "${count(p.count(Kind.VOICE))} vocaux" else null,
-            if (p.deleted > 0) "${count(p.deleted)} supprimés" else null,
-            if (p.edited > 0) "${count(p.edited)} modifiés" else null,
-            if (p.links > 0) "${count(p.links)} liens" else null,
+            if (stats.stickersKnown && p.media > p.stickers) plural(p.media, "média", "médias") else null,
+            if (p.count(Kind.VOICE) > 0) plural(p.count(Kind.VOICE), "vocal", "vocaux") else null,
+            if (p.deleted > 0) plural(p.deleted, "supprimé", "supprimés") else null,
+            if (p.edited > 0) plural(p.edited, "modifié", "modifiés") else null,
+            if (p.links > 0) plural(p.links, "lien", "liens") else null,
             "actif ${count(p.activeDays)} jours sur ${count(stats.days)}",
         )
         Text(extra.joinToString(" · "), color = Palette.TextTertiary, fontSize = 11.5.sp, lineHeight = 15.sp)
