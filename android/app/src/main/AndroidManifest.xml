@@ -79,8 +79,10 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- "Exporter la discussion → Analyser avec Gulp" from WhatsApp: the .txt (or .zip) of a discussion, opened in
-             "Vu, répondu" (MainActivity reads EXTRA_STREAM, content:// only). -->
+        <!-- "Exporter la discussion → Analyser avec Gulp" from WhatsApp: the .zip of a discussion, opened in
+             "Vu, répondu" (MainActivity reads EXTRA_STREAM, content:// only). No text/plain here: a second SEND
+             text/plain filter next to MainActivity's made some phones refuse the APK ("package non valide", 1.10.0);
+             a shared .txt file goes through MainActivity's filter instead. -->
         <activity-alias
             android:name=".ChatEntry"
             android:exported="true"
@@ -89,7 +91,6 @@
             <intent-filter android:label="@string/chat_label">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
                 <data android:mimeType="application/zip" />
                 <data android:mimeType="application/x-zip-compressed" />
             </intent-filter>

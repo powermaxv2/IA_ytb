@@ -83,7 +83,7 @@ private data class ChatRequest(val uri: Uri, val serial: Int)
 
 /**
  * "Vu, répondu" (ToolRegistry.CHAT_STATS), the app Maxime made, as a Gulp tool: a WhatsApp export picked here or
- * shared to "Analyser avec Gulp" is read and analysed on the phone. Nothing is sent or saved.
+ * shared to Gulp is read and analysed on the phone. Nothing is sent or saved.
  */
 @Composable
 fun ChatStatsTool(vm: MainViewModel) {
@@ -96,7 +96,7 @@ fun ChatStatsTool(vm: MainViewModel) {
         request = ChatRequest(uri, (request?.serial ?: 0) + 1)
     }
 
-    // A file can arrive while the tool is already open (Partager → Analyser avec Gulp): keyed on the URI.
+    // A file can arrive while the tool is already open (Partager → Gulp): keyed on the URI.
     LaunchedEffect(vm.pendingFile) {
         vm.consumePendingFile()?.let { open(it) }
     }
@@ -170,7 +170,7 @@ fun ColumnScope.ChatContent(phase: ChatPhase, gap: Gap, actions: ChatActions) {
 private fun IdleStep(actions: ChatActions) {
     FileDropZone(
         title = "Choisir un export",
-        hint = "Fichier .txt ou .zip d'une discussion WhatsApp, ou Partager → Analyser avec Gulp",
+        hint = "Fichier .txt ou .zip d'une discussion WhatsApp, ou Partager → Gulp",
         icon = Icons.Rounded.UploadFile,
         onClick = actions.onChooseFile,
     )
@@ -186,7 +186,7 @@ private fun HowToCard() {
     val steps = listOf(
         "Ouvre la discussion dans WhatsApp.",
         "Android : ⋮ › Plus › Exporter la discussion › Sans médias. iPhone : nom du groupe › Exporter la discussion › Sans médias.",
-        "Dans la liste de partage, choisis « Analyser avec Gulp » : l'analyse s'ouvre directement. Ou enregistre le fichier puis choisis-le ici.",
+        "Dans la liste de partage, choisis « Analyser avec Gulp » pour un .zip, « Télécharger avec Gulp » pour un .txt : l'analyse s'ouvre directement. Ou enregistre le fichier puis choisis-le ici.",
     )
     val accent = LocalAccent.current
     Column(

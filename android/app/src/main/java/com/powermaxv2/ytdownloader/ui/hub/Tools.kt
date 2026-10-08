@@ -44,7 +44,7 @@ object ToolRegistry {
     /** File preview (images, PDF, text, ZIP contents, media info). Also "Partager → Aperçu avec Gulp" / "Ouvrir avec". */
     const val PREVIEW = "preview"
 
-    /** "Vu, répondu": who answers fastest in a WhatsApp discussion export. Also "Partager → Analyser avec Gulp". */
+    /** "Vu, répondu": who answers fastest in a WhatsApp discussion export. Also reached by sharing the export to Gulp. */
     const val CHAT_STATS = "chat-stats"
 
     private fun comingSoon(slot: Int) = GulpTool(

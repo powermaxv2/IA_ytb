@@ -76,12 +76,13 @@ class MainActivity : ComponentActivity() {
             CONVERT_ENTRY -> ToolRegistry.CONVERTER
             PREVIEW_ENTRY -> ToolRegistry.PREVIEW
             CHAT_ENTRY -> ToolRegistry.CHAT_STATS
-            else -> null
+            // A .txt file without a link shared to "Télécharger avec Gulp": a WhatsApp export "Sans médias". The
+            // .txt cannot have its own alias: a second SEND text/plain filter made some phones refuse the APK.
+            else -> ToolRegistry.CHAT_STATS.takeIf { intent != null && isSharedTextFile(intent) }
         }
         if (fileTool != null) {
             val uri = when (intent?.action) {
-                Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-                    ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+                Intent.ACTION_SEND -> sharedStream(intent)
                 Intent.ACTION_VIEW -> intent.data
                 else -> null
             }
@@ -102,6 +103,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun isSharedTextFile(intent: Intent): Boolean =
+        intent.action == Intent.ACTION_SEND && sharedStream(intent) != null &&
+            intent.getStringExtra(Intent.EXTRA_TEXT)?.contains("http", ignoreCase = true) != true
+
+    private fun sharedStream(intent: Intent): Uri? =
+        IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+
     companion object {
         const val ACTION_SHOW_DOWNLOADS = "com.powermaxv2.ytdownloader.SHOW_DOWNLOADS"
         const val ACTION_APP_UPDATE = "com.powermaxv2.ytdownloader.APP_UPDATE"
@@ -115,7 +124,7 @@ class MainActivity : ComponentActivity() {
         /** Exported activity-alias "Aperçu avec Gulp" (SEND of any file, VIEW of a content:// file). */
         const val PREVIEW_ENTRY = "com.powermaxv2.ytdownloader.PreviewEntry"
 
-        /** Exported activity-alias "Analyser avec Gulp" (SEND of a WhatsApp export: .txt or .zip). */
+        /** Exported activity-alias "Analyser avec Gulp" (SEND of a WhatsApp .zip; a .txt comes to MainActivity). */
         const val CHAT_ENTRY = "com.powermaxv2.ytdownloader.ChatEntry"
     }
 }
