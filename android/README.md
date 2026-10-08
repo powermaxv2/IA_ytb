@@ -31,8 +31,8 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 ## Vu, répondu (depuis 1.10.0)
 
 Analyse d'une discussion **WhatsApp** exportée : qui répond le plus vite ? Dans WhatsApp, discussion ›
-**Exporter la discussion › Sans médias**, puis **Partager → Analyser avec Gulp** (ou choisir le `.txt` / `.zip`
-enregistré depuis l'outil). L'outil affiche le temps de réponse moyen et médian, le podium des plus rapides (temps
+**Exporter la discussion › Sans médias**, puis **Partager → Analyser avec Gulp** pour un `.zip`, ou **Télécharger avec
+Gulp** pour un `.txt` (un fichier texte partagé sans lien ouvre Vu, répondu), ou choisir le fichier depuis l'outil. L'outil affiche le temps de réponse moyen et médian, le podium des plus rapides (temps
 médian, 3 réponses au moins), la course des temps de réponse de chacun, les messages par personne (anneau), la
 répartition des délais, les heures d'activité, les messages les plus répétés et les emojis favoris. Une réponse est
 un message envoyé juste après celui de quelqu'un d'autre ; le réglage « Nouvelle conversation après » (1 h à 24 h,
