@@ -51,6 +51,7 @@ import com.powermaxv2.ytdownloader.core.Skin
 import com.powermaxv2.ytdownloader.core.chat.ChatExport
 import com.powermaxv2.ytdownloader.core.chat.ChatPhase
 import com.powermaxv2.ytdownloader.core.chat.Gap
+import com.powermaxv2.ytdownloader.core.chat.WeekdayNames
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
@@ -66,7 +67,7 @@ import com.powermaxv2.ytdownloader.ui.tools.convert.toolCard
 
 const val CHAT_TITLE = "Vu, répondu"
 const val CHAT_COMMAND = "vu-repondu"
-const val CHAT_SUBTITLE = "Qui répond le plus vite dans une discussion WhatsApp ? Partage son export : temps de réponse, podium, messages, refrains."
+const val CHAT_SUBTITLE = "Qui répond le plus vite dans une discussion WhatsApp ? Partage son export : temps de réponse moyen, podium, fiches par personne, stickers, refrains."
 
 /** Types offered by the file picker: WhatsApp exports are a .txt, or a .zip when shared. */
 private val ExportTypes = arrayOf("text/plain", "application/zip", "application/x-zip-compressed", "application/octet-stream")
@@ -185,7 +186,7 @@ private fun HowToCard() {
     val terminal = LocalSkin.current == Skin.TERMINAL
     val steps = listOf(
         "Ouvre la discussion dans WhatsApp.",
-        "Android : ⋮ › Plus › Exporter la discussion › Sans médias. iPhone : nom du groupe › Exporter la discussion › Sans médias.",
+        "Android : ⋮ › Plus › Exporter la discussion. iPhone : nom du groupe › Exporter la discussion. « Sans médias » suffit ; « Avec médias » permet aussi de compter les stickers, photos et vocaux.",
         "Dans la liste de partage, choisis « Analyser avec Gulp » pour un .zip, « Télécharger avec Gulp » pour un .txt : l'analyse s'ouvre directement. Ou enregistre le fichier puis choisis-le ici.",
     )
     val accent = LocalAccent.current
@@ -271,31 +272,53 @@ private fun ReadyStep(ready: ChatPhase.Ready, gap: Gap, actions: ChatActions) {
     val key = stats
     SourceCard(stats, ready.name, ready.sample, gap, actions.onGap, key)
     KpiGrid(stats, replies, key = key to gap)
-    StatCard("Podium", "Les plus rapides", 1, key, sub = "Classés par temps de réponse médian (au moins 3 réponses).") {
+    StatCard("Podium", "Les plus rapides", 1, key, sub = "Classés par temps de réponse moyen (au moins 3 réponses).") {
         Podium(replies, key = key to gap)
     }
-    StatCard("Course", "Temps de réponse par personne", 2, key, sub = "Barre courte = réponse rapide.") {
+    StatCard("Course", "Temps de réponse par personne", 2, key, sub = "Moyenne de chaque réponse ; barre courte = réponse rapide.") {
         Race(replies, key = key to gap)
+    }
+    StatCard("Fiches", "Chacun en détail", 3, key, sub = "Les chiffres de chaque personne, du plus rapide au plus lent.") {
+        Profiles(stats, replies, key = key to gap)
     }
     StatCard(
         "Volume",
         "Messages envoyés",
-        3,
+        4,
         key,
-        sub = "${count(stats.messages.size)} messages, dont ${count(stats.mediaCount)} médias ou messages supprimés.",
+        sub = "${count(stats.messages.size)} messages, dont ${count(stats.mediaCount)} médias et stickers.",
     ) {
         Volume(stats, key)
     }
-    StatCard("Délais", "Répartition des temps de réponse", 4, key) {
+    StatCard(
+        "Médias",
+        if (stats.stickersKnown) "Stickers, photos, vocaux" else "Médias et stickers",
+        5,
+        key,
+        sub = if (stats.stickersKnown) "${count(stats.stickers)} stickers envoyés." else null,
+    ) {
+        MediaCard(stats, key)
+    }
+    StatCard("Délais", "Répartition des temps de réponse", 6, key) {
         Histogram(replies)
     }
-    StatCard("Horloge", "Heures d'activité", 5, key, sub = "Pic d'activité vers ${stats.peakHour} h (${count(stats.hours[stats.peakHour])} messages).") {
-        Hours(stats)
+    StatCard("Conversations", "Qui lance, qui conclut", 7, key, sub = "Une conversation commence après ${gap.label} sans message.".takeIf { gap != Gap.NEVER } ?: "Toute la discussion compte comme une seule conversation.") {
+        Conversations(stats, replies, key = key to gap)
     }
-    StatCard("Refrain", "Messages les plus utilisés", 6, key, sub = "Majuscules et ponctuation finale ignorées. Médias et messages supprimés exclus.") {
+    StatCard(
+        "Horloge",
+        "Heures et jours d'activité",
+        8,
+        key,
+        sub = "Pic vers ${stats.peakHour} h (${count(stats.hours[stats.peakHour])} messages), surtout le ${WeekdayNames[stats.peakWeekday]}.",
+    ) {
+        Hours(stats)
+        Weekdays(stats)
+    }
+    StatCard("Refrain", "Messages les plus utilisés", 9, key, sub = "Majuscules et ponctuation finale ignorées. Médias et messages supprimés exclus.") {
         Refrains(stats, key)
     }
-    StatCard("Bonus", "Emojis favoris", 7, key) {
+    StatCard("Bonus", "Emojis favoris", 10, key) {
         Emojis(stats, key)
     }
     SideButton(

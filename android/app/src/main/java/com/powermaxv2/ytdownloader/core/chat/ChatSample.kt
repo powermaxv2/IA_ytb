@@ -6,7 +6,8 @@ import kotlin.math.exp
 
 /**
  * The example discussion shown by "Voir un exemple": a made-up flat-share group over three weeks, where Inès
- * answers in about a minute and Hugo in half an hour. Always the same (seeded), written as an Android export.
+ * answers in about a minute and Hugo in half an hour. Always the same (seeded), written as an Android export
+ * "with media", so stickers, photos and vocals can be told apart.
  */
 object ChatSample {
     const val NAME = "Groupe « Coloc Belleville »"
@@ -28,6 +29,10 @@ object ChatSample {
         fun at(t: Double) = LocalDateTime.ofEpochSecond(kotlin.math.floor(t).toLong(), 0, ZoneOffset.UTC)
         fun epoch(d: LocalDateTime) = d.toEpochSecond(ZoneOffset.UTC).toDouble()
         fun pad(n: Int) = n.toString().padStart(2, '0')
+        // "<Médias omis>" of the word list becomes, in turn, one of these attached files.
+        val files = listOf("STK-%s-WA%04d.webp", "IMG-%s-WA%04d.jpg", "STK-%s-WA%04d.webp", "PTT-%s-WA%04d.opus", "VID-%s-WA%04d.mp4")
+        var attached = 0
+        var written = 0
         val out = ArrayList<String>()
         out.add("15/09/2026 18:02 - Les messages et les appels sont chiffrés de bout en bout.")
         val start = LocalDateTime.of(2026, 9, 15, 18, 0)
@@ -43,7 +48,15 @@ object ChatSample {
                 val length = 4 + (rnd() * 16).toInt()
                 repeat(length) {
                     val d = at(t)
-                    out.add("${pad(d.dayOfMonth)}/${pad(d.monthValue)}/${d.year} ${pad(d.hour)}:${pad(d.minute)} - ${people[who].first}: ${words[(rnd() * words.size).toInt()]}")
+                    var text = words[(rnd() * words.size).toInt()]
+                    if (text == "<Médias omis>") {
+                        val date = "${d.year}${pad(d.monthValue)}${pad(d.dayOfMonth)}"
+                        text = files[attached % files.size].format(date, attached) + " (fichier joint)"
+                        attached++
+                    } else if (++written % 25 == 0) {
+                        text += " <Ce message a été modifié>"
+                    }
+                    out.add("${pad(d.dayOfMonth)}/${pad(d.monthValue)}/${d.year} ${pad(d.hour)}:${pad(d.minute)} - ${people[who].first}: $text")
                     var next = who
                     if (rnd() < 0.75) {
                         do next = (rnd() * 4).toInt() while (next == who)

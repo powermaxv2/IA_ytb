@@ -88,10 +88,10 @@ private val DayFormat = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRENCH)
 
 internal fun day(epochSeconds: Long): String = LocalDateTime.ofEpochSecond(epochSeconds, 0, ZoneOffset.UTC).format(DayFormat)
 
-private fun initial(name: String): String =
+internal fun initial(name: String): String =
     name.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "?"
 
-private val terminal: Boolean @Composable get() = LocalSkin.current == Skin.TERMINAL
+internal val terminal: Boolean @Composable get() = LocalSkin.current == Skin.TERMINAL
 
 /** Card title in the skin's display font (uppercase on Terminal). */
 @Composable
@@ -139,7 +139,7 @@ internal fun StatCard(eyebrow: String, title: String, index: Int, key: Any?, sub
 
 /** Little coloured dot of a person. */
 @Composable
-private fun Dot(color: Color, size: androidx.compose.ui.unit.Dp = 10.dp) {
+internal fun Dot(color: Color, size: androidx.compose.ui.unit.Dp = 10.dp) {
     Box(
         Modifier
             .size(size)
@@ -322,16 +322,25 @@ internal fun SourceCard(stats: ChatStats, name: String, sample: Boolean, gap: Ga
             )
         }
         Text(
-            "${day(stats.first)} → ${day(stats.last)} · ${stats.days} jours",
+            "${day(stats.first)} → ${day(stats.last)} · ${stats.days} jours" +
+                if (stats.activeDays < stats.days) ", dont ${stats.activeDays} actifs" else "",
             color = Palette.TextSecondary,
             fontSize = 13.sp,
         )
+        if (stats.toTheMinute) {
+            Text(
+                "Export à la minute près : une réponse dans la même minute compte pour 20 s (en moyenne), pas 0 s.",
+                color = Palette.TextTertiary,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+            )
+        }
         BlockLabel("Nouvelle conversation après")
         OptionChips(Gap.entries, gap, { it.label }, onGap)
     }
 }
 
-// MARK: - The four big numbers
+// MARK: - The six big numbers
 
 @Composable
 internal fun KpiGrid(stats: ChatStats, replies: ReplyStats, key: Any?) {
@@ -366,6 +375,30 @@ internal fun KpiGrid(stats: ChatStats, replies: ReplyStats, key: Any?) {
                 { count(it) },
                 replies.under5min?.let { "${percent(it)} en moins de 5 min" } ?: "—",
                 3,
+                key,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Kpi(
+                "Conversations",
+                replies.conversations.toDouble(),
+                { count(it) },
+                replies.starter?.let { "${it.person.name} en lance le plus" } ?: "—",
+                4,
+                key,
+                modifier = Modifier.weight(1f),
+            )
+            Kpi(
+                "Stickers",
+                if (stats.stickersKnown) stats.stickers.toDouble() else null,
+                { count(it) },
+                if (stats.stickersKnown) {
+                    stats.people.filter { it.stickers > 0 }.maxByOrNull { it.stickers }?.let { "${it.name} en envoie le plus" } ?: "aucun envoyé"
+                } else {
+                    "non distingués dans cet export"
+                },
+                5,
                 key,
                 modifier = Modifier.weight(1f),
             )
@@ -429,7 +462,7 @@ private fun Kpi(
 
 private val PodiumHeights = listOf(110.dp, 150.dp, 80.dp)
 
-/** The three fastest (median, at least 3 answers): 2nd, 1st, 3rd; blocks grow, avatars pop, the crown drops. */
+/** The three fastest (average, at least 3 answers): 2nd, 1st, 3rd; blocks grow, avatars pop, the crown drops. */
 @Composable
 internal fun Podium(replies: ReplyStats, key: Any?) {
     val top = replies.podium
@@ -488,7 +521,7 @@ internal fun Podium(replies: ReplyStats, key: Any?) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(duration(row.median), color = Palette.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(duration(row.average), color = Palette.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
                 val grow = rememberGrow(1f, delays[i], durationMs = 900)
                 val blockShape = if (skin == Skin.TERMINAL) RoundedCornerShape(2.dp) else RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
@@ -526,11 +559,11 @@ internal fun Podium(replies: ReplyStats, key: Any?) {
 
 // MARK: - Race
 
-/** Everyone's median answer time as a bar (short = fast), the average below. */
+/** Everyone's average answer time as a bar (short = fast), the median and slowest answer below. */
 @Composable
 internal fun Race(replies: ReplyStats, key: Any?) {
     val rows = replies.rows.take(10)
-    val maxMedian = rows.mapNotNull { it.median }.maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
+    val maxAverage = rows.mapNotNull { it.average }.maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         rows.forEachIndexed { i, r ->
             val color = personColor(r.person.colorIndex)
@@ -549,14 +582,14 @@ internal fun Race(replies: ReplyStats, key: Any?) {
                         modifier = Modifier.weight(1f),
                     )
                     Column(horizontalAlignment = Alignment.End) {
-                        Text(duration(r.median), color = Palette.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        Text("moy. ${duration(r.average)}", color = Palette.TextTertiary, fontSize = 11.sp)
+                        Text(duration(r.average), color = Palette.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("médiane ${duration(r.median)}", color = Palette.TextTertiary, fontSize = 11.sp)
                     }
                 }
-                val fraction = r.median?.let { max(0.02, it / maxMedian).toFloat() } ?: 0f
+                val fraction = r.average?.let { max(0.02, it / maxAverage).toFloat() } ?: 0f
                 StatBar(fraction, color, Modifier.padding(start = 22.dp), delayMs = 250 + i * 70)
                 Text(
-                    "${count(r.count)} réponses · ${percent(r.under5min)} en < 5 min · record ${duration(r.fastest)}",
+                    "${count(r.count)} réponses · ${percent(r.under5min)} en < 5 min · plus lente ${duration(r.slowest)}",
                     color = Palette.TextTertiary,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(start = 22.dp),
@@ -705,7 +738,7 @@ internal fun Histogram(replies: ReplyStats) {
 
 /** One bar of a column chart, [fraction] of the height; Classic: the accent gradient. */
 @Composable
-private fun ColumnBar(fraction: Float, color: Color?, skin: Skin, dim: Boolean = false) {
+internal fun ColumnBar(fraction: Float, color: Color?, skin: Skin, dim: Boolean = false) {
     val accent = LocalAccent.current
     val shape = when (skin) {
         Skin.CLASSIC -> RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 3.dp, bottomEnd = 3.dp)
