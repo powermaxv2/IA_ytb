@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.runtime.Composable
@@ -8,6 +9,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 
@@ -42,6 +44,9 @@ object ToolRegistry {
     /** File preview (images, PDF, text, ZIP contents, media info). Also "Partager → Aperçu avec Gulp" / "Ouvrir avec". */
     const val PREVIEW = "preview"
 
+    /** "Vu, répondu": who answers fastest in a WhatsApp discussion export. Also "Partager → Analyser avec Gulp". */
+    const val CHAT_STATS = "chat-stats"
+
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
         name = "Outil n°$slot",
@@ -73,7 +78,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Preview,
             screen = { vm -> PreviewTool(vm) },
         ),
-        comingSoon(4),
+        GulpTool(
+            id = CHAT_STATS,
+            name = "Vu, répondu",
+            tagline = "Qui répond le plus vite dans un groupe WhatsApp ? Temps de réponse, podium, messages et refrains.",
+            tags = listOf("WhatsApp", "Temps de réponse", "Partager → Gulp"),
+            icon = Icons.Rounded.DoneAll,
+            screen = { vm -> ChatStatsTool(vm) },
+        ),
+        comingSoon(5),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

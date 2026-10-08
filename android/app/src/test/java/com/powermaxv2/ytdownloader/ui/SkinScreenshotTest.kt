@@ -80,11 +80,11 @@ class SkinScreenshotTest {
     @Test fun terminalHome() = home(Skin.TERMINAL, "terminal")
 
     // Tall screen: the whole home screen, downloader included, in one picture.
-    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h1900dp-xxhdpi")
     @Test fun classicHomeFileTools() = homeFileTools(Skin.CLASSIC, "classic")
-    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h1900dp-xxhdpi")
     @Test fun paperHomeFileTools() = homeFileTools(Skin.PAPER, "paper")
-    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h1900dp-xxhdpi")
     @Test fun terminalHomeFileTools() = homeFileTools(Skin.TERMINAL, "terminal")
 
     @Test fun classicToolScaffold() = toolScaffold(Skin.CLASSIC, "classic")

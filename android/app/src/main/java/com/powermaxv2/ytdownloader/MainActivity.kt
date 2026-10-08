@@ -70,10 +70,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        // A file shared to "Convertir avec Gulp" / "Aperçu avec Gulp" or opened with Gulp: the alias says which tool.
+        // A file shared to "Convertir avec Gulp" / "Aperçu avec Gulp" / "Analyser avec Gulp" or opened with Gulp: the
+        // alias says which tool.
         val fileTool = when (intent?.component?.className) {
             CONVERT_ENTRY -> ToolRegistry.CONVERTER
             PREVIEW_ENTRY -> ToolRegistry.PREVIEW
+            CHAT_ENTRY -> ToolRegistry.CHAT_STATS
             else -> null
         }
         if (fileTool != null) {
@@ -112,5 +114,8 @@ class MainActivity : ComponentActivity() {
 
         /** Exported activity-alias "Aperçu avec Gulp" (SEND of any file, VIEW of a content:// file). */
         const val PREVIEW_ENTRY = "com.powermaxv2.ytdownloader.PreviewEntry"
+
+        /** Exported activity-alias "Analyser avec Gulp" (SEND of a WhatsApp export: .txt or .zip). */
+        const val CHAT_ENTRY = "com.powermaxv2.ytdownloader.ChatEntry"
     }
 }

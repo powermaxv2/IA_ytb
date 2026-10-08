@@ -79,6 +79,22 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- "Exporter la discussion → Analyser avec Gulp" from WhatsApp: the .txt (or .zip) of a discussion, opened in
+             "Vu, répondu" (MainActivity reads EXTRA_STREAM, content:// only). -->
+        <activity-alias
+            android:name=".ChatEntry"
+            android:exported="true"
+            android:label="@string/chat_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter android:label="@string/chat_label">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Entry of the "Mise à jour disponible" notification: not exported, so other apps cannot start an update. -->
         <activity-alias
             android:name=".UpdateEntry"

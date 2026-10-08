@@ -7,8 +7,8 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 
 - **Gulp est une boîte à outils** (depuis 1.8.0) : au lancement, la page d'accueil liste les outils, dans les trois
   interfaces. Le premier est le **Téléchargeur vidéo** décrit ci-dessous ; depuis 1.9.0 s'y ajoutent le
-  **Convertisseur** et l'**Aperçu** (section « Convertisseur et Aperçu ») ; les cartes « À venir » réservent la
-  place des suivants. Le logo en haut d'un outil (ou le bouton retour) ramène à l'accueil.
+  **Convertisseur** et l'**Aperçu** (section « Convertisseur et Aperçu »), depuis 1.10.0 **Vu, répondu** (section
+  du même nom) ; les cartes « À venir » réservent la place des suivants. Le logo en haut d'un outil (ou le bouton retour) ramène à l'accueil.
 - Trois onglets séparés, **YouTube**, **Instagram** et **Autres**, chacun avec son champ de lien (un lien collé
   dans le mauvais onglet est ouvert dans le bon) ; les **Réglages** s'ouvrent avec la roue crantée en haut à droite
   de chaque écran
@@ -27,6 +27,20 @@ Version Android (APK) de YT Downloader : télécharge depuis **YouTube**, **Inst
 - **Trois interfaces au choix** dans **Réglages › Interface**, appliquées tout de suite : **Classique** (sombre, accent
   par onglet), **Papier** (clair, typographie magazine) et **Terminal** (console vert fluo). Polices embarquées sous
   licence libre OFL : Bricolage Grotesque, JetBrains Mono et Archivo Black
+
+## Vu, répondu (depuis 1.10.0)
+
+Analyse d'une discussion **WhatsApp** exportée : qui répond le plus vite ? Dans WhatsApp, discussion ›
+**Exporter la discussion › Sans médias**, puis **Partager → Analyser avec Gulp** (ou choisir le `.txt` / `.zip`
+enregistré depuis l'outil). L'outil affiche le temps de réponse moyen et médian, le podium des plus rapides (temps
+médian, 3 réponses au moins), la course des temps de réponse de chacun, les messages par personne (anneau), la
+répartition des délais, les heures d'activité, les messages les plus répétés et les emojis favoris. Une réponse est
+un message envoyé juste après celui de quelqu'un d'autre ; le réglage « Nouvelle conversation après » (1 h à 24 h,
+ou jamais, 6 h par défaut) écarte les réponses trop tardives.
+
+Formats lus : exports Android et iPhone, dates J/M/A, M/J/A ou A/M/J, heures sur 24 h ou AM/PM. Tout est calculé sur
+le téléphone, rien n'est envoyé ni enregistré ; un `.zip` est lu en mémoire (40 Mo de texte au plus), jamais extrait.
+C'est l'app « Vu, répondu » de Maxime, refaite en natif dans Gulp avec les mêmes calculs.
 
 ## Convertisseur et Aperçu (depuis 1.9.0)
 
