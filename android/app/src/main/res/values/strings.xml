@@ -5,6 +5,7 @@
     <string name="convert_label">Convertir avec Gulp</string>
     <string name="preview_label">Aperçu avec Gulp</string>
     <string name="chat_label">Analyser avec Gulp</string>
+    <string name="compress_label">Compresser avec Gulp</string>
     <string name="channel_progress">Téléchargements en cours</string>
     <string name="channel_done">Téléchargements terminés</string>
     <string name="channel_updates">Mises à jour de l\'app</string>

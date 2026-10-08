@@ -96,6 +96,23 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- "Partager → Compresser avec Gulp": a photo, video, sound or PDF, opened in the Compresseur (MainActivity
+             reads EXTRA_STREAM, content:// only). Media and PDF types only: never text/plain (see ChatEntry). -->
+        <activity-alias
+            android:name=".CompressEntry"
+            android:exported="true"
+            android:label="@string/compress_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter android:label="@string/compress_label">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Entry of the "Mise à jour disponible" notification: not exported, so other apps cannot start an update. -->
         <activity-alias
             android:name=".UpdateEntry"

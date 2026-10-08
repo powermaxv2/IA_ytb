@@ -8,6 +8,7 @@ import com.powermaxv2.ytdownloader.core.Instagram
 import com.powermaxv2.ytdownloader.core.Notifications
 import com.powermaxv2.ytdownloader.core.Prefs
 import com.powermaxv2.ytdownloader.core.UpdateCheckJob
+import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +29,9 @@ class App : Application() {
 
     /** The Convertisseur's state: lives as long as the app, so a conversion survives leaving its screen. */
     val converter: ConverterController by lazy { ConverterController(this, scope, engine) }
+
+    /** The Compresseur's state, kept the same way (a compression survives leaving its screen). */
+    val compressor: CompressorController by lazy { CompressorController(this, scope, engine) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile

@@ -16,12 +16,16 @@ class ToolRegistryTest {
 
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
-        assertEquals(listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS), ids.take(4))
+        assertEquals(
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR),
+            ids.take(5),
+        )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
         assertEquals("preview", ToolRegistry.PREVIEW)
         assertEquals("chat-stats", ToolRegistry.CHAT_STATS)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS).forEach { id ->
+        assertEquals("compressor", ToolRegistry.COMPRESSOR)
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -33,11 +37,12 @@ class ToolRegistryTest {
         assertEquals("Convertisseur", ToolRegistry.find(ToolRegistry.CONVERTER)?.name)
         assertEquals("Aperçu", ToolRegistry.find(ToolRegistry.PREVIEW)?.name)
         assertEquals("Vu, répondu", ToolRegistry.find(ToolRegistry.CHAT_STATS)?.name)
+        assertEquals("Compresseur", ToolRegistry.find(ToolRegistry.COMPRESSOR)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-5"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(4, ToolRegistry.available.size)
+        assertEquals(listOf("soon-6"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(5, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -73,7 +78,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-5").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-6").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
