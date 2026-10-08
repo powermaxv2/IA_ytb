@@ -23,12 +23,18 @@ import com.powermaxv2.ytdownloader.ui.hub.GulpTool
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicComingSoon
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicHomeHeader
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicToolCard
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicToolBubble
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicHomeSection
 import com.powermaxv2.ytdownloader.ui.skin.paper.PaperComingSoon
 import com.powermaxv2.ytdownloader.ui.skin.paper.PaperHomeHeader
 import com.powermaxv2.ytdownloader.ui.skin.paper.PaperToolCard
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperToolBubble
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperHomeSection
 import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalComingSoon
 import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalHomeHeader
 import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalToolCard
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalToolBubble
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalHomeSection
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicBackground
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicBottomBar
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicGuide
@@ -176,6 +182,26 @@ fun SkinToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
         Skin.CLASSIC -> ClassicToolCard(tool, index, onOpen)
         Skin.PAPER -> PaperToolCard(tool, index, onOpen)
         Skin.TERMINAL -> TerminalToolCard(tool, index, onOpen)
+    }
+}
+
+/** Small card of a tool that is out (half the width of [SkinToolCard]); [order] staggers its entrance. */
+@Composable
+fun SkinToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicToolBubble(tool, order, modifier, onOpen)
+        Skin.PAPER -> PaperToolBubble(tool, index, order, modifier, onOpen)
+        Skin.TERMINAL -> TerminalToolBubble(tool, index, order, modifier, onOpen)
+    }
+}
+
+/** Title of a group of the home screen ("Dernier utilisé", "Tes autres outils"). */
+@Composable
+fun SkinHomeSection(title: String, order: Int) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicHomeSection(title, order)
+        Skin.PAPER -> PaperHomeSection(title, order)
+        Skin.TERMINAL -> TerminalHomeSection(title, order)
     }
 }
 

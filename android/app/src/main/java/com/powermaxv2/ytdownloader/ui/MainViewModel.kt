@@ -94,6 +94,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var toolId by mutableStateOf(ToolRegistry.DOWNLOADER)
         private set
 
+    /** Last tool opened, remembered across launches: the home screen shows it big ([ToolRegistry.featured]). */
+    var lastToolId by mutableStateOf(prefs.lastToolId)
+        private set
+
     var tab by mutableStateOf(Tab.YOUTUBE)
         private set
 
@@ -138,6 +142,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (ToolRegistry.find(id) == null) return
         toolId = id
         place = Place.TOOL
+        if (lastToolId != id) {
+            lastToolId = id
+            prefs.lastToolId = id
+        }
     }
 
     fun goHome() {

@@ -85,6 +85,11 @@ class Prefs(context: Context) {
         get() = sp.getLong("lastAppUpdateCheck", 0)
         set(value) = sp.edit().putLong("lastAppUpdateCheck", value).apply()
 
+    /** Id of the last tool opened (shown big on the home screen); null until a tool has been used. */
+    var lastToolId: String?
+        get() = sp.getString("lastToolId", null)
+        set(value) = sp.edit().putString("lastToolId", value).apply()
+
     /** Last version announced by a notification, so that each version is announced once. */
     var notifiedAppVersion: String?
         get() = sp.getString("notifiedAppVersion", null)

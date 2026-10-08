@@ -281,3 +281,79 @@ private fun TerminalSoonLine(tool: GulpTool, number: Int) {
         Text("EN COMPIL.", color = Palette.TextTertiary, fontSize = 11.sp, letterSpacing = 1.sp, modifier = Modifier.blinking(1400))
     }
 }
+
+/** Group title of the home screen, typed like a log line ("> DERNIER UTILISÉ"). */
+@Composable
+fun TerminalHomeSection(title: String, order: Int) {
+    TermLabel(
+        "> " + title.uppercase(),
+        modifier = Modifier
+            .padding(top = 4.dp)
+            .staggeredEntrance(order, baseDelay = 300),
+    )
+}
+
+/**
+ * Small cell of a tool (half a card): its number and phosphor symbol, the name, and "> ouvrir" with a blinking
+ * caret. A tap inverts the cell for a flash (via the press bounce) and opens the tool.
+ */
+@Composable
+fun TerminalToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+    val accent = LocalAccent.current.start
+    val shape = RoundedCornerShape(LocalTokens.current.cardRadius)
+    val line = slug(tool.name)
+    val typed by rememberTyped(line, key = tool.id, charMs = 30, delayMs = 500L + order * 120L)
+    Column(
+        modifier
+            .staggeredEntrance(order, baseDelay = 300)
+            .bounceClick(pressedScale = 0.94f, onClick = onOpen)
+            .clip(shape)
+            .background(Palette.Surface)
+            .border(1.dp, accent.copy(alpha = 0.55f), shape)
+            .padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("[${toolNumber(index + 1)}]", color = accent, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier
+                    .bob(order, amplitude = 2.dp)
+                    .size(34.dp)
+                    .termPanel(),
+                contentAlignment = Alignment.Center,
+            ) {
+                val icon = tool.icon
+                val platform = tool.platforms.firstOrNull()
+                when {
+                    tool.platforms.isEmpty() && icon != null -> Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(19.dp))
+                    platform != null -> PlatformGlyph(platform, Modifier.size(18.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            tool.name.uppercase(),
+            color = Palette.TextPrimary,
+            // The wide display face cuts a long word ("CONVERTISSEUR") in two at 16 sp in half a screen.
+            fontSize = if (tool.name.split(' ').maxOf { it.length } > 11) 13.sp else 16.sp,
+            lineHeight = 20.sp,
+            fontFamily = LocalTokens.current.display,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text("./" + line.take(typed), color = Palette.TextTertiary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("> OUVRIR", color = accent, fontSize = 12.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(3.dp))
+            Box(
+                Modifier
+                    .size(width = 7.dp, height = 13.dp)
+                    .blinking()
+                    .background(accent),
+            )
+        }
+    }
+}

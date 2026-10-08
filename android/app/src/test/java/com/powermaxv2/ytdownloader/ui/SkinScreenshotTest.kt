@@ -79,13 +79,13 @@ class SkinScreenshotTest {
     @Test fun paperHome() = home(Skin.PAPER, "paper")
     @Test fun terminalHome() = home(Skin.TERMINAL, "terminal")
 
-    // Tall screen: the whole home screen, downloader included, in one picture.
-    @Config(qualifiers = "w411dp-h1900dp-xxhdpi")
-    @Test fun classicHomeFileTools() = homeFileTools(Skin.CLASSIC, "classic")
-    @Config(qualifiers = "w411dp-h1900dp-xxhdpi")
-    @Test fun paperHomeFileTools() = homeFileTools(Skin.PAPER, "paper")
-    @Config(qualifiers = "w411dp-h1900dp-xxhdpi")
-    @Test fun terminalHomeFileTools() = homeFileTools(Skin.TERMINAL, "terminal")
+    // Taller screen: the whole home screen, "À venir" included, in one picture.
+    @Config(qualifiers = "w411dp-h1300dp-xxhdpi")
+    @Test fun classicHomeLastUsed() = homeLastUsed(Skin.CLASSIC, "classic")
+    @Config(qualifiers = "w411dp-h1300dp-xxhdpi")
+    @Test fun paperHomeLastUsed() = homeLastUsed(Skin.PAPER, "paper")
+    @Config(qualifiers = "w411dp-h1300dp-xxhdpi")
+    @Test fun terminalHomeLastUsed() = homeLastUsed(Skin.TERMINAL, "terminal")
 
     @Test fun classicToolScaffold() = toolScaffold(Skin.CLASSIC, "classic")
     @Test fun paperToolScaffold() = toolScaffold(Skin.PAPER, "paper")
@@ -155,7 +155,7 @@ class SkinScreenshotTest {
         capture("${name}_youtube_video")
     }
 
-    /** Home screen of the hub with the real list of tools (the downloader + the "À venir" ones). */
+    /** Home screen at the first launch: nothing used yet, so the downloader is the big card. */
     private fun home(skin: Skin, name: String) {
         composeRule.setContent {
             AppTheme(Platform.YOUTUBE, skin) {
@@ -163,6 +163,7 @@ class SkinScreenshotTest {
                     SkinBackground()
                     HomeContent(
                         tools = ToolRegistry.tools,
+                        lastUsedId = null,
                         onOpen = {},
                         onSettings = {},
                         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
@@ -173,14 +174,15 @@ class SkinScreenshotTest {
         capture("${name}_home")
     }
 
-    /** The whole home screen (every tool, then the "À venir" card), on a screen tall enough to hold it. */
-    private fun homeFileTools(skin: Skin, name: String) {
+    /** Home screen once "Vu, répondu" was the last tool used: it is the big card, the downloader a bubble. */
+    private fun homeLastUsed(skin: Skin, name: String) {
         composeRule.setContent {
             AppTheme(Platform.YOUTUBE, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     HomeContent(
                         tools = ToolRegistry.tools,
+                        lastUsedId = ToolRegistry.CHAT_STATS,
                         onOpen = {},
                         onSettings = {},
                         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
@@ -188,7 +190,7 @@ class SkinScreenshotTest {
                 }
             }
         }
-        capture("${name}_home_file_tools")
+        capture("${name}_home_last_used")
     }
 
     /** Shared frame of the file tools: top bar and the "Choisir un fichier" drop zone. */
