@@ -188,24 +188,29 @@ internal fun ChatDemo(modifier: Modifier = Modifier) {
     val step = t.toInt() // 0..size: the last step clears the phone
     val skin = LocalSkin.current
     val tokens = LocalTokens.current
-    Column(
+    Box(
         modifier
             .fillMaxWidth()
             .graphicsLayer { rotationZ = if (skin == Skin.CLASSIC) -1.2f else 0f }
             .toolCard()
-            .heightIn(min = 300.dp)
-            .padding(horizontal = 14.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+            .heightIn(min = 320.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         // Speaker slot of the phone.
         Box(
             Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.TopCenter)
                 .size(width = 56.dp, height = 5.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(Palette.Stroke),
         )
-        Spacer(Modifier.weight(1f, fill = false).heightIn(min = 12.dp))
+        Column(
+            Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(top = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+        ) {
         DemoScript.forEachIndexed { i, line ->
             val shown = if (line.typing) step == i else step in i until DemoScript.size
             line.chip?.let { chip ->
@@ -239,6 +244,7 @@ internal fun ChatDemo(modifier: Modifier = Modifier) {
             ) {
                 Bubble(line)
             }
+        }
         }
     }
 }

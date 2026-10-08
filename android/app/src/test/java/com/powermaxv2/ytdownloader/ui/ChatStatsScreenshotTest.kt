@@ -40,11 +40,11 @@ class ChatStatsScreenshotTest {
     @Test fun terminalIdle() = shot(Skin.TERMINAL, "terminal_chat_idle", ChatPhase.Idle)
 
     // Tall screen: every result card in one picture.
-    @Config(qualifiers = "w411dp-h4200dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h3900dp-xxhdpi")
     @Test fun classicResults() = shot(Skin.CLASSIC, "classic_chat_results", ChatExport.sample())
-    @Config(qualifiers = "w411dp-h4200dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h3900dp-xxhdpi")
     @Test fun paperResults() = shot(Skin.PAPER, "paper_chat_results", ChatExport.sample())
-    @Config(qualifiers = "w411dp-h4200dp-xxhdpi")
+    @Config(qualifiers = "w411dp-h3900dp-xxhdpi")
     @Test fun terminalResults() = shot(Skin.TERMINAL, "terminal_chat_results", ChatExport.sample())
 
     @Test fun classicFailed() = shot(Skin.CLASSIC, "classic_chat_failed", ChatPhase.Failed(ChatExport.NOT_WHATSAPP))
@@ -69,7 +69,7 @@ class ChatStatsScreenshotTest {
             }
         }
         // Long enough for the podium crown and every bar; the demo chat is then mid-conversation.
-        composeRule.mainClock.advanceTimeBy(4_200)
+        composeRule.mainClock.advanceTimeBy(7_000)
         composeRule.waitForIdle()
         composeRule.onRoot().captureRoboImage("build/outputs/roborazzi/$name.png")
     }
