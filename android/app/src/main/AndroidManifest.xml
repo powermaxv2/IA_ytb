@@ -119,6 +119,18 @@
             android:exported="false"
             android:targetActivity=".MainActivity" />
 
+        <!-- The Scanner hands the camera app a content:// URI of a new file in Gulp's private work folder, so the photo
+             never lands in the Gallery. Not exported: the camera app only gets the one URI it is granted. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <service
             android:name=".core.DownloadService"
             android:exported="false"
