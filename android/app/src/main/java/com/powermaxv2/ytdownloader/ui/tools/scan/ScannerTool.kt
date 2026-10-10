@@ -589,7 +589,9 @@ private fun PagesStep(state: ScanUiState, actions: ScannerActions) {
             .toolCard()
             .padding(16.dp),
     ) {
-        BlockLabel(if (count > 1) "$count pages · touchez une page pour la retoucher" else "1 page · touchez-la pour la retoucher")
+        BlockLabel(if (count > 1) "$count pages" else "1 page")
+        Spacer(Modifier.height(4.dp))
+        Hint(if (count > 1) "Touchez une page pour la retoucher, ‹ › pour changer l'ordre." else "Touchez la page pour la retoucher.")
         Spacer(Modifier.height(14.dp))
         val cells = state.pages.mapIndexed { i, p -> Cell.Page(p, i + 1) } +
             (if (count < ScanPlan.MAX_PAGES) listOf(Cell.Shoot, Cell.Pick) else emptyList())
