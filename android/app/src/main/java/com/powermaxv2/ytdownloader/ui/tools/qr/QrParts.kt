@@ -312,19 +312,19 @@ private fun DrawScope.corners(left: Float, top: Float, side: Float, arm: Float, 
 
 /** Still scene for the viewfinder (start screen, screenshots): a tilted white card holding a code, slowly swaying. */
 @Composable
-internal fun BoxScope.SampleScene(matrix: QrMatrix?, caption: String) {
+internal fun BoxScope.SampleScene(matrix: QrMatrix?, caption: String, compact: Boolean = false) {
     val transition = rememberInfiniteTransition(label = "sampleScene")
     val sway by transition.animateFloat(-1f, 1f, infiniteRepeatable(tween(3200, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "sway")
     Column(
         Modifier
             .align(Alignment.Center)
-            .padding(bottom = 40.dp)
+            .padding(bottom = if (compact) 76.dp else 40.dp)
             .graphicsLayer {
                 rotationZ = -6f + sway * 1.5f
                 rotationX = 10f
                 translationY = sway * 4.dp.toPx()
             }
-            .width(168.dp)
+            .width(if (compact) 124.dp else 168.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFFEFE9E0))
             .padding(14.dp),

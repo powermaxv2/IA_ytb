@@ -341,7 +341,7 @@ private fun IdleStep(state: QrUiState, actions: QrActions) {
         height = 300.dp,
         onClick = actions.onCamera,
         modifier = Modifier.staggeredEntrance(2, baseDelay = 160),
-    ) { SampleScene(sample, "Wi-Fi invités") }
+    ) { SampleScene(sample, "Wi-Fi invités", compact = true) }
     SideButton("Lire depuis une image", Icons.Rounded.Image, Modifier.fillMaxWidth().staggeredEntrance(3, baseDelay = 160), onClick = actions.onImage)
     HistoryCard(state.history, state.now, actions.onHistory, actions.onClearHistory, index = 4)
     Column(
