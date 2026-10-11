@@ -1,7 +1,9 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DoneAll
@@ -15,6 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
+import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
@@ -22,6 +25,7 @@ import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
@@ -76,6 +80,12 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Vocaux en texte: writes down a voice note (WhatsApp, memo), offline. Also "Partager → Transcrire avec Gulp". */
+    const val VOICE_TEXT = "voice-text"
+
+    /** Nettoyeur WhatsApp: finds WhatsApp's duplicates and big media in its folder, and deletes what the user checks. */
+    const val CLEANER = "whatsapp-cleaner"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -164,7 +174,23 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(11),
+        GulpTool(
+            id = VOICE_TEXT,
+            name = "Vocaux en texte",
+            tagline = "Lis un vocal WhatsApp au lieu de l'écouter : Gulp l'écrit mot à mot, sur le téléphone, sans rien envoyer.",
+            tags = listOf("WhatsApp", "Hors ligne", "Partager → Gulp"),
+            icon = Icons.Rounded.RecordVoiceOver,
+            screen = { vm -> VoiceTool(vm) },
+        ),
+        GulpTool(
+            id = CLEANER,
+            name = "Nettoyeur WhatsApp",
+            tagline = "Trouve les doublons et les gros médias de WhatsApp, et libère de la place en quelques touchers.",
+            tags = listOf("WhatsApp", "Doublons", "Hors ligne"),
+            icon = Icons.Rounded.CleaningServices,
+            screen = { vm -> CleanerTool(vm) },
+        ),
+        comingSoon(13),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
