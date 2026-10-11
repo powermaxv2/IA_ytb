@@ -109,7 +109,9 @@ fun TerminalCategoryChips(
     Row(
         Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
+            .horizontalScroll(rememberScrollState())
+            // Room for the picked chip, which grows a little, so the scroll edge does not cut it.
+            .padding(horizontal = 4.dp, vertical = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TerminalFlag("tout", total, selected == null, order = 0) { onSelect(null) }

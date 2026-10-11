@@ -144,7 +144,8 @@ fun PaperCategoryChips(
         Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(vertical = 4.dp),
+            // Room for the stamped (tilted, bigger) chip, so the scroll edge does not cut it.
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PaperChip("Tout", AllToolsIcon, total, selected == null, order = 0) { onSelect(null) }
