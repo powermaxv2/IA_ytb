@@ -14,6 +14,7 @@ import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
+import com.powermaxv2.ytdownloader.core.sticker.StickerController
 import com.powermaxv2.ytdownloader.core.status.StatusController
 import com.powermaxv2.ytdownloader.core.trim.TrimController
 import com.powermaxv2.ytdownloader.core.voice.VoiceController
@@ -57,6 +58,8 @@ class App : Application() {
     /** The Nettoyeur WhatsApp's scan and selection, kept the same way (a deletion survives leaving its screen). */
     val cleaner: CleanerController by lazy { CleanerController(this, scope) }
 
+    /** The Stickers tool's pictures and work, kept the same way (a pack being made survives leaving its screen). */
+    val stickers: StickerController by lazy { StickerController(this, scope, engine) }
     /** The Statuts tool's state, kept the same way (a copy survives leaving its screen). */
     val statuses: StatusController by lazy { StatusController(this, scope) }
 

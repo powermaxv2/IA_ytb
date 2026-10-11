@@ -24,6 +24,8 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
+import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
@@ -89,6 +91,8 @@ object ToolRegistry {
     /** Nettoyeur WhatsApp: finds WhatsApp's duplicates and big media in its folder, and deletes what the user checks. */
     const val CLEANER = "whatsapp-cleaner"
 
+    /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
+    const val STICKERS = "stickers"
     /** Statuts: keeps the photos and videos of WhatsApp statuses before they vanish (24 h). */
     const val STATUSES = "statuses"
 
@@ -196,6 +200,12 @@ object ToolRegistry {
             screen = { vm -> CleanerTool(vm) },
         ),
         GulpTool(
+            id = STICKERS,
+            name = "Stickers",
+            tagline = "Transforme une photo, une vidéo ou un GIF en stickers WhatsApp et ajoute le pack direct dans WhatsApp.",
+            tags = listOf("WhatsApp", "Photo · Vidéo · GIF", "Fond effacé"),
+            icon = StickerIcon,
+            screen = { vm -> StickerTool(vm) },
             id = STATUSES,
             name = "Statuts",
             tagline = "Garde les photos et vidéos des statuts WhatsApp de tes contacts avant qu'ils disparaissent.",
@@ -203,7 +213,7 @@ object ToolRegistry {
             icon = StatusIcon,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(14),
+        comingSoon(15),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
