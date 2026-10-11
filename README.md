@@ -1,128 +1,139 @@
-# YT Downloader pour macOS
+<p align="center">
+  <img src="docs/readme/gulp-banniere.svg" width="100%" alt="Gulp : le logo avale des vidéos, des sons, des PDF et des photos ; les dix outils défilent en dessous.">
+</p>
 
-Application macOS native (SwiftUI) pour télécharger des vidéos YouTube **avec le son**, dans la qualité de votre choix — de 144p jusqu'au **maximum disponible (4K, 8K, HDR, 60 fps)** — ou seulement l'audio.
+<p align="center">
+  <img src="https://img.shields.io/badge/Android-1.13.0-FF5A48?style=for-the-badge&logo=android&logoColor=white" alt="Android 1.13.0">
+  <img src="https://img.shields.io/badge/outils-10-FF7A45?style=for-the-badge" alt="10 outils">
+  <img src="https://img.shields.io/badge/interfaces-3-7C5CFF?style=for-the-badge" alt="3 interfaces">
+  <img src="https://img.shields.io/badge/licence-GPL--3.0-2A0F0A?style=for-the-badge" alt="Licence GPL-3.0">
+</p>
 
-> **Android** : une version APK (téléchargeur vidéo ; convertisseur et aperçu de fichiers, hors ligne) se trouve dans [`android/`](android/README.md).
-> Elle est indépendante de l'app macOS.
+**Gulp** est une app Android qui rassemble dix petits outils du quotidien dans une seule appli : télécharger une
+vidéo, convertir ou alléger un fichier, scanner un document, couper un passage, nettoyer une photo, assembler des
+PDF, lire un QR code ou mesurer qui répond le plus vite sur WhatsApp. Au départ, c'était **YT Downloader**, un
+simple téléchargeur vidéo ; depuis la version 1.8.0, la page d'accueil est un hub d'outils, et le dernier utilisé
+s'affiche en grand.
 
-## Fonctionnalités
+Hormis le téléchargeur, qui va chercher la vidéo sur son site, les outils travaillent **hors ligne, sur le
+téléphone** : aucun fichier n'est envoyé nulle part, et les originaux ne sont jamais modifiés.
 
-- **Coller / glisser-déposer** un lien → analyse automatique des qualités disponibles
-- **Détection du presse-papiers** : copiez un lien YouTube, revenez dans l'app, un bandeau propose de l'analyser
-- **Playlists** : liste des vidéos avec cases à cocher, qualité commune, téléchargement en file
-- **Choix de la qualité** sous forme de tuiles : résolution, fps, HDR et taille estimée ; la meilleure qualité est marquée **MAX**
-- **Audio + vidéo fusionnés** automatiquement (YouTube sépare les flux au-delà de 720p)
-- Formats vidéo : **MP4**, **MKV**, ou **MP4 QuickTime** (H.264, lecture native sur Mac)
-- **Audio seul** : M4A (AAC), MP3, Opus (flux d'origine) ou FLAC
-- **File d'attente** avec progression, vitesse, temps restant, annulation et nouvelle tentative
-- Miniature, métadonnées, chapitres et sous-titres intégrés (réglables)
-- Notification à la fin d'un téléchargement, badge sur l'icône du Dock, bouton « Afficher dans le Finder »
-- **Cookies du navigateur** (Safari, Chrome, Firefox, Brave, Edge, Arc) pour les vidéos avec limite d'âge
-  ou quand YouTube demande « confirm you're not a bot »
-- Interface sombre moderne, fenêtre sans barre de titre
+## Trois interfaces, les mêmes outils
 
-Au premier lancement, l'app installe elle-même ses composants dans
-`~/Library/Application Support/YTDownloader/bin` :
+<p align="center">
+  <img src="docs/readme/gulp-trois-interfaces.gif" width="820" alt="Les trois interfaces de Gulp côte à côte, qui passent d'un outil à l'autre en même temps.">
+</p>
 
-| Outil | Rôle |
+Dans **Réglages › Interface**, le changement s'applique tout de suite :
+
+| Interface | Style |
 |---|---|
-| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | moteur de téléchargement |
-| FFmpeg / ffprobe 6.1.1 | fusion audio + vidéo, conversion audio (empreinte vérifiée) |
-| [Deno](https://deno.com) | environnement JavaScript requis par yt-dlp pour débloquer toutes les qualités YouTube |
+| **Gulp** | sombre, dégradé rouge orangé |
+| **Papier** | clair, crème et encre, typographie magazine |
+| **Terminal** | console orange phosphore |
 
-Si vous les avez déjà via Homebrew (`/opt/homebrew/bin`), ils sont réutilisés.
+## Les dix outils
 
-## Installation (la plus simple)
+<table>
+<tr>
+<td width="50%" align="center" valign="top">
+<img src="docs/readme/outils/telechargeur-video.gif" width="250" alt="Téléchargeur vidéo"><br>
+<b>01 · Téléchargeur vidéo</b><br>
+<sub>YouTube, Instagram, TikTok, X, Snapchat, Facebook… jusqu'en 4K / 8K / HDR, ou le son seul (M4A, MP3, Opus, FLAC). Playlists, file d'attente, enregistrement dans la Galerie.</sub>
+</td>
+<td width="50%" align="center" valign="top">
+<img src="docs/readme/outils/convertisseur.gif" width="250" alt="Convertisseur"><br>
+<b>02 · Convertisseur</b> <sub>depuis 1.9.0</sub><br>
+<sub>Vidéo (MP4, MKV, WebM, MOV, GIF…), son (MP3, FLAC, WAV…), photo (JPG, PNG, WebP, ou plusieurs photos en un PDF), PDF en images, Markdown en HTML, CSV ⇄ JSON.</sub>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top">
+<img src="docs/readme/outils/apercu.gif" width="250" alt="Aperçu"><br>
+<b>03 · Aperçu</b> <sub>depuis 1.9.0</sub><br>
+<sub>Montre un fichier sans le modifier : photo, vidéo, son avec forme d'onde, PDF, code coloré, CSV, contenu d'un ZIP (listé, jamais extrait), empreinte SHA-256.</sub>
+</td>
+<td align="center" valign="top">
+<img src="docs/readme/outils/vu-repondu.gif" width="250" alt="Vu, répondu"><br>
+<b>04 · Vu, répondu</b> <sub>depuis 1.10.0</sub><br>
+<sub>Une discussion WhatsApp exportée : temps de réponse moyen, podium des plus rapides, fiche par personne, stickers, heures d'activité, messages les plus répétés.</sub>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top">
+<img src="docs/readme/outils/compresseur.gif" width="250" alt="Compresseur"><br>
+<b>05 · Compresseur</b> <sub>depuis 1.11.0</sub><br>
+<sub>Rend une photo, une vidéo, un son ou un PDF plus léger (Léger, Équilibré, Maxi, ou une taille cible : Discord, WhatsApp, e-mail), ou range plusieurs fichiers dans un ZIP.</sub>
+</td>
+<td align="center" valign="top">
+<img src="docs/readme/outils/qr-code.gif" width="250" alt="QR code"><br>
+<b>06 · QR code</b> <sub>depuis 1.12.0</sub><br>
+<sub>Lit un QR code ou un code-barres (appareil photo ou image) et comprend un lien, un Wi-Fi, un contact… Crée aussi le sien, avec le logo Gulp au milieu.</sub>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top">
+<img src="docs/readme/outils/scanner.gif" width="250" alt="Scanner"><br>
+<b>07 · Scanner</b> <sub>depuis 1.12.0</sub><br>
+<sub>Photographie des pages : Gulp trouve la feuille, la recadre, la redresse et la nettoie (Net, Gris, Noir &amp; blanc), puis en fait un seul PDF.</sub>
+</td>
+<td align="center" valign="top">
+<img src="docs/readme/outils/decoupeur.gif" width="250" alt="Découpeur"><br>
+<b>08 · Découpeur</b> <sub>depuis 1.13.0</sub><br>
+<sub>Garde le bon moment d'une vidéo ou d'un son, au dixième de seconde, sans réencodage. Sorties : vidéo, son seul, sonnerie ou GIF.</sub>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top">
+<img src="docs/readme/outils/gomme.gif" width="250" alt="Gomme"><br>
+<b>09 · Gomme</b> <sub>depuis 1.13.0</sub><br>
+<sub>Efface ce que racontent les photos avant de les envoyer : lieu exact, téléphone, auteur, date. L'image n'est pas réencodée, Gulp en garde une copie propre.</sub>
+</td>
+<td align="center" valign="top">
+<img src="docs/readme/outils/assembleur-pdf.gif" width="250" alt="Assembleur PDF"><br>
+<b>10 · Assembleur PDF</b> <sub>depuis 1.13.0</sub><br>
+<sub>Colle plusieurs PDF et photos en un seul PDF ; les pages se tournent, se retirent et se déplacent au doigt. Sait aussi séparer un PDF.</sub>
+</td>
+</tr>
+</table>
 
-Ouvrez **Terminal** (⌘ Espace → tapez « Terminal » → Entrée), collez cette ligne puis appuyez sur Entrée :
+Le détail de chaque outil, ses formats et ses limites est dans [`android/README.md`](android/README.md) ; les
+nouveautés de chaque version dans [`android/release-notes/`](android/release-notes/).
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/powermaxv2/IA_ytb/claude/youtube-downloader-mac-51ojpa/install.sh | bash
-```
+## Partager vers Gulp
 
-Le script télécharge le code, compile l'app **sur votre Mac**, l'installe dans **Applications**, la lance,
-et dépose aussi `YT-Downloader.dmg` dans **Téléchargements** (pour l'installer sur un autre Mac).
+Pas besoin d'ouvrir l'app d'abord : depuis YouTube, la Galerie, WhatsApp ou un gestionnaire de fichiers,
+**Partager** propose **Télécharger avec Gulp**, **Convertir avec Gulp**, **Aperçu avec Gulp**,
+**Compresser avec Gulp** et **Analyser avec Gulp** (pour un export WhatsApp). Gulp ouvre directement le bon outil.
 
-- La première fois, macOS peut ouvrir une fenêtre « Installer les outils de développement » :
-  cliquez **Installer**, attendez la fin, puis **relancez la même commande**.
-- Compilée localement, l'app n'affiche pas d'alerte Gatekeeper.
+## Installer
 
-### Autres options
+Le dépôt est **privé** : rien n'est distribué au public, et l'app n'est proposée nulle part au téléchargement.
 
-- **Compiler à la main** (macOS 13+, Xcode ou Command Line Tools) :
+- **APK** : chaque version publiée (tag `android-vX.Y.Z`) apparaît dans les **Releases** du dépôt, visibles par
+  ceux qui y ont accès. Prendre `YT-Downloader-X.Y.Z-arm64-v8a.apk` (presque tous les téléphones récents) ou
+  `-universal` en cas de doute. Les fichiers gardent l'ancien nom, et le paquet reste `com.powermaxv2.ytdownloader`,
+  pour que les versions déjà installées se mettent à jour par-dessus.
+- **Compiler soi-même** : JDK 17 et SDK Android (API 35) ; Android 7.0 (API 24) au minimum sur le téléphone.
+
   ```bash
-  git clone -b claude/youtube-downloader-mac-51ojpa https://github.com/powermaxv2/IA_ytb.git
-  cd IA_ytb
-  ARCHS=native ./scripts/build_app.sh   # ou sans ARCHS pour un binaire universel (nécessite Xcode)
-  open dist                             # YT-Downloader.dmg + YT Downloader.app
+  cd android
+  ./gradlew assembleRelease
   ```
-- **GitHub Actions** : le workflow « Build macOS app » produit le `.dmg` en artefact
-  (et en Release pour un tag `v*`). L'app téléchargée ainsi n'est pas notarisée :
-  premier lancement par **clic droit → Ouvrir**, ou `xattr -cr "/Applications/YT Downloader.app"`.
 
-## Mises à jour automatiques
+La recherche de mise à jour intégrée à l'app interroge GitHub sans compte : avec un dépôt privé, elle ne voit plus
+les nouvelles versions, qu'il faut installer à la main.
 
-À partir de la version 1.2.0, l'app vérifie GitHub à chaque lancement (désactivable dans les Réglages).
-Quand une nouvelle version est publiée, un bandeau propose **Mettre à jour** : l'app télécharge le code,
-le compile sur votre Mac (1 à 3 minutes), remplace `YT Downloader.app` et redémarre.
-En cas d'échec, l'ancienne version reste en place.
+## Et sur Mac ?
 
-Menu **YT Downloader → Rechercher des mises à jour…** pour vérifier à la main.
+L'app d'origine, **YT Downloader pour macOS** (SwiftUI, version 1.3.1), est toujours dans le dépôt (`Sources/`,
+`Package.swift`). Elle est restée un téléchargeur vidéo, sans les autres outils de Gulp. Installation, réglages et
+sécurité : [`docs/macos.md`](docs/macos.md).
 
-**Publier une nouvelle version** : modifier le code, augmenter le numéro dans `VERSION`,
-ajouter une section en haut de `RELEASE_NOTES.md`, puis pousser sur la branche
-`claude/youtube-downloader-mac-51ojpa`.
+## YouTube : usage personnel
 
-## Sécurité
-
-- **Outils vérifiés** : yt-dlp et Deno sont téléchargés depuis leurs pages GitHub officielles et comparés à
-  l'empreinte SHA-256 publiée avec la même release ; un fichier non conforme est refusé.
-  FFmpeg 6.1.1 (builds evermeet.cx / osxexperts.net, miroir GitHub `eugeneware/ffmpeg-static`) est vérifié
-  contre une empreinte SHA-256 **inscrite dans le code de l'app** : tout fichier modifié est refusé.
-  Un FFmpeg installé via Homebrew est utilisé en priorité s'il existe.
-- **Contrôle d'intégrité** : l'empreinte de chaque outil est enregistrée (`manifest.json`) et recontrôlée à chaque
-  lancement ; un fichier modifié est supprimé, réinstallé, et une alerte s'affiche.
-- **yt-dlp isolé** : `--ignore-config`, `--no-plugin-dirs`, environnement réduit (pas de `PYTHONPATH`, `DYLD_*`…),
-  dossier des outils accessible uniquement à votre compte (`chmod 700`).
-- **Entrées** : seuls les liens `http(s)://` sont acceptés.
-- **App** : signée avec le *hardened runtime* d'Apple (pas d'injection de bibliothèques).
-- **Mises à jour** : code téléchargé en HTTPS pour un commit précis, jamais de retour à une version antérieure.
-  La sécurité repose sur votre compte GitHub : activez la validation en deux étapes (2FA) et ne donnez à personne
-  l'accès en écriture au dépôt.
-
-Réglages → **Sécurité** affiche l'état de chaque outil et permet de relancer la vérification.
-
-## Utilisation
-
-1. Copiez un lien YouTube puis cliquez **Coller** (ou glissez le lien dans la fenêtre).
-2. Choisissez **Vidéo + son** ou **Audio seul**.
-3. Sélectionnez la qualité (la tuile **MAX** est présélectionnée) et le format.
-4. **Télécharger** (⌘↩). Les fichiers arrivent dans `~/Téléchargements` par défaut (modifiable dans les Réglages, ⌘,).
-
-> **Astuce** : au-delà de 1080p, YouTube ne fournit que du VP9 / AV1. QuickTime ne lit pas toujours ces codecs :
-> utilisez [IINA](https://iina.io) ou VLC, ou choisissez le format « MP4 · QuickTime » (H.264, souvent limité à 1080p).
-
-> **En cas d'erreur soudaine** (403, « not a bot »…) : Réglages → **Mettre à jour yt-dlp**.
-
-## Structure
-
-```
-Sources/YTDownloader/
-├── App.swift                 point d'entrée, fenêtre et réglages
-├── Core/
-│   ├── ToolManager.swift     détection / installation de yt-dlp, FFmpeg, Deno
-│   ├── YTDLP.swift           analyse d'une vidéo (yt-dlp -J), messages d'erreur
-│   ├── DownloadManager.swift file d'attente, suivi de progression
-│   ├── Models.swift          formats, qualités, construction des arguments yt-dlp
-│   ├── Shell.swift           exécution de processus (sortie en flux)
-│   └── Prefs.swift           préférences utilisateur
-└── Views/                    interface SwiftUI
-```
-
-## Avertissement
-
-**Projet personnel.** Cette app est développée pour l'usage privé de son auteur. Elle n'est pas distribuée au
-public, et aucune version n'est proposée au téléchargement.
+**Projet personnel.** Gulp est développé pour l'usage privé de son auteur. Le téléchargement depuis YouTube est
+gardé **pour un usage personnel uniquement** : l'app n'est pas distribuée au public.
 
 **Ce logiciel est fourni « tel quel », sans garantie, et n'est ni affilié à YouTube, Google, Meta, X, TikTok,
 Snap ou BeReal, ni approuvé par eux.**
@@ -139,7 +150,25 @@ Snap ou BeReal, ni approuvé par eux.**
 - L'auteur n'encourage aucune violation du droit d'auteur et ne peut être tenu responsable de l'usage qui est fait
   du logiciel.
 
-Données personnelles : voir [PRIVACY.md](PRIVACY.md). Signaler une faille : voir [SECURITY.md](SECURITY.md).
+Données personnelles : [PRIVACY.md](PRIVACY.md). Signaler une faille : [SECURITY.md](SECURITY.md).
+
+## Sous le capot
+
+| | |
+|---|---|
+| App Android | Kotlin, Jetpack Compose, dans [`android/`](android/) |
+| Vidéo et son | yt-dlp, FFmpeg, Python et QuickJS intégrés à l'APK via [youtubedl-android](https://github.com/JunkFood02/youtubedl-android) |
+| PDF | PdfBox-Android (Assembleur), rendu PDF d'Android (Aperçu, Convertisseur) |
+| QR code | ZXing, CameraX |
+| Polices | Bricolage Grotesque, JetBrains Mono, Archivo Black (licence OFL) |
+| Captures | tests Robolectric + Roborazzi, refaites par le CI à chaque push |
+
+Ajouter un outil : une entrée dans `ToolRegistry.tools`
+([`ui/hub/Tools.kt`](android/app/src/main/java/com/powermaxv2/ytdownloader/ui/hub/Tools.kt)) avec son écran
+Compose. Composants tiers et leurs licences : [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Les animations de cette page sont faites à partir des vraies captures de l'app :
+[`docs/readme/fabrication/`](docs/readme/fabrication/).
 
 ## Licence
 
@@ -148,9 +177,3 @@ Copyright (C) 2026 powermaxv2
 Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la
 **GNU General Public License version 3**, ou (à votre choix) toute version ultérieure, telle que publiée par la
 Free Software Foundation. Il est distribué sans aucune garantie. Texte complet : [LICENSE](LICENSE).
-
-La version Android intègre youtubedl-android et FFmpeg, distribués sous GPL-3.0. Les composants tiers et leurs
-licences sont listés dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-YouTube est une marque de Google LLC ; Instagram et Facebook sont des marques de Meta Platforms, Inc. ; les autres
-noms cités appartiennent à leurs propriétaires respectifs.
