@@ -74,11 +74,13 @@ class StyledTextTest {
         assertEquals("🅶🆄🅻🅿", style("Gulp", TextStyleKind.SQUARES_DARK))
     }
 
-    @Test fun accentsAreKeptOnStyledLetters() {
-        val out = style("é", TextStyleKind.SERIF_BOLD)
-        assertEquals("𝐞́", out)
-        // A letter that has no look-alike keeps its accent, glued back.
-        assertEquals("Ⓒ'ⓔⓢⓣ ⓛ'éⓣé".replace("é", "ⓔ́"), style("C'est l'été", TextStyleKind.BUBBLES))
+    @Test fun accentedLettersStayAsTyped() {
+        // A look-alike letter with a glued accent shows the accent beside it on most phones: é stays é.
+        assertEquals("𝐒𝐨𝐢𝐫é𝐞", style("Soirée", TextStyleKind.SERIF_BOLD))
+        assertEquals("Ⓒ'ⓔⓢⓣ ⓛ'éⓣéⓢ", style("C'est l'étés", TextStyleKind.BUBBLES))
+        // Typed apart (e + ◌́), it is composed first and kept whole too.
+        assertEquals("é", style("e\u0301", TextStyleKind.GOTHIC))
+        assertEquals("ｃａｆé", style("café", TextStyleKind.WIDE))
     }
 
     @Test fun emojiAndOtherScriptsStay() {

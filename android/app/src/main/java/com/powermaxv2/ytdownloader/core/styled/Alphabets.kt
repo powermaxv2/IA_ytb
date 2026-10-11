@@ -4,8 +4,9 @@ import java.text.BreakIterator
 import java.text.Normalizer
 
 /**
- * Unicode look-alike alphabets. Accented letters are split first (é = e + ◌́), the letter is swapped and the accent
- * kept, so "Été" still reads "𝐄́𝐭𝐞́". Anything without a look-alike (emoji, punctuation, other scripts) stays as is.
+ * Unicode look-alike alphabets. Only plain letters and digits have look-alikes: an accented letter stays as typed
+ * ("Soirée" → "𝐒𝐨𝐢𝐫é𝐞"), because an accent glued on a look-alike letter lands beside it on most phones. Anything without
+ * a look-alike (emoji, punctuation, other scripts) stays as is.
  */
 internal object Alphabets {
     /** Look-alike of an ASCII letter or digit, or null to keep it. */
@@ -97,21 +98,20 @@ internal object Alphabets {
         "abcdefghijklmnopqrstuvwxyz".zip("ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ").associate { (a, b) -> a to b.toString() },
     )
 
-    /** [input] with every letter and digit [alphabet] knows swapped, accents kept on top. */
+    /** [input] with every letter and digit [alphabet] knows swapped. */
     fun map(input: String, alphabet: Alphabet): String {
-        val split = Normalizer.normalize(input, Normalizer.Form.NFD)
-        val out = buildString {
-            for (c in split) append(alphabet.of(c) ?: c)
+        // Composed first, so "e + ◌́" typed apart is one "é" and stays whole.
+        val text = Normalizer.normalize(input, Normalizer.Form.NFC)
+        return buildString {
+            for (c in text) append(alphabet.of(c) ?: c)
         }
-        // Puts back together what was not swapped (é, ç…); a swapped letter and its accent have no single character.
-        return Normalizer.normalize(out, Normalizer.Form.NFC)
     }
 
     /** Ｆｕｌｌ ｗｉｄｔｈ: every printable ASCII character, and the space, have a wide twin. */
     fun wide(input: String): String {
-        val split = Normalizer.normalize(input, Normalizer.Form.NFD)
-        val out = buildString {
-            for (c in split) {
+        val text = Normalizer.normalize(input, Normalizer.Form.NFC)
+        return buildString {
+            for (c in text) {
                 when (c) {
                     ' ' -> append('　')
                     in '!'..'~' -> append((c.code + 0xFEE0).toChar())
@@ -119,7 +119,6 @@ internal object Alphabets {
                 }
             }
         }
-        return Normalizer.normalize(out, Normalizer.Form.NFC)
     }
 
     private val FLIPPED: Map<Char, String> = buildMap {
