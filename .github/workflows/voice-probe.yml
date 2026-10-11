@@ -1,0 +1,46 @@
+name: Voice probe (temporary)
+on:
+  push:
+    paths: [".github/workflows/voice-probe.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Model hash and layout
+        run: |
+          curl -sSLf -o m.zip https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip
+          ls -l m.zip; sha256sum m.zip
+          unzip -l m.zip
+          curl -sSLI https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip | grep -i -E "content-length|etag|last-modified|location"
+          curl -sSLI https://huggingface.co/alphacep/vosk-model-small-fr/resolve/main/vosk-model-small-fr-0.22.zip | grep -i -E "^HTTP|content-length|location" || true
+      - name: Transcription test
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng ffmpeg >/dev/null
+          pip install -q vosk
+          unzip -q m.zip
+          espeak-ng -v fr -s 150 -w say.wav "Salut, c'est moi. Je t'envoie un vocal pour te dire que je serai en retard ce soir. On se retrouve devant le cinéma vers vingt heures."
+          ffmpeg -loglevel error -y -i say.wav -c:a libopus -b:a 24k say.opus
+          ffmpeg -loglevel error -y -i say.opus -map 0:a:0 -vn -ac 1 -ar 16000 -c:a pcm_s16le out.wav
+          cat > t.py <<'PY'
+          import json, sys, time, wave
+          from vosk import Model, KaldiRecognizer, SetLogLevel
+          SetLogLevel(-1)
+          t=time.time(); m=Model(sys.argv[1]); print("load", time.time()-t)
+          w=wave.open(sys.argv[2]); r=KaldiRecognizer(m, 16000); r.SetWords(True)
+          t=time.time()
+          while True:
+              d=w.readframes(4000)
+              if not d: break
+              if r.AcceptWaveform(d): print("FINAL", r.Result())
+              else: print("PARTIAL", r.PartialResult())
+          print("LAST", r.FinalResult()); print("decode", time.time()-t)
+          PY
+          python3 t.py vosk-model-small-fr-0.22 out.wav
+      - name: Android libraries
+        run: |
+          M=https://repo1.maven.org/maven2
+          curl -sSLf -o v.aar $M/com/alphacephei/vosk-android/0.3.75/vosk-android-0.3.75.aar && unzip -l v.aar
+          curl -sSLf -o j.aar $M/net/java/dev/jna/jna/5.18.1/jna-5.18.1.aar && unzip -l j.aar
+          unzip -p v.aar classes.jar > v.jar && unzip -l v.jar
+          unzip -p v.aar proguard.txt || true; unzip -p j.aar proguard.txt || true
+          curl -sSLf $M/com/alphacephei/vosk-android/0.3.75/vosk-android-0.3.75.module | head -80
