@@ -2,6 +2,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.PictureAsPdf
@@ -20,6 +21,7 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
 // Adding a tool = one entry in ToolRegistry.tools and one composable for its screen.
@@ -64,6 +66,8 @@ object ToolRegistry {
     /** Document scanner: photos of pages, cropped, straightened and cleaned, into one PDF. */
     const val SCANNER = "scanner"
 
+    /** Découpeur: keeps a passage of a video or a sound (video, sound only, ringtone or GIF). */
+    const val TRIMMER = "trimmer"
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
 
@@ -131,6 +135,14 @@ object ToolRegistry {
             screen = { vm -> ScannerTool(vm) },
         ),
         GulpTool(
+            id = TRIMMER,
+            name = "Découpeur",
+            tagline = "Garde juste le bon moment d'une vidéo ou d'un son, ou tires-en le son, une sonnerie ou un GIF.",
+            tags = listOf("Vidéo · Son", "Sonnerie · GIF", "Sans réencodage"),
+            icon = Icons.Rounded.ContentCut,
+            screen = { vm -> TrimTool(vm) },
+        ),
+        GulpTool(
             id = PDF_JOIN,
             name = "Assembleur PDF",
             tagline = "Colle plusieurs PDF et photos en un seul, change l'ordre, tourne ou retire des pages, ou sépare un PDF.",
@@ -138,7 +150,7 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(9),
+        comingSoon(10),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
