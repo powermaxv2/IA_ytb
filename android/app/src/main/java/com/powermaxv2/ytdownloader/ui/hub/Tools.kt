@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -21,6 +22,7 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
@@ -76,6 +78,9 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Découpe statut: a long video cut into parts of 30 s or 1 min, to post one after the other as WhatsApp statuses. */
+    const val STATUS_SPLIT = "status-split"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -164,7 +169,15 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(11),
+        GulpTool(
+            id = STATUS_SPLIT,
+            name = "Découpe statut",
+            tagline = "Coupe une longue vidéo en morceaux d'une minute, prêts à poster à la suite en statut WhatsApp.",
+            tags = listOf("WhatsApp", "30 s · 1 min", "Sans réencodage"),
+            icon = Icons.Rounded.DonutLarge,
+            screen = { vm -> StatusTool(vm) },
+        ),
+        comingSoon(12),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
