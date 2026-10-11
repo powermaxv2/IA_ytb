@@ -12,6 +12,7 @@ import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.scan.ScanController
+import com.powermaxv2.ytdownloader.core.trim.TrimController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +37,9 @@ class App : Application() {
 
     /** The Scanner's pages, kept the same way (they stay when the user leaves the tool; gone at the next launch). */
     val scanner: ScanController by lazy { ScanController(this, scope) }
+
+    /** The Découpeur's state, kept the same way (a cut survives leaving its screen). */
+    val trimmer: TrimController by lazy { TrimController(this, scope, engine) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile
