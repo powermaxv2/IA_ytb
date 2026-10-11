@@ -1,11 +1,11 @@
 package com.powermaxv2.ytdownloader.ui.tools.pdfjoin
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -450,7 +450,7 @@ private fun PageCell(
                 }
             }
             // Retirer: a big × over the page left out.
-            AnimatedVisibility(
+            androidx.compose.animation.AnimatedVisibility(
                 marked,
                 enter = scaleIn(spring(dampingRatio = 0.45f, stiffness = 520f), initialScale = 0.3f) + fadeIn(),
                 exit = scaleOut(targetScale = 0.4f) + fadeOut(),
