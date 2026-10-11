@@ -100,4 +100,38 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.CHAT_STATS, featuredTool(ready, ToolRegistry.CHAT_STATS).id)
         assertEquals(ToolRegistry.PREVIEW, featuredTool(ready, ToolRegistry.PREVIEW).id)
     }
+
+    @Test fun everyToolHasACategory() {
+        ToolRegistry.available.forEach { assertTrue(it.id, ToolCategories.of(it) != ToolCategory.OTHER) }
+        assertEquals(ToolCategory.MEDIA, ToolCategories.of(ToolRegistry.find(ToolRegistry.DOWNLOADER)!!))
+        assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.PDF_JOIN)!!))
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_STATS)!!))
+    }
+
+    @Test fun newToolsAreFiledByTheirWordsElseInAutres() {
+        val whatsapp = GulpTool(id = "new-thing", name = "Machin", tagline = "Range tes discussions WhatsApp.")
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(whatsapp))
+        val stickers = GulpTool(id = "made-up", name = "Stickers", tagline = "Fais des autocollants.")
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(stickers))
+        val unknown = GulpTool(id = "mystery", name = "Boussole", tagline = "Indique le nord.")
+        assertEquals(ToolCategory.OTHER, ToolCategories.of(unknown))
+        assertEquals(listOf(ToolCategory.OTHER), ToolCategories.present(listOf(unknown)))
+    }
+
+    @Test fun searchIgnoresAccentsAndCaseAndMatchesEveryWord() {
+        fun found(q: String) = ToolRegistry.available.filter { ToolCategories.matches(it, q) }.map { it.id }
+        assertTrue(ToolRegistry.DOWNLOADER in found("TELECHARGEUR"))
+        assertTrue(ToolRegistry.DOWNLOADER in found("tiktok"))
+        assertTrue(ToolRegistry.PDF_JOIN in found("pdf"))
+        assertTrue(ToolRegistry.SCANNER in found("pdf"))
+        assertEquals(listOf(ToolRegistry.CHAT_STATS), found("whatsapp réponse"))
+        assertTrue(found("karaoké").isEmpty())
+        assertEquals(ToolRegistry.available.size, found("  ").size)
+    }
+
+    @Test fun resultsWording() {
+        assertEquals("Aucun outil trouvé", resultsText(0))
+        assertEquals("1 outil trouvé", resultsText(1))
+        assertEquals("4 outils trouvés", resultsText(4))
+    }
 }
