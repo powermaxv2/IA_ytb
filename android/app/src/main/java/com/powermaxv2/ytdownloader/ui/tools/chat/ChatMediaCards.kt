@@ -266,7 +266,7 @@ private fun MediaKpi(label: String, seconds: Double?, modifier: Modifier, index:
         CountUpText(
             seconds,
             { duration(it) },
-            TextStyle(fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, fontFamily = LocalTokens.current.display),
+            TextStyle(fontSize = if (skin == Skin.TERMINAL) 14.sp else 17.sp, fontWeight = FontWeight.ExtraBold, fontFamily = LocalTokens.current.display),
             LocalAccent.current.start,
         )
         Text(label, color = Palette.TextTertiary, fontSize = 10.5.sp, lineHeight = 13.sp, maxLines = 2)
@@ -328,12 +328,12 @@ internal fun Weight(stats: ChatStats, media: MediaStats, key: Any?) {
                 }
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (skin == Skin.TERMINAL) 6.dp else 10.dp)) {
             WeightKinds.filter { k -> media.people.any { it.bytes(k.first) > 0 } }.forEach { (_, label, c) ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(c))
                     Spacer(Modifier.width(4.dp))
-                    Text(label.substringAfter(' '), color = Palette.TextTertiary, fontSize = 11.sp)
+                    Text(label.substringAfter(' '), color = Palette.TextTertiary, fontSize = if (skin == Skin.TERMINAL) 9.5.sp else 11.sp, maxLines = 1, softWrap = false)
                 }
             }
         }
