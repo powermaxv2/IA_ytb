@@ -46,7 +46,7 @@ object ToolCategories {
         "status-saver" to ToolCategory.WHATSAPP,
         "status-split" to ToolCategory.WHATSAPP,
         "status-cut" to ToolCategory.WHATSAPP,
-        "voice-text" to ToolCategory.WHATSAPP,
+        ToolRegistry.VOICE_TEXT to ToolCategory.WHATSAPP,
         "voice-to-text" to ToolCategory.WHATSAPP,
         "voice-notes" to ToolCategory.WHATSAPP,
         "whatsapp-cleaner" to ToolCategory.WHATSAPP,
