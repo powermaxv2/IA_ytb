@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files Gulp can hand to another app through its FileProvider: only the tools' private work folders
+     (cacheDir/gulp-work, wiped at every launch). -->
+<paths>
+    <cache-path name="work" path="gulp-work/" />
+</paths>

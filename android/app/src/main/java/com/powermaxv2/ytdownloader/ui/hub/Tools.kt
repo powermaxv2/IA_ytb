@@ -3,6 +3,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -17,6 +18,7 @@ import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
+import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
@@ -58,6 +60,9 @@ object ToolRegistry {
 
     /** QR codes: read one (camera or picture), or create one for a link, a text, a Wi-Fi network or a contact. */
     const val QR_CODE = "qr-code"
+
+    /** Document scanner: photos of pages, cropped, straightened and cleaned, into one PDF. */
+    const val SCANNER = "scanner"
 
     /** Découpeur: keeps a passage of a video or a sound (video, sound only, ringtone or GIF). */
     const val TRIMMER = "trimmer"
@@ -118,6 +123,14 @@ object ToolRegistry {
             screen = { vm -> QrTool(vm) },
         ),
         GulpTool(
+            id = SCANNER,
+            name = "Scanner",
+            tagline = "Photographie des pages, Gulp les recadre, les redresse et les nettoie, puis en fait un seul PDF.",
+            tags = listOf("Photo → PDF", "Recadrage auto", "Hors ligne"),
+            icon = Icons.Rounded.DocumentScanner,
+            screen = { vm -> ScannerTool(vm) },
+        ),
+        GulpTool(
             id = TRIMMER,
             name = "Découpeur",
             tagline = "Garde juste le bon moment d'une vidéo ou d'un son, ou tires-en le son, une sonnerie ou un GIF.",
@@ -125,7 +138,7 @@ object ToolRegistry {
             icon = Icons.Rounded.ContentCut,
             screen = { vm -> TrimTool(vm) },
         ),
-        comingSoon(8),
+        comingSoon(9),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
