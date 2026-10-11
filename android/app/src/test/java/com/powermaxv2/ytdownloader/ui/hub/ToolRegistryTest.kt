@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.WIPER),
-            ids.take(8),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER),
+            ids.take(9),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -27,8 +27,9 @@ class ToolRegistryTest {
         assertEquals("compressor", ToolRegistry.COMPRESSOR)
         assertEquals("qr-code", ToolRegistry.QR_CODE)
         assertEquals("scanner", ToolRegistry.SCANNER)
+        assertEquals("trimmer", ToolRegistry.TRIMMER)
         assertEquals("wiper", ToolRegistry.WIPER)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.WIPER).forEach { id ->
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -43,12 +44,13 @@ class ToolRegistryTest {
         assertEquals("Compresseur", ToolRegistry.find(ToolRegistry.COMPRESSOR)?.name)
         assertEquals("QR code", ToolRegistry.find(ToolRegistry.QR_CODE)?.name)
         assertEquals("Scanner", ToolRegistry.find(ToolRegistry.SCANNER)?.name)
+        assertEquals("Découpeur", ToolRegistry.find(ToolRegistry.TRIMMER)?.name)
         assertEquals("Gomme", ToolRegistry.find(ToolRegistry.WIPER)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-9"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(8, ToolRegistry.available.size)
+        assertEquals(listOf("soon-10"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(9, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
