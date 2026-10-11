@@ -276,7 +276,7 @@ private fun SetupStep(state: StatusUiState, actions: StatusActions) {
         OptionChips(StatusApp.entries, state.app, { it.title }, actions.onApp)
     }
     MainButton(
-        "Autoriser le dossier des statuts",
+        "Autoriser le dossier",
         icon = Icons.Rounded.FolderOpen,
         modifier = Modifier.staggeredEntrance(3, baseDelay = 120),
         onClick = actions.onPickFolder,
