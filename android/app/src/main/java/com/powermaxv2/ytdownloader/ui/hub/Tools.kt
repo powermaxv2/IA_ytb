@@ -5,6 +5,7 @@ import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -16,6 +17,7 @@ import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
+import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
@@ -71,6 +73,9 @@ object ToolRegistry {
 
     /** Gomme: erases what photos tell (place, phone, author, date) into clean copies. */
     const val WIPER = "wiper"
+
+    /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
+    const val PDF_JOIN = "pdf-join"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -151,7 +156,15 @@ object ToolRegistry {
             icon = EraserIcon,
             screen = { vm -> WipeTool(vm) },
         ),
-        comingSoon(10),
+        GulpTool(
+            id = PDF_JOIN,
+            name = "Assembleur PDF",
+            tagline = "Colle plusieurs PDF et photos en un seul, change l'ordre, tourne ou retire des pages, ou sépare un PDF.",
+            tags = listOf("PDF · Photos", "Ordre · Rotation", "Séparer"),
+            icon = Icons.Rounded.PictureAsPdf,
+            screen = { vm -> PdfJoinTool(vm) },
+        ),
+        comingSoon(11),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

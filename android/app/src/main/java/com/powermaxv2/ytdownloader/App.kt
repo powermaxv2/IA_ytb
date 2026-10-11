@@ -11,6 +11,7 @@ import com.powermaxv2.ytdownloader.core.UpdateCheckJob
 import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
+import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.trim.TrimController
 import com.powermaxv2.ytdownloader.core.wipe.WipeController
@@ -41,6 +42,8 @@ class App : Application() {
 
     /** The Découpeur's state, kept the same way (a cut survives leaving its screen). */
     val trimmer: TrimController by lazy { TrimController(this, scope, engine) }
+    /** The Assembleur PDF's pages and work, kept the same way. */
+    val pdfJoin: JoinController by lazy { JoinController(this, scope) }
 
     /** The Gomme's state, kept the same way (a cleaning survives leaving its screen). */
     val wiper: WipeController by lazy { WipeController(this, scope) }

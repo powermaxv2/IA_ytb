@@ -107,6 +107,8 @@ dependencies {
     implementation("androidx.camera:camera-camera2:$cameraX")
     implementation("androidx.camera:camera-lifecycle:$cameraX")
     implementation("androidx.camera:camera-view:$cameraX")
+    // Assembleur PDF: copies PDF pages as they are, text included (Apache-2.0).
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
     // yt-dlp + Python + FFmpeg + QuickJS packaged for Android.
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")

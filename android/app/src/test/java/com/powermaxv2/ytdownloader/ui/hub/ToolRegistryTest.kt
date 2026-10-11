@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER),
-            ids.take(9),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN),
+            ids.take(10),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -29,7 +29,8 @@ class ToolRegistryTest {
         assertEquals("scanner", ToolRegistry.SCANNER)
         assertEquals("trimmer", ToolRegistry.TRIMMER)
         assertEquals("wiper", ToolRegistry.WIPER)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER).forEach { id ->
+        assertEquals("pdf-join", ToolRegistry.PDF_JOIN)
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -46,11 +47,12 @@ class ToolRegistryTest {
         assertEquals("Scanner", ToolRegistry.find(ToolRegistry.SCANNER)?.name)
         assertEquals("Découpeur", ToolRegistry.find(ToolRegistry.TRIMMER)?.name)
         assertEquals("Gomme", ToolRegistry.find(ToolRegistry.WIPER)?.name)
+        assertEquals("Assembleur PDF", ToolRegistry.find(ToolRegistry.PDF_JOIN)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-10"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(9, ToolRegistry.available.size)
+        assertEquals(listOf("soon-11"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(10, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -86,7 +88,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-9").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-11").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
