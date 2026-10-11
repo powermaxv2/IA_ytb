@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -21,6 +22,7 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
@@ -76,6 +78,9 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Texte stylé: a text in WhatsApp's styles (*gras*, _italique_, ~barré~…) and in Unicode fonts, ready to paste. */
+    const val STYLED_TEXT = "styled-text"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -164,7 +169,15 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(11),
+        GulpTool(
+            id = STYLED_TEXT,
+            name = "Texte stylé",
+            tagline = "Écris une fois, colle-le en gras, barré, gothique ou en bulles dans WhatsApp.",
+            tags = listOf("WhatsApp", "24 styles", "Copier · Envoyer"),
+            icon = Icons.Rounded.TextFormat,
+            screen = { vm -> StyledTextTool(vm) },
+        ),
+        comingSoon(12),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
