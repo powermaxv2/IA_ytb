@@ -227,20 +227,18 @@ internal fun StickerStage(
                 )
             }
         }
-        caption?.let {
-            Text(
-                if (skin == Skin.TERMINAL) "> $it" else it,
-                color = if (skin == Skin.PAPER) Palette.TextSecondary else Color.White.copy(alpha = 0.8f),
-                fontSize = 11.5.sp,
-                fontFamily = if (skin == Skin.TERMINAL) FontFamily.Monospace else null,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(if (skin == Skin.PAPER) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.45f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            )
-        }
+    }
+    caption?.let {
+        Text(
+            if (skin == Skin.TERMINAL) "> $it" else it,
+            color = Palette.TextSecondary,
+            fontSize = 12.5.sp,
+            fontFamily = if (skin == Skin.TERMINAL) FontFamily.Monospace else null,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
     }
 }
 

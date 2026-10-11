@@ -56,10 +56,20 @@ object StickerArt {
         val margin = StickerRules.margin(style)
         val inner = RectF(margin.toFloat(), margin.toFloat(), (SIZE - margin).toFloat(), (SIZE - margin).toFloat())
 
-        // The picture inside its shape, on its own layer.
+        // The picture inside its shape, on its own layer: the shape is filled first, then the picture is drawn
+        // only where the shape is (SRC_IN). A DST_IN path would leave everything outside the path untouched.
         val shaped = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(shaped)
         val filter = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+        val path = shapePath(style.shape, inner)
+        if (path != null) {
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.BLACK
+                if (style.shape == StickerShape.STAR || style.shape == StickerShape.HEART) pathEffect = CornerPathEffect(inner.width() * 0.06f)
+            }
+            canvas.drawPath(path, fill)
+            filter.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+        }
         val mirror = style.mirror != (variant == StickerVariant.MIRROR)
         if (mirror) {
             canvas.save()
@@ -67,14 +77,8 @@ object StickerArt {
         }
         canvas.drawBitmap(content, null, inner, filter)
         if (mirror) canvas.restore()
+        filter.xfermode = null
         if (content !== square) content.recycle()
-        shapePath(style.shape, inner)?.let { path ->
-            val mask = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-                if (style.shape == StickerShape.STAR || style.shape == StickerShape.HEART) pathEffect = CornerPathEffect(inner.width() * 0.06f)
-            }
-            canvas.drawPath(path, mask)
-        }
 
         val out = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val result = Canvas(out)
