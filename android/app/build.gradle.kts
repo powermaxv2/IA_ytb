@@ -101,6 +101,12 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     // Markdown → HTML in the Convertisseur (BSD-2-Clause).
     implementation("org.commonmark:commonmark:0.24.0")
+    // QR code tool: reading and writing codes (ZXing, Apache-2.0) and the live camera (CameraX, Apache-2.0).
+    implementation("com.google.zxing:core:3.5.3")
+    val cameraX = "1.4.1"
+    implementation("androidx.camera:camera-camera2:$cameraX")
+    implementation("androidx.camera:camera-lifecycle:$cameraX")
+    implementation("androidx.camera:camera-view:$cameraX")
     // Assembleur PDF: copies PDF pages as they are, text included (Apache-2.0).
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 

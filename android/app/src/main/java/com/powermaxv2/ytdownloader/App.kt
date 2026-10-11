@@ -12,6 +12,7 @@ import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
+import com.powermaxv2.ytdownloader.core.scan.ScanController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +34,9 @@ class App : Application() {
 
     /** The Compresseur's state, kept the same way (a compression survives leaving its screen). */
     val compressor: CompressorController by lazy { CompressorController(this, scope, engine) }
+
+    /** The Scanner's pages, kept the same way (they stay when the user leaves the tool; gone at the next launch). */
+    val scanner: ScanController by lazy { ScanController(this, scope) }
 
     /** The Assembleur PDF's pages and work, kept the same way. */
     val pdfJoin: JoinController by lazy { JoinController(this, scope) }

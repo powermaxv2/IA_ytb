@@ -27,11 +27,22 @@ class JpegPdfWriter(output: OutputStream) : Closeable {
 
     /**
      * Adds a page of [widthPt] × [heightPt] points (1/72 inch) filled by the JPEG [jpeg] of [pixelWidth] ×
-     * [pixelHeight] pixels (RGB baseline, as Bitmap.compress writes it).
+     * [pixelHeight] pixels (RGB baseline, as Bitmap.compress writes it). The picture fills the page, or the
+     * [drawWidth] × [drawHeight] box at [x], [y] (points from the bottom-left corner; the rest stays white).
      */
-    fun addPage(jpeg: ByteArray, pixelWidth: Int, pixelHeight: Int, widthPt: Float, heightPt: Float) {
+    fun addPage(
+        jpeg: ByteArray,
+        pixelWidth: Int,
+        pixelHeight: Int,
+        widthPt: Float,
+        heightPt: Float,
+        x: Float = 0f,
+        y: Float = 0f,
+        drawWidth: Float = widthPt,
+        drawHeight: Float = heightPt,
+    ) {
         check(!finished)
-        require(pixelWidth > 0 && pixelHeight > 0 && widthPt > 0 && heightPt > 0)
+        require(pixelWidth > 0 && pixelHeight > 0 && widthPt > 0 && heightPt > 0 && drawWidth > 0 && drawHeight > 0)
         val image = begin()
         out.write(
             ("<< /Type /XObject /Subtype /Image /Width $pixelWidth /Height $pixelHeight /ColorSpace /DeviceRGB " +
@@ -42,7 +53,7 @@ class JpegPdfWriter(output: OutputStream) : Closeable {
 
         val w = num(widthPt)
         val h = num(heightPt)
-        val content = "q $w 0 0 $h 0 0 cm /Im0 Do Q".latin1()
+        val content = "q ${num(drawWidth)} 0 0 ${num(drawHeight)} ${num(x)} ${num(y)} cm /Im0 Do Q".latin1()
         val contents = begin()
         out.write("<< /Length ${content.size} >>\nstream\n".latin1())
         out.write(content)

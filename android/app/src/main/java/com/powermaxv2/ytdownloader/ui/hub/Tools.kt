@@ -2,9 +2,11 @@ package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -16,6 +18,8 @@ import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
+import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
+import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
 // Adding a tool = one entry in ToolRegistry.tools and one composable for its screen.
@@ -53,6 +57,12 @@ object ToolRegistry {
 
     /** File compressor (photos, videos, sounds, PDF, or several files in one ZIP). Also "Partager → Compresser avec Gulp". */
     const val COMPRESSOR = "compressor"
+
+    /** QR codes: read one (camera or picture), or create one for a link, a text, a Wi-Fi network or a contact. */
+    const val QR_CODE = "qr-code"
+
+    /** Document scanner: photos of pages, cropped, straightened and cleaned, into one PDF. */
+    const val SCANNER = "scanner"
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
@@ -105,6 +115,22 @@ object ToolRegistry {
             screen = { vm -> CompressorTool(vm) },
         ),
         GulpTool(
+            id = QR_CODE,
+            name = "QR code",
+            tagline = "Scanne un QR code ou un code-barres, ou crée le tien : lien, texte, Wi-Fi ou contact.",
+            tags = listOf("Scanner", "Créer", "Wi-Fi · Lien"),
+            icon = Icons.Rounded.QrCodeScanner,
+            screen = { vm -> QrTool(vm) },
+        ),
+        GulpTool(
+            id = SCANNER,
+            name = "Scanner",
+            tagline = "Photographie des pages, Gulp les recadre, les redresse et les nettoie, puis en fait un seul PDF.",
+            tags = listOf("Photo → PDF", "Recadrage auto", "Hors ligne"),
+            icon = Icons.Rounded.DocumentScanner,
+            screen = { vm -> ScannerTool(vm) },
+        ),
+        GulpTool(
             id = PDF_JOIN,
             name = "Assembleur PDF",
             tagline = "Colle plusieurs PDF et photos en un seul, change l'ordre, tourne ou retire des pages, ou sépare un PDF.",
@@ -112,7 +138,7 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(7),
+        comingSoon(9),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
