@@ -14,6 +14,8 @@ import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
+import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
+import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
 // Adding a tool = one entry in ToolRegistry.tools and one composable for its screen.
@@ -51,6 +53,9 @@ object ToolRegistry {
 
     /** File compressor (photos, videos, sounds, PDF, or several files in one ZIP). Also "Partager → Compresser avec Gulp". */
     const val COMPRESSOR = "compressor"
+
+    /** Gomme: erases what photos tell (place, phone, author, date) into clean copies. */
+    const val WIPER = "wiper"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -99,7 +104,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Compress,
             screen = { vm -> CompressorTool(vm) },
         ),
-        comingSoon(6),
+        GulpTool(
+            id = WIPER,
+            name = "Gomme",
+            tagline = "Efface ce que tes photos disent de toi (lieu, téléphone, nom) avant de les envoyer.",
+            tags = listOf("Lieu · Téléphone · Nom", "Hors ligne", "Image intacte"),
+            icon = EraserIcon,
+            screen = { vm -> WipeTool(vm) },
+        ),
+        comingSoon(7),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
