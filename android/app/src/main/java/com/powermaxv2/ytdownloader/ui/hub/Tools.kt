@@ -2,6 +2,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -14,6 +15,7 @@ import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
+import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
 // Adding a tool = one entry in ToolRegistry.tools and one composable for its screen.
@@ -51,6 +53,9 @@ object ToolRegistry {
 
     /** File compressor (photos, videos, sounds, PDF, or several files in one ZIP). Also "Partager → Compresser avec Gulp". */
     const val COMPRESSOR = "compressor"
+
+    /** Découpeur: keeps a passage of a video or a sound (video, sound only, ringtone or GIF). */
+    const val TRIMMER = "trimmer"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -99,7 +104,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Compress,
             screen = { vm -> CompressorTool(vm) },
         ),
-        comingSoon(6),
+        GulpTool(
+            id = TRIMMER,
+            name = "Découpeur",
+            tagline = "Garde juste le bon moment d'une vidéo ou d'un son, ou tires-en le son, une sonnerie ou un GIF.",
+            tags = listOf("Vidéo · Son", "Sonnerie · GIF", "Sans réencodage"),
+            icon = Icons.Rounded.ContentCut,
+            screen = { vm -> TrimTool(vm) },
+        ),
+        comingSoon(7),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

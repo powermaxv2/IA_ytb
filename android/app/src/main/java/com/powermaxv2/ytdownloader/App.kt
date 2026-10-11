@@ -11,6 +11,7 @@ import com.powermaxv2.ytdownloader.core.UpdateCheckJob
 import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
+import com.powermaxv2.ytdownloader.core.trim.TrimController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,6 +33,9 @@ class App : Application() {
 
     /** The Compresseur's state, kept the same way (a compression survives leaving its screen). */
     val compressor: CompressorController by lazy { CompressorController(this, scope, engine) }
+
+    /** The Découpeur's state, kept the same way (a cut survives leaving its screen). */
+    val trimmer: TrimController by lazy { TrimController(this, scope, engine) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile
