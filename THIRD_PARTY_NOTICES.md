@@ -18,6 +18,9 @@ auteurs et leurs licences, comme ces licences le demandent. Les textes complets 
 | Kotlin standard library, kotlinx.coroutines 1.9.0 | | Apache-2.0 | https://github.com/JetBrains/kotlin · https://github.com/Kotlin/kotlinx.coroutines |
 | Coil | 2.7.0 | Apache-2.0 | https://github.com/coil-kt/coil |
 | commonmark-java | 0.24.0 | BSD-2-Clause, texte : [`LICENSES/commonmark-java-BSD-2-Clause.txt`](LICENSES/commonmark-java-BSD-2-Clause.txt) | Copyright (c) 2015, Atlassian Pty Ltd · https://github.com/commonmark/commonmark-java |
+| PdfBox-Android (portage Android d'Apache PDFBox et FontBox), Assembleur PDF | 2.0.27.0 | Apache-2.0. Avis d'Apache PDFBox : « Apache PDFBox, Copyright 2014 The Apache Software Foundation. This product includes software developed at The Apache Software Foundation (http://www.apache.org/). » | https://github.com/TomRoush/PdfBox-Android · https://pdfbox.apache.org |
+| Fichiers inclus dans PdfBox-Android : police Liberation Sans, métriques AFM des 14 polices standard d'Adobe, CMaps d'Adobe | | SIL OFL 1.1 (Liberation Sans) · licence Adobe des fichiers AFM (redistribution libre) · BSD-3-Clause (CMaps Adobe) | https://github.com/liberationfonts · https://github.com/adobe-type-tools/cmap-resources |
+| Bouncy Castle (`bcprov`, `bcpkix`, `bcutil`, dépendances de PdfBox-Android) | 1.72 | Licence Bouncy Castle (type MIT) | https://www.bouncycastle.org/licence.html |
 | Bricolage Grotesque | | SIL OFL 1.1 | Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage) |
 | JetBrains Mono | | SIL OFL 1.1 | Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) |
 | Archivo Black | | SIL OFL 1.1 | Copyright 2017 The Archivo Black Project Authors (https://github.com/Omnibus-Type/ArchivoBlack) |

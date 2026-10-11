@@ -3,6 +3,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
+import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
@@ -51,6 +53,9 @@ object ToolRegistry {
 
     /** File compressor (photos, videos, sounds, PDF, or several files in one ZIP). Also "Partager → Compresser avec Gulp". */
     const val COMPRESSOR = "compressor"
+
+    /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
+    const val PDF_JOIN = "pdf-join"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -99,7 +104,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Compress,
             screen = { vm -> CompressorTool(vm) },
         ),
-        comingSoon(6),
+        GulpTool(
+            id = PDF_JOIN,
+            name = "Assembleur PDF",
+            tagline = "Colle plusieurs PDF et photos en un seul, change l'ordre, tourne ou retire des pages, ou sépare un PDF.",
+            tags = listOf("PDF · Photos", "Ordre · Rotation", "Séparer"),
+            icon = Icons.Rounded.PictureAsPdf,
+            screen = { vm -> PdfJoinTool(vm) },
+        ),
+        comingSoon(7),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

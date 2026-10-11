@@ -11,6 +11,7 @@ import com.powermaxv2.ytdownloader.core.UpdateCheckJob
 import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
+import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,6 +33,9 @@ class App : Application() {
 
     /** The Compresseur's state, kept the same way (a compression survives leaving its screen). */
     val compressor: CompressorController by lazy { CompressorController(this, scope, engine) }
+
+    /** The Assembleur PDF's pages and work, kept the same way. */
+    val pdfJoin: JoinController by lazy { JoinController(this, scope) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile

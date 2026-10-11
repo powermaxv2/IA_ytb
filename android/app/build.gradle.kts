@@ -101,6 +101,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     // Markdown → HTML in the Convertisseur (BSD-2-Clause).
     implementation("org.commonmark:commonmark:0.24.0")
+    // Assembleur PDF: copies PDF pages as they are, text included (Apache-2.0).
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
     // yt-dlp + Python + FFmpeg + QuickJS packaged for Android.
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
