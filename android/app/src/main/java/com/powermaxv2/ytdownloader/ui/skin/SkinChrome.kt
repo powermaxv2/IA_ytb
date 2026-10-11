@@ -20,6 +20,13 @@ import com.powermaxv2.ytdownloader.ui.LinkPane
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Tab
 import com.powermaxv2.ytdownloader.ui.hub.GulpTool
+import com.powermaxv2.ytdownloader.ui.hub.ToolCategory
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicCategoryChips
+import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicSearchBar
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperCategoryChips
+import com.powermaxv2.ytdownloader.ui.skin.paper.PaperSearchBar
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalCategoryChips
+import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalSearchBar
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicComingSoon
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicHomeHeader
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicToolCard
@@ -175,6 +182,32 @@ fun SkinHomeHeader(ready: Int, upcoming: Int, onSettings: () -> Unit) {
     }
 }
 
+/** Search bar of the home screen; the hint cycles through [suggestions] (tool names). */
+@Composable
+fun SkinSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicSearchBar(query, onQueryChange, suggestions)
+        Skin.PAPER -> PaperSearchBar(query, onQueryChange, suggestions)
+        Skin.TERMINAL -> TerminalSearchBar(query, onQueryChange, suggestions)
+    }
+}
+
+/** "Tout" then one chip per category with its count of tools; [selected] null = "Tout". */
+@Composable
+fun SkinCategoryChips(
+    categories: List<ToolCategory>,
+    counts: Map<ToolCategory, Int>,
+    total: Int,
+    selected: ToolCategory?,
+    onSelect: (ToolCategory?) -> Unit,
+) {
+    when (LocalSkin.current) {
+        Skin.CLASSIC -> ClassicCategoryChips(categories, counts, total, selected, onSelect)
+        Skin.PAPER -> PaperCategoryChips(categories, counts, total, selected, onSelect)
+        Skin.TERMINAL -> TerminalCategoryChips(categories, counts, total, selected, onSelect)
+    }
+}
+
 /** Card of a tool that is out ([index] = its place among them); a tap opens it. */
 @Composable
 fun SkinToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
@@ -195,7 +228,7 @@ fun SkinToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = 
     }
 }
 
-/** Title of a group of the home screen ("Dernier utilisé", "Tes autres outils"). */
+/** Title of a group of the home screen ("Dernier utilisé", "Médias", "3 outils trouvés"). */
 @Composable
 fun SkinHomeSection(title: String, order: Int) {
     when (LocalSkin.current) {
