@@ -192,6 +192,7 @@ internal fun TopStickers(stats: ChatStats, media: MediaStats, key: Any?) {
     }
 }
 
+@Composable
 internal fun personColorOf(stats: ChatStats, name: String): Color =
     stats.people.firstOrNull { it.name == name }?.let { personColor(it.colorIndex) } ?: Palette.TextSecondary
 
