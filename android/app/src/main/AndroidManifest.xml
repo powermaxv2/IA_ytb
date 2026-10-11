@@ -120,6 +120,20 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- "Partager → Transcrire avec Gulp": a voice note (WhatsApp .opus, a memo, any sound), opened in Vocaux en
+             texte (MainActivity reads EXTRA_STREAM, content:// only). Sound types only: never text/plain (see ChatEntry). -->
+        <activity-alias
+            android:name=".VoiceEntry"
+            android:exported="true"
+            android:label="@string/voice_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter android:label="@string/voice_label">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Entry of the "Mise à jour disponible" notification: not exported, so other apps cannot start an update. -->
         <activity-alias
             android:name=".UpdateEntry"
