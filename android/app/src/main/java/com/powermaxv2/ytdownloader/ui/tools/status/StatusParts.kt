@@ -90,10 +90,12 @@ internal fun StatusRing(count: Int, modifier: Modifier = Modifier, size: Dp = 16
             val stroke = this.size.minDimension * 0.065f
             val inset = stroke / 2 + 2f
             val arcSize = Size(this.size.width - inset * 2, this.size.height - inset * 2)
-            val gap = if (count == 1) 0f else (if (count > 30) 2f else 5f)
-            val sweep = 360f / count - gap
+            val cap = if (skin == Skin.TERMINAL || count > 12) StrokeCap.Butt else StrokeCap.Round
+            // Round caps stick out of each arc by half the stroke: the gap makes room for them, so the cuts show.
+            val capDegrees = if (cap == StrokeCap.Round) Math.toDegrees((stroke / (arcSize.width / 2)).toDouble()).toFloat() else 0f
+            val gap = if (count == 1) 0f else (if (count > 30) 2f else if (count > 12) 4f else 7f) + capDegrees
+            val sweep = (360f / count - gap).coerceAtLeast(0.5f)
             val base = -90f + (if (active) spin else 0f)
-            val cap = if (skin == Skin.TERMINAL || count > 30) StrokeCap.Butt else StrokeCap.Round
             for (i in 0 until count) {
                 // Each arc grows in turn: the reveal runs over the arcs like a hand drawing the ring.
                 val local = (reveal.value * count - i).coerceIn(0f, 1f)
