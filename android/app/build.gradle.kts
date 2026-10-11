@@ -111,6 +111,8 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraX")
     // Assembleur PDF: copies PDF pages as they are, text included (Apache-2.0).
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    // Vocaux en texte: offline speech recognition (Vosk / Kaldi, Apache-2.0; pulls JNA 5.18.1, Apache-2.0).
+    implementation("com.alphacephei:vosk-android:0.3.75")
 
     // yt-dlp + Python + FFmpeg + QuickJS packaged for Android.
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")

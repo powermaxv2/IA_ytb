@@ -23,6 +23,8 @@ auteurs et leurs licences, comme ces licences le demandent. Les textes complets 
 | PdfBox-Android (portage Android d'Apache PDFBox et FontBox), Assembleur PDF | 2.0.27.0 | Apache-2.0. Avis d'Apache PDFBox : « Apache PDFBox, Copyright 2014 The Apache Software Foundation. This product includes software developed at The Apache Software Foundation (http://www.apache.org/). » | https://github.com/TomRoush/PdfBox-Android · https://pdfbox.apache.org |
 | Fichiers inclus dans PdfBox-Android : police Liberation Sans, métriques AFM des 14 polices standard d'Adobe, CMaps d'Adobe | | SIL OFL 1.1 (Liberation Sans) · licence Adobe des fichiers AFM (redistribution libre) · BSD-3-Clause (CMaps Adobe) | https://github.com/liberationfonts · https://github.com/adobe-type-tools/cmap-resources |
 | Bouncy Castle (`bcprov`, `bcpkix`, `bcutil`, dépendances de PdfBox-Android) | 1.72 | Licence Bouncy Castle (type MIT) | https://www.bouncycastle.org/licence.html |
+| Vosk (`vosk-android`, bibliothèque de reconnaissance vocale basée sur Kaldi), Vocaux en texte | 0.3.75 | Apache-2.0. Copyright Alpha Cephei Inc. Inclut Kaldi (Apache-2.0) et OpenFST (Apache-2.0) | https://github.com/alphacep/vosk-api · https://github.com/kaldi-asr/kaldi |
+| JNA (Java Native Access, dépendance de Vosk) | 5.18.1 | Apache-2.0 (double licence Apache-2.0 / LGPL-2.1, utilisée ici sous Apache-2.0) | https://github.com/java-native-access/jna |
 | Bricolage Grotesque | | SIL OFL 1.1 | Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage) |
 | JetBrains Mono | | SIL OFL 1.1 | Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) |
 | Archivo Black | | SIL OFL 1.1 | Copyright 2017 The Archivo Black Project Authors (https://github.com/Omnibus-Type/ArchivoBlack) |
@@ -34,6 +36,16 @@ Leur code source correspondant est disponible auprès de leurs projets d'origine
 instructions de compilation sont dans le dépôt youtubedl-android (`BUILD_PYTHON.md`, `BUILD_FFMPEG.md`).
 Si vous ne parvenez pas à obtenir le code source correspondant à une version publiée de Gulp, ouvrez une issue
 sur ce dépôt : il vous sera fourni, pendant au moins trois ans après la dernière publication de cette version.
+
+## Téléchargé par l'app Android sur le téléphone
+
+Vocaux en texte télécharge une seule fois, à la première transcription, le modèle de reconnaissance vocale français.
+Il n'est pas inclus dans l'APK. L'app vérifie sa taille et son empreinte SHA-256 avant de l'installer dans ses
+fichiers privés ; il peut être supprimé depuis l'outil.
+
+| Composant | Licence | Source |
+|---|---|---|
+| Modèle Vosk `vosk-model-small-fr-0.22` (42 Mo, français) | Apache-2.0, Copyright Alpha Cephei Inc. | https://alphacephei.com/vosk/models |
 
 ## Téléchargés par l'app macOS sur votre Mac
 

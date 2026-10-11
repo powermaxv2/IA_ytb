@@ -15,3 +15,10 @@
 # PdfBox-Android (Assembleur PDF): its own rules keep the security handlers it loads by reflection. The JPEG 2000
 # decoder is an optional extra library Gulp does not ship.
 -dontwarn com.gemalto.jp2.**
+
+# Vosk (Vocaux en texte): JNA binds org.vosk.LibVosk's native methods and its own classes by name.
+-keep class com.sun.jna.** { *; }
+-keep class * implements com.sun.jna.** { *; }
+-keep class org.vosk.** { *; }
+-dontwarn java.awt.**
+-dontwarn com.sun.jna.**

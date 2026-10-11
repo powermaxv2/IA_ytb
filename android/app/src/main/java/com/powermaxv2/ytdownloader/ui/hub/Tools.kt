@@ -2,6 +2,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DoneAll
@@ -24,6 +25,7 @@ import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
@@ -78,6 +80,9 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Vocaux en texte: writes down a voice note (WhatsApp, memo), offline. Also "Partager → Transcrire avec Gulp". */
+    const val VOICE_TEXT = "voice-text"
 
     /** Statuts: keeps the photos and videos of WhatsApp statuses before they vanish (24 h). */
     const val STATUSES = "statuses"
@@ -170,6 +175,14 @@ object ToolRegistry {
             screen = { vm -> PdfJoinTool(vm) },
         ),
         GulpTool(
+            id = VOICE_TEXT,
+            name = "Vocaux en texte",
+            tagline = "Lis un vocal WhatsApp au lieu de l'écouter : Gulp l'écrit mot à mot, sur le téléphone, sans rien envoyer.",
+            tags = listOf("WhatsApp", "Hors ligne", "Partager → Gulp"),
+            icon = Icons.Rounded.RecordVoiceOver,
+            screen = { vm -> VoiceTool(vm) },
+        ),
+        GulpTool(
             id = STATUSES,
             name = "Statuts",
             tagline = "Garde les photos et vidéos des statuts WhatsApp de tes contacts avant qu'ils disparaissent.",
@@ -177,7 +190,7 @@ object ToolRegistry {
             icon = StatusIcon,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(12),
+        comingSoon(13),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
