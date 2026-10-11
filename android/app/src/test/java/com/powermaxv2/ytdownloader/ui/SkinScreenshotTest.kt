@@ -37,6 +37,7 @@ import com.powermaxv2.ytdownloader.core.VideoFormat
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
 import com.powermaxv2.ytdownloader.ui.hub.HomeContent
+import com.powermaxv2.ytdownloader.ui.hub.ToolCategory
 import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
 import com.powermaxv2.ytdownloader.ui.tools.FileDropZone
 import com.powermaxv2.ytdownloader.ui.tools.ToolScaffold
@@ -86,6 +87,17 @@ class SkinScreenshotTest {
     @Test fun paperHomeLastUsed() = homeLastUsed(Skin.PAPER, "paper")
     @Config(qualifiers = "w411dp-h1300dp-xxhdpi")
     @Test fun terminalHomeLastUsed() = homeLastUsed(Skin.TERMINAL, "terminal")
+
+    // Search and categories of the home screen: typed "pdf", the "Fichiers" chip, and a search with no result.
+    @Test fun classicHomeSearch() = homeFiltered(Skin.CLASSIC, "classic_home_search", query = "pdf")
+    @Test fun paperHomeSearch() = homeFiltered(Skin.PAPER, "paper_home_search", query = "pdf")
+    @Test fun terminalHomeSearch() = homeFiltered(Skin.TERMINAL, "terminal_home_search", query = "pdf")
+    @Test fun classicHomeCategory() = homeFiltered(Skin.CLASSIC, "classic_home_category", category = ToolCategory.FILES)
+    @Test fun paperHomeCategory() = homeFiltered(Skin.PAPER, "paper_home_category", category = ToolCategory.FILES)
+    @Test fun terminalHomeCategory() = homeFiltered(Skin.TERMINAL, "terminal_home_category", category = ToolCategory.FILES)
+    @Test fun classicHomeEmpty() = homeFiltered(Skin.CLASSIC, "classic_home_empty", query = "karaoké")
+    @Test fun paperHomeEmpty() = homeFiltered(Skin.PAPER, "paper_home_empty", query = "karaoké")
+    @Test fun terminalHomeEmpty() = homeFiltered(Skin.TERMINAL, "terminal_home_empty", query = "karaoké")
 
     @Test fun classicToolScaffold() = toolScaffold(Skin.CLASSIC, "classic")
     @Test fun paperToolScaffold() = toolScaffold(Skin.PAPER, "paper")
@@ -191,6 +203,27 @@ class SkinScreenshotTest {
             }
         }
         capture("${name}_home_last_used")
+    }
+
+    /** Home screen with a search typed in and/or a category picked. */
+    private fun homeFiltered(skin: Skin, fileName: String, query: String = "", category: ToolCategory? = null) {
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, skin) {
+                Box(Modifier.fillMaxSize()) {
+                    SkinBackground()
+                    HomeContent(
+                        tools = ToolRegistry.tools,
+                        lastUsedId = null,
+                        onOpen = {},
+                        onSettings = {},
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                        initialQuery = query,
+                        initialCategory = category,
+                    )
+                }
+            }
+        }
+        capture(fileName)
     }
 
     /** Shared frame of the file tools: top bar and the "Choisir un fichier" drop zone. */

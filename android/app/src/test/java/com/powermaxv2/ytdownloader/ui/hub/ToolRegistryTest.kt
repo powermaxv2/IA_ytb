@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.STICKERS),
-            ids.take(11),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS),
+            ids.take(13),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -30,8 +30,10 @@ class ToolRegistryTest {
         assertEquals("trimmer", ToolRegistry.TRIMMER)
         assertEquals("wiper", ToolRegistry.WIPER)
         assertEquals("pdf-join", ToolRegistry.PDF_JOIN)
+        assertEquals("voice-text", ToolRegistry.VOICE_TEXT)
+        assertEquals("whatsapp-cleaner", ToolRegistry.CLEANER)
         assertEquals("stickers", ToolRegistry.STICKERS)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.STICKERS).forEach { id ->
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -49,12 +51,14 @@ class ToolRegistryTest {
         assertEquals("Découpeur", ToolRegistry.find(ToolRegistry.TRIMMER)?.name)
         assertEquals("Gomme", ToolRegistry.find(ToolRegistry.WIPER)?.name)
         assertEquals("Assembleur PDF", ToolRegistry.find(ToolRegistry.PDF_JOIN)?.name)
+        assertEquals("Vocaux en texte", ToolRegistry.find(ToolRegistry.VOICE_TEXT)?.name)
+        assertEquals("Nettoyeur WhatsApp", ToolRegistry.find(ToolRegistry.CLEANER)?.name)
         assertEquals("Stickers", ToolRegistry.find(ToolRegistry.STICKERS)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-12"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(11, ToolRegistry.available.size)
+        assertEquals(listOf("soon-14"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(13, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -90,12 +94,46 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-12").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-14").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
         val ready = ToolRegistry.available
         assertEquals(ToolRegistry.CHAT_STATS, featuredTool(ready, ToolRegistry.CHAT_STATS).id)
         assertEquals(ToolRegistry.PREVIEW, featuredTool(ready, ToolRegistry.PREVIEW).id)
+    }
+
+    @Test fun everyToolHasACategory() {
+        ToolRegistry.available.forEach { assertTrue(it.id, ToolCategories.of(it) != ToolCategory.OTHER) }
+        assertEquals(ToolCategory.MEDIA, ToolCategories.of(ToolRegistry.find(ToolRegistry.DOWNLOADER)!!))
+        assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.PDF_JOIN)!!))
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_STATS)!!))
+    }
+
+    @Test fun newToolsAreFiledByTheirWordsElseInAutres() {
+        val whatsapp = GulpTool(id = "new-thing", name = "Machin", tagline = "Range tes discussions WhatsApp.")
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(whatsapp))
+        val stickers = GulpTool(id = "made-up", name = "Stickers", tagline = "Fais des autocollants.")
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(stickers))
+        val unknown = GulpTool(id = "mystery", name = "Boussole", tagline = "Indique le nord.")
+        assertEquals(ToolCategory.OTHER, ToolCategories.of(unknown))
+        assertEquals(listOf(ToolCategory.OTHER), ToolCategories.present(listOf(unknown)))
+    }
+
+    @Test fun searchIgnoresAccentsAndCaseAndMatchesEveryWord() {
+        fun found(q: String) = ToolRegistry.available.filter { ToolCategories.matches(it, q) }.map { it.id }
+        assertTrue(ToolRegistry.DOWNLOADER in found("TELECHARGEUR"))
+        assertTrue(ToolRegistry.DOWNLOADER in found("tiktok"))
+        assertTrue(ToolRegistry.PDF_JOIN in found("pdf"))
+        assertTrue(ToolRegistry.SCANNER in found("pdf"))
+        assertEquals(listOf(ToolRegistry.CHAT_STATS), found("whatsapp réponse"))
+        assertTrue(found("karaoké").isEmpty())
+        assertEquals(ToolRegistry.available.size, found("  ").size)
+    }
+
+    @Test fun resultsWording() {
+        assertEquals("Aucun outil trouvé", resultsText(0))
+        assertEquals("1 outil trouvé", resultsText(1))
+        assertEquals("4 outils trouvés", resultsText(4))
     }
 }
