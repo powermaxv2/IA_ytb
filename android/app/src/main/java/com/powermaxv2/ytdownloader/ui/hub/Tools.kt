@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
+import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
@@ -83,6 +85,9 @@ object ToolRegistry {
 
     /** Vocaux en texte: writes down a voice note (WhatsApp, memo), offline. Also "Partager → Transcrire avec Gulp". */
     const val VOICE_TEXT = "voice-text"
+
+    /** Nettoyeur WhatsApp: finds WhatsApp's duplicates and big media in its folder, and deletes what the user checks. */
+    const val CLEANER = "whatsapp-cleaner"
 
     /** Découpe statut: a long video cut into parts of 30 s or 1 min, to post one after the other as WhatsApp statuses. */
     const val STATUS_SPLIT = "status-split"
@@ -183,6 +188,14 @@ object ToolRegistry {
             screen = { vm -> VoiceTool(vm) },
         ),
         GulpTool(
+            id = CLEANER,
+            name = "Nettoyeur WhatsApp",
+            tagline = "Trouve les doublons et les gros médias de WhatsApp, et libère de la place en quelques touchers.",
+            tags = listOf("WhatsApp", "Doublons", "Hors ligne"),
+            icon = Icons.Rounded.CleaningServices,
+            screen = { vm -> CleanerTool(vm) },
+        ),
+        GulpTool(
             id = STATUS_SPLIT,
             name = "Découpe statut",
             tagline = "Coupe une longue vidéo en morceaux d'une minute, prêts à poster à la suite en statut WhatsApp.",
@@ -190,7 +203,7 @@ object ToolRegistry {
             icon = Icons.Rounded.DonutLarge,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(13),
+        comingSoon(14),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
