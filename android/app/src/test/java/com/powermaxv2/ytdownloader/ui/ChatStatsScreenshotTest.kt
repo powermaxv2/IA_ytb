@@ -12,7 +12,7 @@ import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.core.Skin
 import com.powermaxv2.ytdownloader.core.chat.ChatExport
 import com.powermaxv2.ytdownloader.core.chat.ChatPhase
-import com.powermaxv2.ytdownloader.core.chat.Gap
+import com.powermaxv2.ytdownloader.core.chat.ReplyOptions
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
 import com.powermaxv2.ytdownloader.ui.tools.ToolScaffold
 import com.powermaxv2.ytdownloader.ui.tools.chat.CHAT_COMMAND
@@ -40,18 +40,21 @@ class ChatStatsScreenshotTest {
     @Test fun terminalIdle() = shot(Skin.TERMINAL, "terminal_chat_idle", ChatPhase.Idle)
 
     // Tall screen: every result card in one picture.
-    @Config(qualifiers = "w411dp-h6600dp-xhdpi")
+    @Config(qualifiers = "w411dp-h12000dp-hdpi")
     @Test fun classicResults() = shot(Skin.CLASSIC, "classic_chat_results", ChatExport.sample())
-    @Config(qualifiers = "w411dp-h6600dp-xhdpi")
+    @Config(qualifiers = "w411dp-h12000dp-hdpi")
     @Test fun paperResults() = shot(Skin.PAPER, "paper_chat_results", ChatExport.sample())
-    @Config(qualifiers = "w411dp-h6600dp-xhdpi")
+    @Config(qualifiers = "w411dp-h12000dp-hdpi")
     @Test fun terminalResults() = shot(Skin.TERMINAL, "terminal_chat_results", ChatExport.sample())
+
+    // The precision switches turned on.
+    @Test fun classicOptions() = shot(Skin.CLASSIC, "classic_chat_options", ChatExport.sample(), ReplyOptions(nights = true, realWait = true))
 
     @Test fun classicFailed() = shot(Skin.CLASSIC, "classic_chat_failed", ChatPhase.Failed(ChatExport.NOT_WHATSAPP))
     @Test fun paperFailed() = shot(Skin.PAPER, "paper_chat_failed", ChatPhase.Failed(ChatExport.NOT_WHATSAPP))
     @Test fun terminalFailed() = shot(Skin.TERMINAL, "terminal_chat_failed", ChatPhase.Failed(ChatExport.NOT_WHATSAPP))
 
-    private fun shot(skin: Skin, name: String, phase: ChatPhase) {
+    private fun shot(skin: Skin, name: String, phase: ChatPhase, options: ReplyOptions = ReplyOptions()) {
         composeRule.setContent {
             AppTheme(Platform.YOUTUBE, skin) {
                 Box(Modifier.fillMaxSize()) {
@@ -63,7 +66,7 @@ class ChatStatsScreenshotTest {
                         onHome = {},
                         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
                     ) {
-                        ChatContent(phase, Gap.DEFAULT, ChatActions())
+                        ChatContent(phase, options, ChatActions())
                     }
                 }
             }
