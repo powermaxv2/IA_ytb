@@ -84,7 +84,8 @@ import com.powermaxv2.ytdownloader.ui.tools.convert.SideButton
 import com.powermaxv2.ytdownloader.ui.tools.convert.TerminalProgress
 import com.powermaxv2.ytdownloader.ui.tools.convert.toolCard
 
-const val CLEANER_TITLE = "Nettoyeur WhatsApp"
+// The top bar has room for one word: "Nettoyeur WhatsApp" would be cut ("Nettoyeur WhatsA…").
+const val CLEANER_TITLE = "Nettoyeur"
 const val CLEANER_COMMAND = "clean"
 const val CLEANER_SUBTITLE = "Trouve les doublons et les gros médias de WhatsApp, et libère de la place."
 
@@ -332,7 +333,7 @@ private fun ReadyStep(state: CleanerUiState, actions: CleanerActions) {
             .toolCard()
             .padding(16.dp),
     ) {
-        BlockLabel(state.folder?.let { "WhatsApp · $it" } ?: "WhatsApp")
+        BlockLabel(state.folder ?: "WhatsApp")
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.Bottom) {
             CountingBytes(report.totalBytes, Palette.TextPrimary, 40.sp)

@@ -272,10 +272,13 @@ internal fun SweepingBroom(modifier: Modifier = Modifier, size: Dp = 64.dp) {
 
 private val dayFormat = SimpleDateFormat("d MMM yyyy", Locale.FRANCE)
 
-/** "Sent · 12 mars 2026". */
+/** "Vidéos · 12 mars 2026" (or "Envoyé par toi" for the copies WhatsApp keeps of what the user sent). */
 internal fun fileDetail(file: MediaFile): String {
-    val where = file.folder.split('/').lastOrNull { it.isNotBlank() }?.removePrefix("WhatsApp ")?.removePrefix(".")?.let {
-        if (it.equals("Sent", ignoreCase = true)) "Envoyé" else if (it.equals("Private", ignoreCase = true)) "Privé" else it
+    val last = file.folder.split('/').lastOrNull { it.isNotBlank() }.orEmpty()
+    val where = when {
+        last.equals("Sent", ignoreCase = true) -> "Envoyé par toi"
+        last.equals("Private", ignoreCase = true) -> "Privé"
+        else -> file.type.label
     }
     val day = if (file.modified > 0) dayFormat.format(Date(file.modified)) else null
     return listOfNotNull(where, day).joinToString(" · ")
