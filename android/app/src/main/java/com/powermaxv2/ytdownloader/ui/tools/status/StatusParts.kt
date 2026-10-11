@@ -341,6 +341,7 @@ internal fun ContactRings(modifier: Modifier = Modifier) {
     val turn by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(14_000, easing = LinearEasing)), label = "ringTurn")
     val breathe by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2_400, easing = LinearEasing), RepeatMode.Restart), label = "ringBreathe")
     val terminal = LocalSkin.current == Skin.TERMINAL
+    val seenColor = Palette.TextPrimary.copy(alpha = 0.25f)
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
         listOf(3, 2, 4, 1).forEachIndexed { i, segments ->
             val phase = ((breathe * 4f) - i).let { if (it < 0) it + 4f else it }
@@ -364,7 +365,7 @@ internal fun ContactRings(modifier: Modifier = Modifier) {
                     for (s in 0 until segments) {
                         val seen = s < segments / 2
                         drawArc(
-                            if (seen) Palette.TextPrimary.copy(alpha = 0.25f) else accent.start,
+                            if (seen) seenColor else accent.start,
                             turn * (if (i % 2 == 0) 1f else -1f) + s * each + gap / 2,
                             each - gap,
                             false,
