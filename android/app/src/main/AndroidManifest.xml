@@ -24,6 +24,12 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
+    <!-- Stickers: lets Gulp see whether WhatsApp (or WhatsApp Business) is installed, to hand it a sticker pack. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="false"
@@ -151,6 +157,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Stickers: WhatsApp reads the packs made in Gulp from here (WhatsApp's sticker contract). Only WhatsApp can
+             read it (its own permission); it lists the packs and opens their .webp files, read-only. -->
+        <provider
+            android:name=".core.sticker.StickerProvider"
+            android:authorities="${applicationId}.stickers"
+            android:enabled="true"
+            android:exported="true"
+            android:readPermission="com.whatsapp.sticker.READ" />
 
         <service
             android:name=".core.DownloadService"
