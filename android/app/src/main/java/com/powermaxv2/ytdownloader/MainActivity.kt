@@ -70,7 +70,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        // A file shared to "Convertir avec Gulp" / "Aperçu avec Gulp" / "Analyser avec Gulp" / "Compresser avec Gulp" or
+        // A file shared to "Convertir avec Gulp" / "Aperçu avec Gulp" / "Analyser avec Gulp" / "Compresser avec Gulp" /
+        // "Transcrire avec Gulp" or
         // opened with Gulp: the
         // alias says which tool.
         val fileTool = when (intent?.component?.className) {
@@ -78,6 +79,7 @@ class MainActivity : ComponentActivity() {
             PREVIEW_ENTRY -> ToolRegistry.PREVIEW
             CHAT_ENTRY -> ToolRegistry.CHAT_STATS
             COMPRESS_ENTRY -> ToolRegistry.COMPRESSOR
+            VOICE_ENTRY -> ToolRegistry.VOICE_TEXT
             // A .txt file without a link shared to "Télécharger avec Gulp": a WhatsApp export "Sans médias". The
             // .txt cannot have its own alias: a second SEND text/plain filter made some phones refuse the APK.
             else -> ToolRegistry.CHAT_STATS.takeIf { intent != null && isSharedTextFile(intent) }
@@ -131,5 +133,8 @@ class MainActivity : ComponentActivity() {
 
         /** Exported activity-alias "Compresser avec Gulp" (SEND of a photo, video, sound or PDF). */
         const val COMPRESS_ENTRY = "com.powermaxv2.ytdownloader.CompressEntry"
+
+        /** Exported activity-alias "Transcrire avec Gulp" (SEND of a sound: a WhatsApp voice note, a memo). */
+        const val VOICE_ENTRY = "com.powermaxv2.ytdownloader.VoiceEntry"
     }
 }
