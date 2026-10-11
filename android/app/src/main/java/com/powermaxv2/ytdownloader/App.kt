@@ -8,6 +8,7 @@ import com.powermaxv2.ytdownloader.core.Instagram
 import com.powermaxv2.ytdownloader.core.Notifications
 import com.powermaxv2.ytdownloader.core.Prefs
 import com.powermaxv2.ytdownloader.core.UpdateCheckJob
+import com.powermaxv2.ytdownloader.core.cleaner.CleanerController
 import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
@@ -47,6 +48,9 @@ class App : Application() {
 
     /** The Gomme's state, kept the same way (a cleaning survives leaving its screen). */
     val wiper: WipeController by lazy { WipeController(this, scope) }
+
+    /** The Nettoyeur WhatsApp's scan and selection, kept the same way (a deletion survives leaving its screen). */
+    val cleaner: CleanerController by lazy { CleanerController(this, scope) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile
