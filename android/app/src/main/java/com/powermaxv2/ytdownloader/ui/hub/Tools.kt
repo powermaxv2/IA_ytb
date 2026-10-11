@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -24,6 +25,7 @@ import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
@@ -78,6 +80,9 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Vocaux en texte: writes down a voice note (WhatsApp, memo), offline. Also "Partager → Transcrire avec Gulp". */
+    const val VOICE_TEXT = "voice-text"
 
     /** Découpe statut: a long video cut into parts of 30 s or 1 min, to post one after the other as WhatsApp statuses. */
     const val STATUS_SPLIT = "status-split"
@@ -170,6 +175,14 @@ object ToolRegistry {
             screen = { vm -> PdfJoinTool(vm) },
         ),
         GulpTool(
+            id = VOICE_TEXT,
+            name = "Vocaux en texte",
+            tagline = "Lis un vocal WhatsApp au lieu de l'écouter : Gulp l'écrit mot à mot, sur le téléphone, sans rien envoyer.",
+            tags = listOf("WhatsApp", "Hors ligne", "Partager → Gulp"),
+            icon = Icons.Rounded.RecordVoiceOver,
+            screen = { vm -> VoiceTool(vm) },
+        ),
+        GulpTool(
             id = STATUS_SPLIT,
             name = "Découpe statut",
             tagline = "Coupe une longue vidéo en morceaux d'une minute, prêts à poster à la suite en statut WhatsApp.",
@@ -177,7 +190,7 @@ object ToolRegistry {
             icon = Icons.Rounded.DonutLarge,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(12),
+        comingSoon(13),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
