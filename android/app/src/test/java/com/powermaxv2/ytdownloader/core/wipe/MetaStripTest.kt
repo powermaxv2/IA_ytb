@@ -7,21 +7,28 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import javax.imageio.ImageIO
+import java.util.Base64
 
 class MetaStripTest {
     // MARK: - Fixtures
 
-    private fun plainJpeg(): ByteArray {
-        val image = BufferedImage(32, 24, BufferedImage.TYPE_INT_RGB)
-        for (x in 0 until 32) for (y in 0 until 24) image.setRGB(x, y, (x * 8 shl 16) or (y * 10 shl 8) or 0x40)
-        val out = ByteArrayOutputStream()
-        ImageIO.write(image, "jpg", out)
-        return out.toByteArray()
-    }
+    // Fixtures made once with javax.imageio (not on the Android unit-test classpath): a 32 × 24 gradient JPEG and an
+    // empty 8 × 8 PNG.
+    private val plainJpegBase64 =
+        "/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAx" +
+            "NDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy" +
+            "MjIyMjIyMjL/wAARCAAYACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUF" +
+            "BAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVW" +
+            "V1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi" +
+            "4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAEC" +
+            "AxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVm" +
+            "Z2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq" +
+            "8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDyODTeny1pwab0+WtyDTeny1pwab0+Woq43zMcvzHbUw4NN6fLWpBpvT5a24NN6fLWpBpv" +
+            "T5a8yrjfM+5y/MdtSpBpvT5a04NN6fLRRXl1asj8Uy+vPTU04NN6fLWpBpvT5aKK8utVkfc5fXnpqf/Z"
+
+    private fun plainJpeg(): ByteArray = Base64.getDecoder().decode(plainJpegBase64)
+
+    private fun plainPng(): ByteArray = Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAADUlEQVR4XmNgGAUgAAABCAABPnZNkgAAAABJRU5ErkJggg==")
 
     private fun segment(marker: Int, payload: ByteArray): ByteArray =
         byteArrayOf(0xFF.toByte(), marker.toByte(), (payload.size + 2 shr 8).toByte(), (payload.size + 2 and 0xFF).toByte()) + payload
@@ -42,7 +49,31 @@ class MetaStripTest {
 
     private fun ByteArray.contains(text: String): Boolean = String(this, Charsets.ISO_8859_1).contains(text)
 
-    private fun decodes(bytes: ByteArray): Boolean = ImageIO.read(ByteArrayInputStream(bytes))?.width == 32
+    /** A JPEG a decoder can read: SOI, a 32 × 24 frame header, a scan, then EOI (anything after it is ignored). */
+    private fun decodes(bytes: ByteArray): Boolean {
+        if (bytes.size < 4 || bytes.indexOfMarker(0xD8) != 0) return false
+        val sof = bytes.indexOfMarker(0xC0)
+        val scan = bytes.indexOfMarker(0xDA)
+        if (sof < 0 || scan < sof) return false
+        val height = ((bytes[sof + 5].toInt() and 0xFF) shl 8) or (bytes[sof + 6].toInt() and 0xFF)
+        val width = ((bytes[sof + 7].toInt() and 0xFF) shl 8) or (bytes[sof + 8].toInt() and 0xFF)
+        val end = (scan until bytes.size - 1).firstOrNull { bytes[it] == 0xFF.toByte() && bytes[it + 1] == 0xD9.toByte() }
+        return width == 32 && height == 24 && end != null
+    }
+
+    /** Every PNG chunk is whole and its CRC right, up to IEND. */
+    private fun validPng(bytes: ByteArray): Boolean {
+        var i = 8
+        while (i + 12 <= bytes.size) {
+            val length = java.nio.ByteBuffer.wrap(bytes, i, 4).int
+            if (length < 0 || i + 12 + length > bytes.size) return false
+            val crc = java.util.zip.CRC32().apply { update(bytes, i + 4, 4 + length) }.value.toInt()
+            if (crc != java.nio.ByteBuffer.wrap(bytes, i + 8 + length, 4).int) return false
+            if (String(bytes, i + 4, 4, Charsets.ISO_8859_1) == "IEND") return i + 12 + length == bytes.size
+            i += 12 + length
+        }
+        return false
+    }
 
     // MARK: - JPEG
 
@@ -132,10 +163,7 @@ class MetaStripTest {
     // MARK: - PNG and WebP
 
     @Test fun pngTextChunksAreDropped() {
-        val image = BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB)
-        val out = ByteArrayOutputStream()
-        ImageIO.write(image, "png", out)
-        val png = out.toByteArray()
+        val png = plainPng()
         val iend = png.size - 12
         val text = pngChunk("tEXt", "Author\u0000Maxime".toByteArray(Charsets.ISO_8859_1))
         val exif = pngChunk("eXIf", "MM\u0000*GPS".toByteArray(Charsets.ISO_8859_1))
@@ -144,7 +172,7 @@ class MetaStripTest {
         assertFalse(clean.contains("Maxime"))
         assertFalse(clean.contains("GPS"))
         assertArrayEquals(png, clean)
-        assertNotNull(ImageIO.read(ByteArrayInputStream(clean)))
+        assertTrue(validPng(clean))
     }
 
     @Test fun webpExifAndXmpAreDroppedAndFlagsCleared() {
@@ -161,10 +189,7 @@ class MetaStripTest {
     }
 
     @Test fun keptExifGoesBackIntoPngBeforeTheImageData() {
-        val image = BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB)
-        val out = ByteArrayOutputStream()
-        ImageIO.write(image, "png", out)
-        val png = out.toByteArray()
+        val png = plainPng()
         val iend = png.size - 12
         val dirty = png.copyOfRange(0, iend) + pngChunk("tEXt", "Author\u0000Maxime".toByteArray(Charsets.ISO_8859_1)) + png.copyOfRange(iend, png.size)
         val exif = ExifWriter.build(KeptExif(dateTimeOriginal = "2026:10:10 18:42:07"))!!
@@ -173,8 +198,8 @@ class MetaStripTest {
         assertTrue(clean.contains("2026:10:10 18:42:07"))
         val text = String(clean, Charsets.ISO_8859_1)
         assertTrue(text.indexOf("eXIf") in 0 until text.indexOf("IDAT"))
-        // Readers check the CRC: ImageIO refuses a bad one.
-        assertNotNull(ImageIO.read(ByteArrayInputStream(clean)))
+        // Readers check the CRCs.
+        assertTrue(validPng(clean))
         val chunk = text.indexOf("eXIf") - 4
         val length = java.nio.ByteBuffer.wrap(clean, chunk, 4).int
         assertArrayEquals(exif.copyOfRange(6, exif.size), clean.copyOfRange(chunk + 8, chunk + 8 + length))
