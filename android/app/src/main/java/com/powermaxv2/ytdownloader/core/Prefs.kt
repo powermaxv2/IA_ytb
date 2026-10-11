@@ -86,6 +86,11 @@ class Prefs(context: Context) {
         set(value) = sp.edit().putLong("lastAppUpdateCheck", value).apply()
 
     /** Id of the last tool opened (shown big on the home screen); null until a tool has been used. */
+    /** Last codes read by the QR code tool (QrHistory.encode), on this phone only. */
+    var qrHistory: String?
+        get() = sp.getString("qrHistory", null)
+        set(value) = sp.edit().putString("qrHistory", value).apply()
+
     var lastToolId: String?
         get() = sp.getString("lastToolId", null)
         set(value) = sp.edit().putString("lastToolId", value).apply()
