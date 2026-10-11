@@ -96,7 +96,7 @@ object ChatSample {
     }
 
     /** The example's stickers: 8 made-up ones, drawn as emojis, some much more used than others. */
-    private val StickerEmojis = listOf("😂", "🔥", "🥹", "💀", "🫠", "😎", "🙏", "👀").mapIndexed { i, e -> "sample$i" to e }.toMap()
+    private val StickerEmojis = listOf("😂", "🔥", "😭", "💀", "🤣", "😎", "🙏", "👀").mapIndexed { i, e -> "sample$i" to e }.toMap()
 
     /**
      * Made-up files for the example's attachments (it has no .zip): weights, vocal and video lengths, sticker

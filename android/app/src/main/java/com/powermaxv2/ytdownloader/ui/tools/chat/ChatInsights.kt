@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -242,17 +244,27 @@ internal fun Calendar(stats: ChatStats, key: Any?) {
         delay(250)
         wave.animateTo(1f, tween(1600))
     }
-    // Wide squares when the discussion is short, so a month still fills the card.
-    val columns = max(weeks, 12)
+    // Six months or more: weeks across, days down (like GitHub). A short discussion: days across, weeks down,
+    // so a few weeks still fill the card.
+    val across = weeks >= 12
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (!across) {
+            Row(Modifier.fillMaxWidth()) {
+                listOf("L", "M", "M", "J", "V", "S", "D").forEach {
+                    Text(it, color = Palette.TextTertiary, fontSize = 11.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                }
+            }
+        }
         Canvas(
             Modifier
                 .fillMaxWidth()
-                .height(if (columns > 18) 120.dp else 150.dp),
+                .then(if (across) Modifier.height(120.dp) else Modifier.aspectRatio(7f / weeks)),
         ) {
-            val gap = 3.dp.toPx()
-            val cell = minOf((size.width - gap * (columns - 1)) / columns, (size.height - gap * 6) / 7)
-            val left = (size.width - (cell * weeks + gap * (weeks - 1))) / 2
+            val gap = (if (across) 3 else 5).dp.toPx()
+            val columns = if (across) weeks else 7
+            val rows = if (across) 7 else weeks
+            val cell = minOf((size.width - gap * (columns - 1)) / columns, (size.height - gap * (rows - 1)) / rows)
+            val left = (size.width - (cell * columns + gap * (columns - 1))) / 2
             val r = if (skin == Skin.CLASSIC) cell * 0.28f else cell * 0.12f
             for (w in 0 until weeks) {
                 for (d in 0 until 7) {
@@ -265,8 +277,10 @@ internal fun Calendar(stats: ChatStats, key: Any?) {
                     val level = if (n == 0) 0f else 0.22f + 0.78f * (n.toFloat() / most)
                     val c = if (n == 0) empty else accent.copy(alpha = level)
                     val s = cell * (0.4f + 0.6f * reach)
-                    val x = left + w * (cell + gap) + (cell - s) / 2
-                    val y = d * (cell + gap) + (cell - s) / 2
+                    val col = if (across) w else d
+                    val row = if (across) d else w
+                    val x = left + col * (cell + gap) + (cell - s) / 2
+                    val y = row * (cell + gap) + (cell - s) / 2
                     drawRoundRect(c.copy(alpha = c.alpha * reach), Offset(x, y), Size(s, s), CornerRadius(r, r))
                 }
             }
