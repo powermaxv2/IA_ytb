@@ -20,6 +20,8 @@ import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
+import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
 // Gulp is a hub: the home screen lists the tools, each tool is a full screen of its own.
 // Adding a tool = one entry in ToolRegistry.tools and one composable for its screen.
@@ -66,6 +68,9 @@ object ToolRegistry {
 
     /** Découpeur: keeps a passage of a video or a sound (video, sound only, ringtone or GIF). */
     const val TRIMMER = "trimmer"
+
+    /** Gomme: erases what photos tell (place, phone, author, date) into clean copies. */
+    const val WIPER = "wiper"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -138,7 +143,15 @@ object ToolRegistry {
             icon = Icons.Rounded.ContentCut,
             screen = { vm -> TrimTool(vm) },
         ),
-        comingSoon(9),
+        GulpTool(
+            id = WIPER,
+            name = "Gomme",
+            tagline = "Efface ce que tes photos disent de toi (lieu, téléphone, nom) avant de les envoyer.",
+            tags = listOf("Lieu · Téléphone · Nom", "Hors ligne", "Image intacte"),
+            icon = EraserIcon,
+            screen = { vm -> WipeTool(vm) },
+        ),
+        comingSoon(10),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
