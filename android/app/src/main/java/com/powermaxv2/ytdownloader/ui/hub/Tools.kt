@@ -21,6 +21,8 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
+import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
@@ -76,6 +78,9 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
+    const val STICKERS = "stickers"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -164,7 +169,15 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(11),
+        GulpTool(
+            id = STICKERS,
+            name = "Stickers",
+            tagline = "Transforme une photo, une vidéo ou un GIF en stickers WhatsApp et ajoute le pack direct dans WhatsApp.",
+            tags = listOf("WhatsApp", "Photo · Vidéo · GIF", "Fond effacé"),
+            icon = StickerIcon,
+            screen = { vm -> StickerTool(vm) },
+        ),
+        comingSoon(12),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
