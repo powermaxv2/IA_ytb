@@ -21,6 +21,8 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
@@ -76,6 +78,9 @@ object ToolRegistry {
 
     /** Assembleur PDF: several PDF and photos in one, pages moved, turned or removed, or a PDF cut in several. */
     const val PDF_JOIN = "pdf-join"
+
+    /** Statuts: keeps the photos and videos of WhatsApp statuses before they vanish (24 h). */
+    const val STATUSES = "statuses"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -164,7 +169,15 @@ object ToolRegistry {
             icon = Icons.Rounded.PictureAsPdf,
             screen = { vm -> PdfJoinTool(vm) },
         ),
-        comingSoon(11),
+        GulpTool(
+            id = STATUSES,
+            name = "Statuts",
+            tagline = "Garde les photos et vidéos des statuts WhatsApp de tes contacts avant qu'ils disparaissent.",
+            tags = listOf("WhatsApp", "Photo · Vidéo", "Hors ligne"),
+            icon = StatusIcon,
+            screen = { vm -> StatusTool(vm) },
+        ),
+        comingSoon(12),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
