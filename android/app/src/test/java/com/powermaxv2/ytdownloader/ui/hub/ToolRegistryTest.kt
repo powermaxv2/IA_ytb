@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.WIPER),
-            ids.take(7),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.WIPER),
+            ids.take(8),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -26,8 +26,9 @@ class ToolRegistryTest {
         assertEquals("chat-stats", ToolRegistry.CHAT_STATS)
         assertEquals("compressor", ToolRegistry.COMPRESSOR)
         assertEquals("qr-code", ToolRegistry.QR_CODE)
+        assertEquals("scanner", ToolRegistry.SCANNER)
         assertEquals("wiper", ToolRegistry.WIPER)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.WIPER).forEach { id ->
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.WIPER).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -41,12 +42,13 @@ class ToolRegistryTest {
         assertEquals("Vu, répondu", ToolRegistry.find(ToolRegistry.CHAT_STATS)?.name)
         assertEquals("Compresseur", ToolRegistry.find(ToolRegistry.COMPRESSOR)?.name)
         assertEquals("QR code", ToolRegistry.find(ToolRegistry.QR_CODE)?.name)
+        assertEquals("Scanner", ToolRegistry.find(ToolRegistry.SCANNER)?.name)
         assertEquals("Gomme", ToolRegistry.find(ToolRegistry.WIPER)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-8"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(7, ToolRegistry.available.size)
+        assertEquals(listOf("soon-9"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(8, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -82,7 +84,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-8").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-9").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {

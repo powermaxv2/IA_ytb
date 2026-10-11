@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
     <!-- Keeps the periodic update check after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- QR code tool: the live scanner. Asked the first time "Scanner" is touched; the camera is optional. -->
+    <!-- QR code tool (live scanner) and Scanner tool (photos of pages): asked the first time the camera is needed; the camera is optional. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
         android:name="android.hardware.camera.any"
@@ -125,6 +125,18 @@
             android:name=".UpdateEntry"
             android:exported="false"
             android:targetActivity=".MainActivity" />
+
+        <!-- The Scanner hands the camera app a content:// URI of a new file in Gulp's private work folder, so the photo
+             never lands in the Gallery. Not exported: the camera app only gets the one URI it is granted. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".core.DownloadService"

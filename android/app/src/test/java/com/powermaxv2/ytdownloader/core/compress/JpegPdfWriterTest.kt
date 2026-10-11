@@ -44,6 +44,17 @@ class JpegPdfWriterTest {
         }
     }
 
+    @Test fun pictureCanSitInsideALargerPage() {
+        val out = ByteArrayOutputStream()
+        JpegPdfWriter(out).use { writer ->
+            writer.addPage(fakeJpeg, 100, 100, 595f, 842f, 0f, 123.5f, 595f, 595f)
+            writer.finish()
+        }
+        val text = String(out.toByteArray(), Charsets.ISO_8859_1)
+        assertTrue("/MediaBox [0 0 595.00 842.00]" in text)
+        assertTrue("q 595.00 0 0 595.00 0.00 123.50 cm /Im0 Do Q" in text)
+    }
+
     @Test(expected = IllegalStateException::class)
     fun emptyPdfIsRefused() {
         JpegPdfWriter(ByteArrayOutputStream()).use { it.finish() }

@@ -11,6 +11,7 @@ import com.powermaxv2.ytdownloader.core.UpdateCheckJob
 import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
+import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.wipe.WipeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,9 @@ class App : Application() {
 
     /** The Compresseur's state, kept the same way (a compression survives leaving its screen). */
     val compressor: CompressorController by lazy { CompressorController(this, scope, engine) }
+
+    /** The Scanner's pages, kept the same way (they stay when the user leaves the tool; gone at the next launch). */
+    val scanner: ScanController by lazy { ScanController(this, scope) }
 
     /** The Gomme's state, kept the same way (a cleaning survives leaving its screen). */
     val wiper: WipeController by lazy { WipeController(this, scope) }
