@@ -5,9 +5,11 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
-// What "Vu, répondu" computes from a discussion: messages, words, media and stickers per person, activity hours
-// and days, repeated messages and emojis ([ChatStats.of]), then, for a "new conversation" threshold
-// ([ChatStats.replies]), the response times and who starts or ends the conversations.
+// What "Vu, répondu" computes from a discussion: messages, words, media and stickers per person, activity hours,
+// days and months, repeated messages, emojis, favourite words and links, records, and with an export "with media"
+// the weight, vocals and stickers of each one ([ChatStats.of]); then, for [ReplyOptions] (threshold of a new
+// conversation, nights left out, real wait), the response times, who answers whom, and who starts or ends the
+// conversations ([ChatStats.replies]).
 // A response = the first message someone sends after someone else's, in the same conversation.
 
 /** One person of the discussion; [colorIndex] picks their colour (rank by number of messages). */
@@ -29,6 +31,8 @@ data class Person(
     /** Days on which they wrote at least once. */
     val activeDays: Int = 0,
     val favoriteEmoji: String? = null,
+    /** Their most used words (common words left out), most first. */
+    val topWords: List<Pair<String, Int>> = emptyList(),
 ) {
     fun count(kind: Kind): Int = kinds[kind.ordinal]
     val stickers: Int get() = count(Kind.STICKER)
@@ -47,6 +51,24 @@ data class Refrain(val label: String, val count: Int)
 
 /** A day of the discussion ([epochDay] as in [LocalDate.toEpochDay]) and its number of messages. */
 data class DayCount(val epochDay: Long, val messages: Int)
+
+/**
+ * A stretch of the discussion for the "Évolution" card: a month, or a week (Monday) when the discussion lasts less
+ * than [ChatStats.MONTHS_MIN] months. [key] = year × 12 + month − 1, or the Monday's epoch day.
+ */
+data class Period(val key: Long, val messages: Int, val weekly: Boolean) {
+    /** "sept.", "15/09". */
+    val label: String get() = if (weekly) {
+        LocalDate.ofEpochDay(key).let { "${it.dayOfMonth.toString().padStart(2, '0')}/${it.monthValue.toString().padStart(2, '0')}" }
+    } else {
+        MonthNames[(key % 12).toInt()]
+    }
+}
+
+val MonthNames = listOf("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.")
+
+/** A record held by [person]: [value] (words, messages in a row…), on [clock], with an [excerpt]. */
+data class TextRecord(val person: String, val value: Int, val clock: Long, val excerpt: String? = null)
 
 data class ChatStats(
     val messages: List<ChatMessage>,
@@ -72,6 +94,20 @@ data class ChatStats(
     val longestSilenceFrom: Long = first,
     /** The export gives minutes only (Android): two messages of the same minute are 0 s apart on paper. */
     val toTheMinute: Boolean = false,
+    /** Every day with at least one message, oldest first. */
+    val daily: List<DayCount> = emptyList(),
+    /** Every month (or week, for a short discussion) from the first message to the last, empty ones included. */
+    val periods: List<Period> = emptyList(),
+    val longestMessage: TextRecord? = null,
+    /** Most messages in a row by one person. */
+    val longestMonologue: TextRecord? = null,
+    /** Links shared, by site ("YouTube", "TikTok"…), most first. */
+    val sites: List<Pair<String, Int>> = emptyList(),
+    /** Calls whose length the export gives, and their total. */
+    val timedCalls: Int = 0,
+    val callSeconds: Long = 0,
+    /** What the files of an export "with media" tell; null without them. */
+    val media: MediaStats? = null,
 ) {
     fun count(kind: Kind): Int = people.sumOf { it.count(kind) }
     val mediaCount: Int get() = people.sumOf { it.media }
@@ -89,10 +125,20 @@ data class ChatStats(
      */
     val stickersKnown: Boolean get() = people.any { p -> Kind.entries.any { it.isMedia && it != Kind.MEDIA && p.count(it) > 0 } }
 
-    fun replies(gap: Gap): ReplyStats = replies(this, gap.seconds)
+    val weekly: Boolean get() = periods.firstOrNull()?.weekly ?: false
+
+    /** The [Period.key] of a clock time. */
+    fun periodOf(clock: Long): Long = periodKey(LocalDate.ofEpochDay(Math.floorDiv(clock, 86_400L)), weekly)
+
+    fun replies(gap: Gap): ReplyStats = replies(this, ReplyOptions(gap))
+    fun replies(options: ReplyOptions): ReplyStats = replies(this, options)
 
     companion object {
-        fun of(messages: List<ChatMessage>): ChatStats {
+        /**
+         * The numbers of [messages]; with [media] (the files of the .zip), the weight, vocals and stickers too.
+         * [stickerEmojis] = what to draw for stickers without a file (the example discussion).
+         */
+        fun of(messages: List<ChatMessage>, media: MediaScan? = null, stickerEmojis: Map<String, String> = emptyMap()): ChatStats {
             require(messages.isNotEmpty())
             class Acc(val name: String) {
                 var msgs = 0
@@ -107,6 +153,7 @@ data class ChatStats(
                 var longestBurst = 0
                 val days = HashSet<Long>()
                 val emojiCounts = LinkedHashMap<String, Int>()
+                val vocabulary = HashMap<String, Int>()
             }
             val people = LinkedHashMap<String, Acc>()
             val hours = IntArray(24)
@@ -116,27 +163,55 @@ data class ChatStats(
             val labels = HashMap<String, String>()
             val emojis = LinkedHashMap<String, Int>()
             var previous: String? = null
+            val sites = HashMap<String, Int>()
+            var longestMessage: TextRecord? = null
+            var monologue: TextRecord? = null
+            var timedCalls = 0
+            var callSeconds = 0L
             for (m in messages) {
                 val p = people.getOrPut(m.author) { Acc(m.author) }
                 p.msgs++
                 p.kinds[m.kind.ordinal]++
                 if (m.edited) p.edited++
-                p.burst = if (previous == m.author) p.burst + 1 else 1
+                if (previous != m.author) p.burst = 0
+                p.burst++
                 p.longestBurst = max(p.longestBurst, p.burst)
+                if (p.burst > (monologue?.value ?: 1)) monologue = TextRecord(m.author, p.burst, m.clock)
                 previous = m.author
                 val hour = m.hour.coerceIn(0, 23)
                 hours[hour]++
                 if (hour < 5) p.night++
-                val date = LocalDate.ofEpochDay(Math.floorDiv(m.time, 86_400L))
+                val date = LocalDate.ofEpochDay(Math.floorDiv(m.clock, 86_400L))
                 weekdays[date.dayOfWeek.value - 1]++
                 perDay[date.toEpochDay()] = (perDay[date.toEpochDay()] ?: 0) + 1
                 p.days.add(date.toEpochDay())
+                if (m.kind == Kind.CALL) {
+                    WhatsAppChat.callSeconds(m.text)?.let {
+                        timedCalls++
+                        callSeconds += it
+                    }
+                }
                 if (m.kind != Kind.TEXT) {
                     if (m.kind.isMedia) p.media++
                     continue
                 }
-                p.words += m.text.split(WHITESPACE).count { w -> w.any { it.isLetterOrDigit() } }
-                p.links += LINK.findAll(m.text).count()
+                val tokens = m.text.split(WHITESPACE)
+                val wordCount = tokens.count { w -> w.any { it.isLetterOrDigit() } }
+                p.words += wordCount
+                if (wordCount > (longestMessage?.value ?: 0)) {
+                    longestMessage = TextRecord(m.author, wordCount, m.clock, m.text.replace(WHITESPACE, " ").take(90))
+                }
+                for (link in LINK.findAll(m.text)) {
+                    p.links++
+                    val site = siteOf(link.value)
+                    sites[site] = (sites[site] ?: 0) + 1
+                }
+                for (t in tokens) {
+                    if (t.startsWith("http", true) || t.startsWith("www.", true)) continue
+                    val w = t.lowercase().trim { !it.isLetter() }
+                    if (w.length < 3 || w.any { !it.isLetter() && it != '\'' && it != '-' } || w in STOP_WORDS) continue
+                    p.vocabulary[w] = (p.vocabulary[w] ?: 0) + 1
+                }
                 val key = m.text.lowercase().replace(WHITESPACE, " ").replace(TRAILING, "").trim()
                 if (key.isNotEmpty()) {
                     val c = counts.getOrPut(key) { IntArray(1) }
@@ -155,6 +230,7 @@ data class ChatStats(
                     Person(
                         a.name, a.msgs, a.words, a.media, i, a.kinds, a.edited, a.emojis, a.links, a.night,
                         a.longestBurst, a.days.size, a.emojiCounts.maxByOrNull { it.value }?.key,
+                        a.vocabulary.entries.filter { it.value > 1 }.sortedByDescending { it.value }.take(5).map { it.key to it.value },
                     )
                 }
             val refrains = counts.entries
@@ -163,8 +239,8 @@ data class ChatStats(
                 .take(8)
                 .map { Refrain(labels.getValue(it.key), it.value[0]) }
             val topEmojis = emojis.entries.sortedByDescending { it.value }.take(12).map { it.key to it.value }
-            val first = messages.first().time
-            val last = messages.last().time
+            val first = messages.first().clock
+            val last = messages.last().clock
             val firstDay = Math.floorDiv(first, 86_400L)
             val lastDay = Math.floorDiv(last, 86_400L)
             val days = max(1, (lastDay - firstDay + 1).toInt())
@@ -183,10 +259,22 @@ data class ChatStats(
                 val dt = messages[i].time - messages[i - 1].time
                 if (dt > silence) {
                     silence = dt
-                    silenceFrom = messages[i - 1].time
+                    silenceFrom = messages[i - 1].clock
                 }
             }
             val busiest = perDay.entries.maxByOrNull { it.value }?.let { DayCount(it.key, it.value) }
+            val firstDate = LocalDate.ofEpochDay(firstDay)
+            val lastDate = LocalDate.ofEpochDay(lastDay)
+            val weekly = (lastDate.year * 12 + lastDate.monthValue) - (firstDate.year * 12 + firstDate.monthValue) + 1 < MONTHS_MIN
+            val perPeriod = HashMap<Long, Int>()
+            perDay.forEach { (d, n) -> periodKey(LocalDate.ofEpochDay(d), weekly).let { perPeriod[it] = (perPeriod[it] ?: 0) + n } }
+            val periods = ArrayList<Period>()
+            var k = periodKey(firstDate, weekly)
+            val lastKey = periodKey(lastDate, weekly)
+            while (k <= lastKey) {
+                periods.add(Period(k, perPeriod[k] ?: 0, weekly))
+                k += if (weekly) 7 else 1
+            }
             return ChatStats(
                 messages, list, hours, refrains, topEmojis, days, first, last,
                 weekdays = weekdays,
@@ -196,8 +284,53 @@ data class ChatStats(
                 longestSilence = silence,
                 longestSilenceFrom = silenceFrom,
                 toTheMinute = messages.none { it.withSeconds },
+                daily = perDay.entries.sortedBy { it.key }.map { DayCount(it.key, it.value) },
+                periods = periods,
+                longestMessage = longestMessage,
+                longestMonologue = monologue,
+                sites = sites.entries.sortedByDescending { it.value }.take(6).map { it.key to it.value },
+                timedCalls = timedCalls,
+                callSeconds = callSeconds,
+                media = media?.let { MediaStats.of(messages, list.map { p -> p.name }, it, stickerEmojis) },
             )
         }
+
+        /** Below this many calendar months, the "Évolution" card goes week by week. */
+        const val MONTHS_MIN = 3
+
+        internal fun periodKey(date: LocalDate, weekly: Boolean): Long =
+            if (weekly) date.toEpochDay() - (date.dayOfWeek.value - 1) else date.year * 12L + date.monthValue - 1
+
+        /** "YouTube", "TikTok"… for a link; else its domain. */
+        fun siteOf(link: String): String {
+            val host = link.lowercase().removePrefix("https://").removePrefix("http://").removePrefix("www.").substringBefore('/').substringBefore('?')
+            return when {
+                host == "youtu.be" || host.endsWith("youtube.com") -> "YouTube"
+                host.endsWith("tiktok.com") -> "TikTok"
+                host.endsWith("instagram.com") -> "Instagram"
+                host == "x.com" || host.endsWith("twitter.com") -> "X"
+                host.endsWith("facebook.com") || host == "fb.watch" -> "Facebook"
+                host.endsWith("snapchat.com") -> "Snapchat"
+                host.endsWith("spotify.com") -> "Spotify"
+                host.startsWith("maps.") || host == "goo.gl" || "google.com/maps" in link -> "Maps"
+                host.endsWith("reddit.com") -> "Reddit"
+                host.endsWith("whatsapp.com") || host == "wa.me" -> "WhatsApp"
+                host.endsWith("amazon.fr") || host.endsWith("amazon.com") || host == "amzn.to" -> "Amazon"
+                else -> host.removePrefix("m.").ifEmpty { "lien" }
+            }
+        }
+
+        /** Words left out of the favourite words: the most common of French, English and Spanish. */
+        private val STOP_WORDS = (
+            "les des une est pas que qui dans pour sur avec mais par plus tout fait comme bien ont son ses aux été elle " +
+                "ils nous vous leur cette ces sont ait mes tes nos vos moi toi lui eux ça cela ceci ici là oui non très peu " +
+                "aussi alors donc car quand où quoi comment avoir être faire dit tous toute toutes rien sans sous chez entre " +
+                "avant après encore déjà juste jamais toujours trop vers était avait étais avais suis es sommes êtes sera " +
+                "ont fais faut peut veux vais va vas vont estce c'est j'ai t'as t'es j'suis qu'il qu'elle d'un d'une l'on " +
+                "the and you that was for are with this have not but what all your can just they she him her his them " +
+                "will would there their about from out get got like its it's i'm don't que los las por para una con del " +
+                "esto eso pero muy más como"
+            ).split(' ').toHashSet()
 
         private val WHITESPACE = Regex("\\s+")
         private val TRAILING = Regex("[\\s.!?…,;:]+$")
@@ -233,29 +366,75 @@ data class ChatStats(
             else -> false
         }
 
-        fun replies(stats: ChatStats, gapSeconds: Long): ReplyStats {
+        /** Hours of the night left out by [ReplyOptions.nights]: from midnight to 7 a.m. */
+        const val NIGHT_END = 7
+
+        /** Seconds of [from]..[to] (clock seconds) between midnight and [NIGHT_END] h. */
+        internal fun nightOverlap(from: Long, to: Long): Long {
+            if (to <= from) return 0
+            var total = 0L
+            var day = Math.floorDiv(from, 86_400L)
+            val lastDay = Math.floorDiv(to, 86_400L)
+            while (day <= lastDay) {
+                val a = max(from, day * 86_400L)
+                val b = minOf(to, day * 86_400L + NIGHT_END * 3_600L)
+                if (b > a) total += b - a
+                day++
+            }
+            return total
+        }
+
+        fun replies(stats: ChatStats, options: ReplyOptions): ReplyStats {
+            val gapSeconds = options.gap.seconds
             val byName = stats.people.associate { it.name to ArrayList<Long>() }
             val starts = stats.people.associate { it.name to IntArray(1) }
             val lastWords = stats.people.associate { it.name to IntArray(1) }
+            val unanswered = stats.people.associate { it.name to IntArray(1) }
+            val pairs = LinkedHashMap<Pair<String, String>, ArrayList<Long>>()
+            val perPeriod = HashMap<Long, ArrayList<Long>>()
             val all = ArrayList<Long>()
+            var fastest: ReplyRecord? = null
+            var slowest: ReplyRecord? = null
             val ms = stats.messages
             var conversations = 1
             starts[ms[0].author]?.let { it[0]++ }
+            // First message of the current run of messages by the same person, in this conversation.
+            var runStart = 0
+
+            fun ended(m: ChatMessage) {
+                lastWords[m.author]?.let { it[0]++ }
+                if (m.kind == Kind.TEXT && '?' in m.text) unanswered[m.author]?.let { it[0]++ }
+            }
             for (i in 1 until ms.size) {
                 val dt = ms[i].time - ms[i - 1].time
                 if (dt > gapSeconds) {
                     // Silence long enough: the previous message ended a conversation, this one starts the next.
                     conversations++
-                    lastWords[ms[i - 1].author]?.let { it[0]++ }
+                    ended(ms[i - 1])
                     starts[ms[i].author]?.let { it[0]++ }
+                    runStart = i
                     continue
                 }
                 if (ms[i].author == ms[i - 1].author || dt < 0) continue
-                val answer = if (dt == 0L && stats.toTheMinute) SAME_MINUTE else dt
+                val from = if (options.realWait) ms[runStart] else ms[i - 1]
+                runStart = i
+                var wait = ms[i].time - from.time
+                if (wait < 0) continue
+                if (options.nights) {
+                    // Chatting in the middle of the night still counts; only the night slept through is left out.
+                    val sameNight = Math.floorDiv(from.clock, 86_400L) == Math.floorDiv(ms[i].clock, 86_400L) && ms[i].hour < NIGHT_END && from.hour < NIGHT_END
+                    if (!sameNight) wait = (wait - nightOverlap(from.clock, ms[i].clock)).coerceAtLeast(0)
+                }
+                val answer = if (wait == 0L && stats.toTheMinute) SAME_MINUTE else wait
                 byName[ms[i].author]?.add(answer)
                 all.add(answer)
+                pairs.getOrPut(from.author to ms[i].author) { ArrayList() }.add(answer)
+                perPeriod.getOrPut(stats.periodOf(ms[i].clock)) { ArrayList() }.add(answer)
+                if (answer < (fastest?.seconds ?: Long.MAX_VALUE)) fastest = ReplyRecord(ms[i].author, from.author, answer, ms[i].clock)
+                if (answer > (slowest?.seconds ?: -1L)) slowest = ReplyRecord(ms[i].author, from.author, answer, ms[i].clock)
             }
             lastWords[ms.last().author]?.let { it[0]++ }
+            val people = stats.people.associateBy { it.name }
             val rows = stats.people.map { p ->
                 val a = byName.getValue(p.name)
                 ReplyRow(
@@ -268,6 +447,9 @@ data class ChatStats(
                     under5min = share(a, 300),
                     starts = starts.getValue(p.name)[0],
                     lastWords = lastWords.getValue(p.name)[0],
+                    trimmed = trimmedMean(a),
+                    unanswered = unanswered.getValue(p.name)[0],
+                    fastest = a.minOrNull(),
                 )
             }.sortedWith(
                 compareBy<ReplyRow> { if (it.average == null) 1 else 0 }
@@ -275,7 +457,28 @@ data class ChatStats(
                     .thenBy { it.average ?: Double.MAX_VALUE }
                     .thenBy { it.median ?: Double.MAX_VALUE },
             )
-            return ReplyStats(rows, all, mean(all), median(all), conversations, stats.messages.size)
+            val pairRows = pairs.mapNotNull { (k, a) ->
+                val from = people[k.first] ?: return@mapNotNull null
+                val to = people[k.second] ?: return@mapNotNull null
+                PairRow(from, to, a.size, mean(a), median(a))
+            }
+            return ReplyStats(
+                rows, all, mean(all), median(all), conversations, stats.messages.size,
+                trimmed = trimmedMean(all),
+                pairs = pairRows,
+                perPeriod = stats.periods.map { mean(perPeriod[it.key].orEmpty()) },
+                fastest = fastest,
+                slowest = slowest,
+                options = options,
+            )
+        }
+
+        /** Mean without the extremes: the fastest and slowest tenth left out (from 10 answers). */
+        fun trimmedMean(a: List<Long>): Double? {
+            if (a.size < 10) return mean(a)
+            val s = a.sorted()
+            val cut = s.size / 10
+            return mean(s.subList(cut, s.size - cut))
         }
 
         private fun share(a: List<Long>, under: Long): Double? = if (a.isEmpty()) null else a.count { it < under }.toDouble() / a.size
@@ -308,7 +511,25 @@ data class ReplyRow(
     val under5min: Double?,
     val starts: Int = 0,
     val lastWords: Int = 0,
+    /** Mean without the fastest and slowest tenth. */
+    val trimmed: Double? = average,
+    /** Questions that ended a conversation: nobody answered them. */
+    val unanswered: Int = 0,
+    val fastest: Long? = null,
 )
+
+/** How [from]'s messages are answered by [to]. */
+data class PairRow(val from: Person, val to: Person, val count: Int, val average: Double?, val median: Double?)
+
+/** One answer: [person] answering [to] after [seconds], on [clock]. */
+data class ReplyRecord(val person: String, val to: String, val seconds: Long, val clock: Long)
+
+/**
+ * How answers are measured. [gap] = silence after which a new conversation starts; [nights] = the hours from
+ * midnight to 7 a.m. slept through are not counted; [realWait] = from the first message of the other's run of
+ * messages (what the person really waited), instead of the last one.
+ */
+data class ReplyOptions(val gap: Gap = Gap.DEFAULT, val nights: Boolean = false, val realWait: Boolean = false)
 
 data class ReplyStats(
     val rows: List<ReplyRow>,
@@ -317,7 +538,25 @@ data class ReplyStats(
     val median: Double?,
     val conversations: Int = 1,
     private val messageCount: Int = 0,
+    val trimmed: Double? = average,
+    val pairs: List<PairRow> = emptyList(),
+    /** Mean answer in each of [ChatStats.periods], null = no answer then. */
+    val perPeriod: List<Double?> = emptyList(),
+    val fastest: ReplyRecord? = null,
+    val slowest: ReplyRecord? = null,
+    val options: ReplyOptions = ReplyOptions(),
 ) {
+    /** Pairs with at least [ChatStats.PODIUM_MIN] answers, fastest first. */
+    val fastestPairs: List<PairRow> get() = pairs.filter { it.count >= ChatStats.PODIUM_MIN && it.average != null }.sortedBy { it.average }
+
+    /** Pairs that answer each other most (both directions together), most first. */
+    val talkativePairs: List<Pair<Pair<Person, Person>, Int>> get() = pairs
+        .groupBy { listOf(it.from.name, it.to.name).sorted() }
+        .map { (_, rows) -> (rows[0].from to rows[0].to) to rows.sumOf { it.count } }
+        .sortedByDescending { it.second }
+
+    val unanswered: Int get() = rows.sumOf { it.unanswered }
+
     /** The three fastest on average with at least [ChatStats.PODIUM_MIN] answers. */
     val podium: List<ReplyRow> get() = rows.filter { it.count >= ChatStats.PODIUM_MIN && it.average != null }.take(3)
     val under5min: Double? get() = if (all.isEmpty()) null else all.count { it < 300 }.toDouble() / all.size
