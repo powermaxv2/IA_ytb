@@ -15,6 +15,7 @@ import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.trim.TrimController
+import com.powermaxv2.ytdownloader.core.voice.VoiceController
 import com.powermaxv2.ytdownloader.core.wipe.WipeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +49,9 @@ class App : Application() {
 
     /** The Gomme's state, kept the same way (a cleaning survives leaving its screen). */
     val wiper: WipeController by lazy { WipeController(this, scope) }
+
+    /** Vocaux en texte's state, kept the same way (a transcription survives leaving its screen). */
+    val voice: VoiceController by lazy { VoiceController(this, scope, engine) }
 
     /** The Nettoyeur WhatsApp's scan and selection, kept the same way (a deletion survives leaving its screen). */
     val cleaner: CleanerController by lazy { CleanerController(this, scope) }
