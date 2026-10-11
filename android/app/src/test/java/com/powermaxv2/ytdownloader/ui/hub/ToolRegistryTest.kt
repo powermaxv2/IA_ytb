@@ -31,9 +31,9 @@ class ToolRegistryTest {
         assertEquals("wiper", ToolRegistry.WIPER)
         assertEquals("pdf-join", ToolRegistry.PDF_JOIN)
         assertEquals("voice-text", ToolRegistry.VOICE_TEXT)
-        assertEquals("whatsapp-cleaner", ToolRegistry.CLEANER, ToolRegistry.STYLED_TEXT)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STYLED_TEXT).forEach { id ->
+        assertEquals("whatsapp-cleaner", ToolRegistry.CLEANER)
         assertEquals("styled-text", ToolRegistry.STYLED_TEXT)
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STYLED_TEXT).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
