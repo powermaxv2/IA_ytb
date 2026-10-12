@@ -15,6 +15,7 @@ import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.sticker.StickerController
+import com.powermaxv2.ytdownloader.core.status.StatusController
 import com.powermaxv2.ytdownloader.core.trim.TrimController
 import com.powermaxv2.ytdownloader.core.voice.VoiceController
 import com.powermaxv2.ytdownloader.core.wipe.WipeController
@@ -59,6 +60,8 @@ class App : Application() {
 
     /** The Stickers tool's pictures and work, kept the same way (a pack being made survives leaving its screen). */
     val stickers: StickerController by lazy { StickerController(this, scope, engine) }
+    /** The Statuts tool's state, kept the same way (a copy survives leaving its screen). */
+    val statuses: StatusController by lazy { StatusController(this, scope) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile

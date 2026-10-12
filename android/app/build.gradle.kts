@@ -99,6 +99,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // First frame of a video as a thumbnail (Statuts).
+    implementation("io.coil-kt:coil-video:2.7.0")
     // Markdown → HTML in the Convertisseur (BSD-2-Clause).
     implementation("org.commonmark:commonmark:0.24.0")
     // QR code tool: reading and writing codes (ZXing, Apache-2.0) and the live camera (CameraX, Apache-2.0).

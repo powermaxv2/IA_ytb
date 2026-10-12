@@ -27,6 +27,8 @@ import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
@@ -93,6 +95,9 @@ object ToolRegistry {
 
     /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
     const val STICKERS = "stickers"
+
+    /** Statuts: keeps the photos and videos of WhatsApp statuses before they vanish (24 h). */
+    const val STATUSES = "statuses"
 
     /** Texte stylé: a text in WhatsApp's styles (*gras*, _italique_, ~barré~…) and in Unicode fonts, ready to paste. */
     const val STYLED_TEXT = "styled-text"
@@ -216,7 +221,15 @@ object ToolRegistry {
             icon = Icons.Rounded.TextFormat,
             screen = { vm -> StyledTextTool(vm) },
         ),
-        comingSoon(15),
+        GulpTool(
+            id = STATUSES,
+            name = "Statuts",
+            tagline = "Garde les photos et vidéos des statuts WhatsApp de tes contacts avant qu'ils disparaissent.",
+            tags = listOf("WhatsApp", "Photo · Vidéo", "Hors ligne"),
+            icon = StatusIcon,
+            screen = { vm -> StatusTool(vm) },
+        ),
+        comingSoon(16),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
