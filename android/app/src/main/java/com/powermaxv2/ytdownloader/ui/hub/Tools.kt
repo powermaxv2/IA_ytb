@@ -4,9 +4,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.Dialpad
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -22,9 +24,11 @@ import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
+import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
+import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
@@ -106,6 +110,12 @@ object ToolRegistry {
 
     /** Découpe statut: a long video cut into parts of 30 s or 1 min, to post one after the other as WhatsApp statuses. */
     const val STATUS_SPLIT = "status-split"
+
+    /** Message direct: opens a WhatsApp chat with a number that is not in the contacts (WhatsApp's wa.me link). */
+    const val DIRECT_CHAT = "whatsapp-direct"
+
+    /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
+    const val CHAT_READER = "chat-reader"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -242,7 +252,23 @@ object ToolRegistry {
             icon = Icons.Rounded.DonutLarge,
             screen = { vm -> SplitTool(vm) },
         ),
-        comingSoon(17),
+        GulpTool(
+            id = DIRECT_CHAT,
+            name = "Écrire sans enregistrer",
+            tagline = "Écris sur WhatsApp à un numéro sans l'ajouter à tes contacts : colle-le, la discussion s'ouvre.",
+            tags = listOf("WhatsApp", "Message prêt", "Sans contact"),
+            icon = Icons.Rounded.Dialpad,
+            screen = { vm -> DirectTool(vm) },
+        ),
+        GulpTool(
+            id = CHAT_READER,
+            name = "Lecteur de discussion",
+            tagline = "Relis une discussion WhatsApp exportée en bulles, comme dans l'appli, cherche dedans et garde-la en PDF.",
+            tags = listOf("WhatsApp", "Recherche", "Export PDF"),
+            icon = Icons.Rounded.Forum,
+            screen = { vm -> ReaderTool(vm) },
+        ),
+        comingSoon(19),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
