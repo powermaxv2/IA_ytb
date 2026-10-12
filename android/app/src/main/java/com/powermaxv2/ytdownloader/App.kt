@@ -14,6 +14,7 @@ import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
+import com.powermaxv2.ytdownloader.core.split.SplitController
 import com.powermaxv2.ytdownloader.core.sticker.StickerController
 import com.powermaxv2.ytdownloader.core.status.StatusController
 import com.powermaxv2.ytdownloader.core.trim.TrimController
@@ -46,6 +47,10 @@ class App : Application() {
 
     /** The Découpeur's state, kept the same way (a cut survives leaving its screen). */
     val trimmer: TrimController by lazy { TrimController(this, scope, engine) }
+
+    /** The Découpe statut's state, kept the same way (a series of statuses keeps being cut off its screen). */
+    val statusSplit: SplitController by lazy { SplitController(this, scope, engine) }
+
     /** The Assembleur PDF's pages and work, kept the same way. */
     val pdfJoin: JoinController by lazy { JoinController(this, scope) }
 

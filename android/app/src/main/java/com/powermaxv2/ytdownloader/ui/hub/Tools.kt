@@ -3,13 +3,14 @@ package com.powermaxv2.ytdownloader.ui.hub
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
-import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
+import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
@@ -101,6 +103,9 @@ object ToolRegistry {
 
     /** Texte stylé: a text in WhatsApp's styles (*gras*, _italique_, ~barré~…) and in Unicode fonts, ready to paste. */
     const val STYLED_TEXT = "styled-text"
+
+    /** Découpe statut: a long video cut into parts of 30 s or 1 min, to post one after the other as WhatsApp statuses. */
+    const val STATUS_SPLIT = "status-split"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -229,7 +234,15 @@ object ToolRegistry {
             icon = StatusIcon,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(16),
+        GulpTool(
+            id = STATUS_SPLIT,
+            name = "Découpe statut",
+            tagline = "Coupe une longue vidéo en morceaux d'une minute, prêts à poster à la suite en statut WhatsApp.",
+            tags = listOf("WhatsApp", "30 s · 1 min", "Sans réencodage"),
+            icon = Icons.Rounded.DonutLarge,
+            screen = { vm -> SplitTool(vm) },
+        ),
+        comingSoon(17),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
