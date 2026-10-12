@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,6 +29,7 @@ import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
+import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
@@ -93,6 +95,9 @@ object ToolRegistry {
 
     /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
     const val STICKERS = "stickers"
+
+    /** Texte stylé: a text in WhatsApp's styles (*gras*, _italique_, ~barré~…) and in Unicode fonts, ready to paste. */
+    const val STYLED_TEXT = "styled-text"
 
     /** Découpe statut: a long video cut into parts of 30 s or 1 min, to post one after the other as WhatsApp statuses. */
     const val STATUS_SPLIT = "status-split"
@@ -209,6 +214,14 @@ object ToolRegistry {
             screen = { vm -> StickerTool(vm) },
         ),
         GulpTool(
+            id = STYLED_TEXT,
+            name = "Texte stylé",
+            tagline = "Écris une fois, colle-le en gras, barré, gothique ou en bulles dans WhatsApp.",
+            tags = listOf("WhatsApp", "24 styles", "Copier · Envoyer"),
+            icon = Icons.Rounded.TextFormat,
+            screen = { vm -> StyledTextTool(vm) },
+        ),
+        GulpTool(
             id = STATUS_SPLIT,
             name = "Découpe statut",
             tagline = "Coupe une longue vidéo en morceaux d'une minute, prêts à poster à la suite en statut WhatsApp.",
@@ -216,7 +229,7 @@ object ToolRegistry {
             icon = Icons.Rounded.DonutLarge,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(15),
+        comingSoon(16),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
