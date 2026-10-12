@@ -24,6 +24,8 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
+import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
@@ -86,6 +88,9 @@ object ToolRegistry {
 
     /** Nettoyeur WhatsApp: finds WhatsApp's duplicates and big media in its folder, and deletes what the user checks. */
     const val CLEANER = "whatsapp-cleaner"
+
+    /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
+    const val STICKERS = "stickers"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -190,7 +195,15 @@ object ToolRegistry {
             icon = Icons.Rounded.CleaningServices,
             screen = { vm -> CleanerTool(vm) },
         ),
-        comingSoon(13),
+        GulpTool(
+            id = STICKERS,
+            name = "Stickers",
+            tagline = "Transforme une photo, une vidéo ou un GIF en stickers WhatsApp et ajoute le pack direct dans WhatsApp.",
+            tags = listOf("WhatsApp", "Photo · Vidéo · GIF", "Fond effacé"),
+            icon = StickerIcon,
+            screen = { vm -> StickerTool(vm) },
+        ),
+        comingSoon(14),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
