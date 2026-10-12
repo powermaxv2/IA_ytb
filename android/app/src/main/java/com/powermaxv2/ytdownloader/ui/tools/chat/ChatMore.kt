@@ -37,6 +37,7 @@ import com.powermaxv2.ytdownloader.core.chat.ReplyStats
 import com.powermaxv2.ytdownloader.core.chat.WeekdayNames
 import com.powermaxv2.ytdownloader.core.chat.duration
 import com.powermaxv2.ytdownloader.core.chat.percent
+import com.powermaxv2.ytdownloader.core.chat.weight
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.hub.bob
@@ -111,6 +112,11 @@ private fun Profile(stats: ChatStats, r: ReplyRow, index: Int, key: Any?) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            val media = stats.media?.of(p.name)
+            stats.media?.stickers?.firstOrNull { it.hash == media?.favoriteSticker }?.let {
+                Sticker(it, 34.dp, index)
+                Spacer(Modifier.width(6.dp))
+            }
             p.favoriteEmoji?.let { Text(it, fontSize = 24.sp, modifier = Modifier.bob(index, amplitude = 2.dp, periodMs = 2200)) }
         }
         val facts = listOf(
@@ -126,6 +132,10 @@ private fun Profile(stats: ChatStats, r: ReplyRow, index: Int, key: Any?) {
             if (stats.stickersKnown) Fact("stickers", p.stickers.toDouble(), { count(it) }) else Fact("médias", p.media.toDouble(), { count(it) }),
             Fact("emojis", p.emojis.toDouble(), { count(it) }),
             Fact("entre 0 h et 5 h", p.night.toDouble(), { count(it) }),
+            Fact("sans les extrêmes", r.trimmed, { duration(it) }),
+            Fact("questions sans réponse", r.unanswered.toDouble(), { count(it) }),
+            stats.media?.of(p.name)?.let { pm -> Fact("envoyés", pm.totalBytes.toDouble(), { weight((it ?: 0.0).toLong()) }) }
+                ?: Fact("liens", p.links.toDouble(), { count(it) }),
         )
         facts.chunked(3).forEachIndexed { line, three ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -134,7 +144,13 @@ private fun Profile(stats: ChatStats, r: ReplyRow, index: Int, key: Any?) {
         }
         val extra = listOfNotNull(
             if (stats.stickersKnown && p.media > p.stickers) plural(p.media, "média", "médias") else null,
-            if (p.count(Kind.VOICE) > 0) plural(p.count(Kind.VOICE), "vocal", "vocaux") else null,
+            if (p.count(Kind.VOICE) > 0) {
+                plural(p.count(Kind.VOICE), "vocal", "vocaux") +
+                    (stats.media?.of(p.name)?.takeIf { it.voiceCount > 0 }?.let { " (${duration(it.voiceSeconds)})" } ?: "")
+            } else {
+                null
+            },
+            p.topWords.firstOrNull()?.let { "mot favori « ${it.first} »" },
             if (p.deleted > 0) plural(p.deleted, "supprimé", "supprimés") else null,
             if (p.edited > 0) plural(p.edited, "modifié", "modifiés") else null,
             if (p.links > 0) plural(p.links, "lien", "liens") else null,
@@ -227,7 +243,8 @@ internal fun MediaCard(stats: ChatStats, key: Any?) {
         } else {
             Text(
                 "Cet export Android « sans médias » écrit « <Médias omis> » pour les photos, vocaux et stickers sans les distinguer. " +
-                    "Pour compter les stickers, exporte la discussion « avec médias » (ou depuis un iPhone).",
+                    "Exporte la discussion « avec médias » et partage le .zip : Gulp compte alors les stickers les plus utilisés, " +
+                    "la durée des vocaux et le poids envoyé par chacun.",
                 color = Palette.TextTertiary,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,

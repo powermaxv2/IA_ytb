@@ -1,34 +1,19 @@
 package com.powermaxv2.ytdownloader.core.status
 
 import android.content.Context
-import android.graphics.Bitmap
+import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Build
-import com.powermaxv2.ytdownloader.core.Engine
+import android.provider.DocumentsContract
 import com.powermaxv2.ytdownloader.core.MediaExporter
 import com.powermaxv2.ytdownloader.core.SavedFile
-import com.powermaxv2.ytdownloader.core.convert.ConversionError
-import com.powermaxv2.ytdownloader.core.convert.FfmpegErrors
-import com.powermaxv2.ytdownloader.core.convert.FfmpegInput
-import com.powermaxv2.ytdownloader.core.convert.FfmpegRunner
-import com.powermaxv2.ytdownloader.core.convert.Target
 import com.powermaxv2.ytdownloader.core.files.FileIntake
-import com.powermaxv2.ytdownloader.core.files.FileKind
-import com.powermaxv2.ytdownloader.core.files.FileTooLarge
-import com.powermaxv2.ytdownloader.core.files.SafeNames
-import com.powermaxv2.ytdownloader.core.files.UnsupportedSource
 import com.powermaxv2.ytdownloader.core.files.WorkDir
-import com.powermaxv2.ytdownloader.core.trim.TrimOutput
-import com.powermaxv2.ytdownloader.core.trim.TrimPlan
-import com.powermaxv2.ytdownloader.core.trim.TrimRange
-import com.powermaxv2.ytdownloader.core.trim.TrimSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,308 +22,368 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.IOException
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.roundToInt
+
+/** One status of the folder. [key] is its file name, stable while WhatsApp keeps it. */
+data class StatusItem(
+    val uri: Uri,
+    val name: String,
+    val kind: StatusKind,
+    val size: Long,
+    val modifiedAt: Long,
+    val durationMs: Long? = null,
+) {
+    val key: String get() = name
+}
+
+data class StatusKept(val item: StatusItem, val saved: SavedFile)
 
 sealed interface StatusPhase {
-    data object Idle : StatusPhase
+    /** No folder yet (or Android forgot it): the "how it works" screen and its button. */
+    data object NeedsFolder : StatusPhase
 
-    data object Reading : StatusPhase
+    data object Loading : StatusPhase
 
-    data class Unsupported(val message: String) : StatusPhase
+    /** The user picked another folder than WhatsApp's statuses. */
+    data class WrongFolder(val message: String) : StatusPhase
 
+    /** The grid (it may be empty: no status seen in WhatsApp lately). */
     data object Ready : StatusPhase
 
-    /** Part [index] (from 0) of [count] is being cut; [progress] 0..1 for the whole series, negative when unknown. */
-    data class Working(val index: Int, val count: Int, val progress: Float, val step: String) : StatusPhase
+    data class Working(val done: Int, val total: Int) : StatusPhase
 
-    /** [saved] in order; [redone] parts had to be cut again exactly (their copy ran past the status length). */
-    data class Done(val saved: List<SavedFile>, val copied: Boolean, val redone: Int = 0) : StatusPhase
+    data class Done(val kept: List<StatusKept>) : StatusPhase
 
-    /** [saved]: the parts already in the Gallery when it failed. */
-    data class Failed(val message: String, val debug: String? = null, val saved: List<SavedFile> = emptyList()) : StatusPhase
+    data class Failed(val message: String, val debug: String? = null) : StatusPhase
 }
 
 data class StatusUiState(
-    val phase: StatusPhase = StatusPhase.Idle,
-    val source: TrimSource? = null,
-    val length: StatusLength = StatusLength.MINUTE,
-    /** Same length for every part (a 2:10 video gives 3 × 0:43 rather than 1:00, 1:00, 0:10). */
-    val equal: Boolean = true,
-    /** Re-encode so each part starts on the exact frame (slower). */
-    val exact: Boolean = false,
-    /** Frames spread over the video: [frames] i is at the middle of the i-th of [frames].size slices. */
-    val frames: List<Bitmap> = emptyList(),
+    val phase: StatusPhase = StatusPhase.NeedsFolder,
+    val app: StatusApp = StatusApp.WHATSAPP,
+    val items: List<StatusItem> = emptyList(),
+    val filter: StatusFilter = StatusFilter.ALL,
+    /** Names of the statuses already kept (they show a check, "Tout enregistrer" skips them). */
+    val saved: Set<String> = emptySet(),
+    /** Names being kept one by one, from their own button. */
+    val saving: Set<String> = emptySet(),
+    /** When the list was read: the rings count the hours left from it. */
+    val now: Long = 0L,
+    /** A short message for a toast (a single save that failed); the screen clears it once shown. */
+    val message: String? = null,
 ) {
-    val parts: List<TrimRange> get() = source?.let { StatusPlan.parts(it.durationMs, length, equal) }.orEmpty()
+    val shown: List<StatusItem> get() = items.filter { filter.accepts(it.kind) }
+    val photos: Int get() = items.count { it.kind == StatusKind.PHOTO }
+    val videos: Int get() = items.count { it.kind == StatusKind.VIDEO }
 
-    val refusal: String? get() = source?.let { StatusPlan.refusal(it.durationMs, length) }
-
-    val copies: Boolean get() = source?.file?.name?.let { TrimPlan.copies(TrimOutput.VIDEO, SafeNames.extensionOf(it), true, exact) } ?: false
-
-    /** The frame closest to the middle of [part], or null while the frames are read. */
-    fun thumb(part: TrimRange): Bitmap? {
-        val duration = source?.durationMs ?: return null
-        if (frames.isEmpty() || duration <= 0) return null
-        val middle = (part.startMs + part.endMs) / 2.0
-        return frames.indices.minByOrNull { i -> abs(middle - duration * (2 * i + 1) / (2.0 * frames.size)) }?.let(frames::get)
-    }
+    /** What "Tout enregistrer" keeps: the shown statuses not kept yet. */
+    val toKeep: List<StatusItem> get() = shown.filter { it.key !in saved && it.key !in saving }
 }
 
 /**
- * The Découpe statut's state and work, held by the App like the Découpeur's (a series keeps being cut when the user
- * leaves the tool). The video is read in place, copied once into a work dir, then each part is cut by FFmpeg with the
- * Découpeur's command, saved to the Gallery (Movies/Gulp) as soon as it is ready, and the copy is deleted.
+ * The Statuts tool, held by the App. WhatsApp keeps the statuses its user has seen in a hidden ".Statuses" folder,
+ * for about a day. Since Android 11 only the system folder picker can give an app access to it: the user picks it
+ * once, Android remembers the permission ([Context.getContentResolver] persisted URI permissions), and the folder
+ * is read again each time the tool opens. Kept statuses are copies in Pictures/Gulp or Movies/Gulp; the folder is
+ * only read, never changed.
  */
-class StatusController(
-    private val context: Context,
-    private val scope: CoroutineScope,
-    private val engine: Engine,
-) {
-    private val _state = MutableStateFlow(StatusUiState())
+class StatusController(private val context: Context, private val scope: CoroutineScope) {
+    private val prefs = context.getSharedPreferences("statuses", Context.MODE_PRIVATE)
+    private val _state = MutableStateFlow(
+        StatusUiState(app = runCatching { StatusApp.valueOf(prefs.getString(KEY_APP, null) ?: "") }.getOrDefault(StatusApp.WHATSAPP)),
+    )
     val state: StateFlow<StatusUiState> = _state.asStateFlow()
 
-    private var readJob: Job? = null
+    private var listJob: Job? = null
     private var workJob: Job? = null
-    private val generation = AtomicInteger(0)
 
     val busy: Boolean get() = _state.value.phase is StatusPhase.Working
 
-    /** Takes the chosen video (replacing the current one). False while a series is being cut. */
-    fun pick(uri: Uri): Boolean {
-        if (busy) return false
-        readJob?.cancel()
-        _state.update { StatusUiState(phase = StatusPhase.Reading, length = it.length, equal = it.equal, exact = it.exact) }
-        readJob = scope.launch(Dispatchers.IO) {
-            val next = try {
-                describe(uri)
+    /** Where the system picker should open for [app]: its statuses folder (Android goes as near as it can). */
+    fun initialUri(app: StatusApp = _state.value.app): Uri =
+        DocumentsContract.buildDocumentUri(EXTERNAL_STORAGE, initialDocumentId(app))
+
+    /**
+     * Reads the folder again (new statuses, expired ones gone). [quiet] = the screen came back to the front: only
+     * the grid (or the first screen, when a folder is known) is refreshed, a result or an error stays on screen.
+     */
+    fun refresh(quiet: Boolean = false) {
+        if (busy) return
+        if (quiet && _state.value.phase.let { it !is StatusPhase.Ready && it !is StatusPhase.NeedsFolder }) return
+        val app = _state.value.app
+        val folder = folderOf(app)
+        if (folder == null) {
+            _state.update { it.copy(phase = StatusPhase.NeedsFolder, items = emptyList()) }
+            return
+        }
+        listJob?.cancel()
+        if (!quiet || _state.value.phase !is StatusPhase.Ready) _state.update { it.copy(phase = StatusPhase.Loading) }
+        listJob = scope.launch(Dispatchers.IO) {
+            // Nothing changes under a running copy, nor after the user switched to the other app meanwhile.
+            fun settle(change: (StatusUiState) -> StatusUiState) =
+                _state.update { if (it.phase is StatusPhase.Working || it.app != app) it else change(it) }
+            try {
+                val items = list(folder.first, folder.second)
+                val saved = keptNames(items)
+                settle { it.copy(phase = StatusPhase.Ready, items = items, saved = saved, now = System.currentTimeMillis()) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: SecurityException) {
-                StatusUiState(phase = StatusPhase.Unsupported("Android a refusé l'accès : choisissez la vidéo à nouveau."))
+                forgetFolder(app)
+                settle { it.copy(phase = StatusPhase.NeedsFolder, items = emptyList(), message = "Android a retiré l'accès au dossier : autorise-le à nouveau.") }
+            } catch (e: FileNotFoundException) {
+                forgetFolder(app)
+                settle { it.copy(phase = StatusPhase.NeedsFolder, items = emptyList(), message = "Le dossier des statuts a disparu : autorise-le à nouveau.") }
             } catch (e: Exception) {
-                StatusUiState(phase = StatusPhase.Unsupported(e.message ?: "Impossible de lire cette vidéo."))
+                settle { it.copy(phase = StatusPhase.Failed("Impossible de lire les statuts.", e.toString())) }
             }
-            _state.update { current -> if (current.phase is StatusPhase.Working) current else next }
-            val source = next.source ?: return@launch
-            val frames = runCatching { frames(uri, source) }.getOrNull() ?: return@launch
-            coroutineContext.ensureActive()
-            _state.update { if (it.source?.file?.uri == uri) it.copy(frames = frames) else it }
-        }
-        return true
-    }
-
-    private fun describe(uri: Uri): StatusUiState {
-        val previous = _state.value
-        val info = FileIntake.describe(context, uri)
-        val head = runCatching { FileIntake.readHead(context, uri) }.getOrDefault(ByteArray(0))
-        if (FileKind.detect(info.name, info.mime, head) != FileKind.VIDEO) {
-            return StatusUiState(phase = StatusPhase.Unsupported("La Découpe statut prend une vidéo. « ${info.name} » n'en est pas une."))
-        }
-        FfmpegInput.refusal(head)?.let { return StatusUiState(phase = StatusPhase.Unsupported(it)) }
-        val retriever = MediaMetadataRetriever()
-        try {
-            retriever.setDataSource(context, uri)
-            val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.takeIf { it > 0 }
-                ?: return StatusUiState(phase = StatusPhase.Unsupported("Gulp ne trouve pas la durée de cette vidéo : elle est peut-être abîmée."))
-            if (retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) != "yes") {
-                return StatusUiState(phase = StatusPhase.Unsupported("« ${info.name} » n'a pas d'image : la Découpe statut prend une vidéo."))
-            }
-            var w = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()
-            var h = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()
-            val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
-            if (rotation == 90 || rotation == 270) w = h.also { h = w }
-            return StatusUiState(StatusPhase.Ready, TrimSource(info, duration, true, w, h), previous.length, previous.equal, previous.exact)
-        } catch (e: RuntimeException) {
-            return StatusUiState(phase = StatusPhase.Unsupported("Gulp ne sait pas lire cette vidéo sur ce téléphone."))
-        } finally {
-            runCatching { retriever.release() }
         }
     }
 
-    /** [FRAMES] frames spread over the video (the closest key frames: fast). */
-    private suspend fun frames(uri: Uri, source: TrimSource): List<Bitmap> {
-        val retriever = MediaMetadataRetriever()
-        val frames = ArrayList<Bitmap>()
-        try {
-            retriever.setDataSource(context, uri)
-            for (i in 0 until FRAMES) {
-                coroutineContext.ensureActive()
-                val us = source.durationMs * 1_000L * (2 * i + 1) / (2 * FRAMES)
-                frame(retriever, us)?.let(frames::add)
-            }
-        } catch (e: CancellationException) {
-            frames.forEach(Bitmap::recycle)
-            throw e
-        } catch (e: RuntimeException) {
-            // No pictures: the parts are still listed.
-        } finally {
-            runCatching { retriever.release() }
-        }
-        // A missing frame would shift the others in time: all or nothing.
-        return if (frames.size == FRAMES) frames else emptyList<Bitmap>().also { frames.forEach(Bitmap::recycle) }
+    fun setApp(app: StatusApp) {
+        if (busy || app == _state.value.app) return
+        prefs.edit().putString(KEY_APP, app.name).apply()
+        _state.update { it.copy(app = app, items = emptyList(), filter = StatusFilter.ALL) }
+        refresh()
     }
 
-    private fun frame(retriever: MediaMetadataRetriever, us: Long): Bitmap? {
-        val raw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            retriever.getScaledFrameAtTime(us, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, FRAME_SIZE, FRAME_SIZE)
-        } else {
-            retriever.getFrameAtTime(us, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-        } ?: return null
-        val longest = max(raw.width, raw.height)
-        if (longest <= FRAME_SIZE * 1.2f) return raw
-        val scale = FRAME_SIZE.toFloat() / longest
-        return Bitmap.createScaledBitmap(raw, max(1, (raw.width * scale).roundToInt()), max(1, (raw.height * scale).roundToInt()), true)
-            .also { if (it !== raw) raw.recycle() }
-    }
+    fun setFilter(filter: StatusFilter) = _state.update { it.copy(filter = filter) }
 
-    fun setLength(length: StatusLength) = edit { it.copy(length = length) }
+    fun clearMessage() = _state.update { it.copy(message = null) }
 
-    fun setEqual(equal: Boolean) = edit { it.copy(equal = equal) }
-
-    fun setExact(exact: Boolean) = edit { it.copy(exact = exact) }
-
-    private inline fun edit(crossinline change: (StatusUiState) -> StatusUiState) {
-        _state.update { if (it.phase == StatusPhase.Ready && it.source != null) change(it) else it }
-    }
-
-    fun reset() {
+    /** The user picked [tree] in the system picker: it must be (or hold) a ".Statuses" folder of WhatsApp. */
+    fun folderPicked(tree: Uri) {
         if (busy) return
-        readJob?.cancel()
-        _state.update { StatusUiState(length = it.length, equal = it.equal, exact = it.exact) }
+        listJob?.cancel()
+        _state.update { it.copy(phase = StatusPhase.Loading) }
+        listJob = scope.launch(Dispatchers.IO) {
+            val treeId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+            val statuses = treeId?.let { statusesFolderOf(it) ?: search(tree, it, statusesSearchDepth(it)) }
+            if (treeId == null || statuses == null) {
+                _state.update {
+                    it.copy(
+                        phase = StatusPhase.WrongFolder(
+                            "Ce n'est pas le dossier des statuts. Laisse Android ouvrir le dossier proposé (.Statuses) " +
+                                "et touche « Utiliser ce dossier », puis « Autoriser ».",
+                        ),
+                    )
+                }
+                return@launch
+            }
+            runCatching { context.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            val app = StatusApp.of(statuses)
+            prefs.edit()
+                .putString(KEY_APP, app.name)
+                .putString(KEY_TREE + app.name, tree.toString())
+                .putString(KEY_FOLDER + app.name, statuses)
+                .apply()
+            _state.update { it.copy(app = app) }
+            refresh()
+        }
     }
 
-    /** From a result or an error, back to the same video and settings. */
-    fun backToEdit() {
-        _state.update { if (it.source != null && !busy) it.copy(phase = StatusPhase.Ready) else it }
+    /** "Changer de dossier": forgets the folder of the current app (Android drops the permission too). */
+    fun changeFolder() {
+        if (busy) return
+        forgetFolder(_state.value.app)
+        _state.update { it.copy(phase = StatusPhase.NeedsFolder, items = emptyList()) }
     }
 
-    /** Stops the series; the parts already saved stay in the Gallery. */
+    fun backToGrid() {
+        if (busy) return
+        refresh(quiet = false)
+    }
+
     fun cancel() {
-        generation.incrementAndGet()
         workJob?.cancel()
-        _state.update { if (it.phase is StatusPhase.Working) it.copy(phase = StatusPhase.Ready) else it }
     }
 
-    fun start() {
+    /** Keeps one status from its own button, without leaving the grid. */
+    fun keepOne(item: StatusItem) {
         val current = _state.value
-        val source = current.source ?: return
-        if (busy || current.phase !is StatusPhase.Ready && current.phase !is StatusPhase.Failed) return
-        if (current.refusal != null) return
-        val parts = current.parts
-        if (parts.isEmpty()) return
-        val token = generation.incrementAndGet()
-        val length = current.length
-        val exact = current.exact
-        _state.update { it.copy(phase = StatusPhase.Working(0, parts.size, -1f, "Copie de la vidéo…")) }
-        val previous = workJob
-        workJob = scope.launch(Dispatchers.IO) {
-            previous?.cancelAndJoin()
-            val saved = ArrayList<SavedFile>()
+        if (busy || item.key in current.saving) return
+        _state.update { it.copy(saving = it.saving + item.key) }
+        scope.launch(Dispatchers.IO) {
             val dir = try {
                 WorkDir.create(context)
             } catch (e: IOException) {
-                fail(token, e.message ?: "Impossible de préparer la découpe.", null, saved)
+                _state.update { it.copy(saving = it.saving - item.key, message = "Impossible de préparer la copie.") }
                 return@launch
             }
             try {
-                val job = coroutineContext
-                val copy = FileIntake.copyToWork(context, source.file.uri, FileIntake.MEDIA_MAX_BYTES, dir) { job.ensureActive() }
-                val head = copy.inputStream().use { input -> ByteArray(FileKind.HEAD_SIZE).let { b -> b.copyOf(max(0, input.read(b))) } }
-                FfmpegInput.refusal(head)?.let { throw ConversionError(it) }
-                val workExt = FfmpegInput.workExt(head, source.file.name)
-                val input = File(dir, "input.$workExt")
-                if (!copy.renameTo(input)) throw ConversionError("Impossible de préparer la vidéo.")
-                val root = WorkDir.root(context).absolutePath
-                val out = File(dir, "out").apply { mkdirs() }
-                val copied = TrimPlan.copies(TrimOutput.VIDEO, workExt, true, exact)
-                var redone = 0
-                parts.forEachIndexed { index, range ->
-                    coroutineContext.ensureActive()
-                    fun overall(fraction: Float) = (index + fraction.coerceIn(0f, 1f)) / parts.size
-                    val label = "Statut ${index + 1} sur ${parts.size}…"
-                    working(token, index, parts.size, overall(0f), label)
-                    var ext = TrimPlan.outputExt(TrimOutput.VIDEO, workExt, true, exact)
-                    var work = cut(root, input, dir, range, workExt, exact, ext) { working(token, index, parts.size, overall(it), label) }
-                    if (copied && StatusPlan.tooLong(durationOf(work) ?: 0L, length)) {
-                        // The copy started on a key frame too far before the part: cut again on the exact frame.
-                        work.delete()
-                        redone++
-                        val again = "Statut ${index + 1} sur ${parts.size} à la seconde près…"
-                        working(token, index, parts.size, overall(0f), again)
-                        ext = TrimPlan.outputExt(TrimOutput.VIDEO, workExt, true, exact = true)
-                        work = cut(root, input, dir, range, workExt, true, ext) { working(token, index, parts.size, overall(it), again) }
-                    }
-                    coroutineContext.ensureActive()
-                    val named = File(out, StatusPlan.outputName(source.file.name, index, parts.size, ext))
-                    named.delete()
-                    if (!work.renameTo(named)) throw ConversionError("Impossible d'enregistrer le statut ${index + 1}.")
-                    saved += MediaExporter.export(context, named)
-                    named.delete()
-                }
-                input.delete()
-                update(token) { it.copy(phase = StatusPhase.Done(saved.toList(), copied, redone)) }
+                copy(item, dir)
+                _state.update { it.copy(saving = it.saving - item.key, saved = it.saved + item.key) }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: ConversionError) {
-                fail(token, e.message ?: FfmpegErrors.GENERIC, e.debug, saved)
-            } catch (e: FileTooLarge) {
-                fail(token, e.message ?: "Vidéo trop volumineuse.", null, saved)
-            } catch (e: UnsupportedSource) {
-                fail(token, e.message ?: "Cette vidéo ne peut pas être ouverte.", null, saved)
-            } catch (e: SecurityException) {
-                fail(token, "Android a refusé l'accès : choisissez la vidéo à nouveau, ou autorisez le stockage.", e.toString(), saved)
-            } catch (e: IOException) {
-                fail(token, "Lecture ou écriture impossible : vérifiez l'espace libre et réessayez.", e.toString(), saved)
             } catch (e: Throwable) {
-                fail(token, FfmpegErrors.GENERIC, e.toString(), saved)
+                _state.update { it.copy(saving = it.saving - item.key, message = failure(e)) }
             } finally {
                 withContext(NonCancellable) { WorkDir.delete(context, dir) }
             }
         }
     }
 
-    /** One part of [input] into a new file of the work [dir], with the Découpeur's command. */
-    private suspend fun cut(root: String, input: File, dir: File, range: TrimRange, workExt: String, exact: Boolean, ext: String, onProgress: (Float) -> Unit): File {
-        val work = File(dir, "part.$ext")
-        work.delete()
-        val args = TrimPlan.args(root, input.absolutePath, work.absolutePath, range, TrimOutput.VIDEO, workExt, true, exact)
-        val target = Target.entries.firstOrNull { it.ext == ext } ?: Target.MP4
-        FfmpegRunner(context, engine).run(args, work, target, range.durationMs / 1000.0, onProgress)
-        return work
+    /** "Tout enregistrer": keeps every shown status not kept yet, then shows them. */
+    fun keepAll() {
+        val current = _state.value
+        val items = current.toKeep
+        if (busy || items.isEmpty()) return
+        _state.update { it.copy(phase = StatusPhase.Working(0, items.size)) }
+        workJob = scope.launch(Dispatchers.IO) {
+            val dir = try {
+                WorkDir.create(context)
+            } catch (e: IOException) {
+                _state.update { it.copy(phase = StatusPhase.Failed(e.message ?: "Impossible de préparer la copie.")) }
+                return@launch
+            }
+            val kept = ArrayList<StatusKept>()
+            try {
+                items.forEachIndexed { index, item ->
+                    coroutineContext.ensureActive()
+                    kept += StatusKept(item, copy(item, dir))
+                    _state.update { it.copy(phase = StatusPhase.Working(index + 1, items.size), saved = it.saved + item.key) }
+                }
+                _state.update { it.copy(phase = StatusPhase.Done(kept)) }
+            } catch (e: CancellationException) {
+                _state.update { it.copy(phase = if (kept.isEmpty()) StatusPhase.Ready else StatusPhase.Done(kept)) }
+                throw e
+            } catch (e: Throwable) {
+                _state.update { it.copy(phase = StatusPhase.Failed(failure(e), e.toString())) }
+            } finally {
+                withContext(NonCancellable) { WorkDir.delete(context, dir) }
+            }
+        }
     }
 
-    /** Length of a written part (ms), or null when Android cannot read it. */
-    private fun durationOf(file: File): Long? {
+    private fun failure(e: Throwable): String = when (e) {
+        is SecurityException -> "Android a refusé l'accès au statut : autorise le dossier à nouveau."
+        is FileNotFoundException -> "Ce statut vient de disparaître de WhatsApp."
+        is IOException -> "Copie impossible : vérifie l'espace libre et réessaie."
+        is OutOfMemoryError -> "Pas assez de mémoire pour ce statut."
+        else -> "La copie du statut a échoué."
+    }
+
+    /** Copies [item] as a new file of the gallery, named by [keptName]; remembers it as kept. */
+    private suspend fun copy(item: StatusItem, dir: File): SavedFile {
+        val job = coroutineContext
+        val file = FileIntake.uniqueFile(dir, keptName(item.name, item.modifiedAt))
+        val input = context.contentResolver.openInputStream(item.uri) ?: throw FileNotFoundException(item.name)
+        input.use { source -> file.outputStream().use { FileIntake.copyCapped(source, it, MAX_BYTES) { job.ensureActive() } } }
+        val saved = MediaExporter.export(context, file)
+        file.delete()
+        remember(item.key)
+        return saved
+    }
+
+    // MARK: - Folder
+
+    /** The tree the user granted for [app] and the document id of its ".Statuses" folder, if Android still allows it. */
+    private fun folderOf(app: StatusApp): Pair<Uri, String>? {
+        val tree = prefs.getString(KEY_TREE + app.name, null)?.let(Uri::parse) ?: return null
+        val folder = prefs.getString(KEY_FOLDER + app.name, null) ?: return null
+        val granted = context.contentResolver.persistedUriPermissions.any { it.uri == tree && it.isReadPermission }
+        return if (granted) tree to folder else null
+    }
+
+    private fun forgetFolder(app: StatusApp) {
+        prefs.getString(KEY_TREE + app.name, null)?.let { tree ->
+            runCatching { context.contentResolver.releasePersistableUriPermission(Uri.parse(tree), Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        }
+        prefs.edit().remove(KEY_TREE + app.name).remove(KEY_FOLDER + app.name).apply()
+    }
+
+    /** Looks for ".Statuses" under the picked folder, [depth] levels down at most. */
+    private fun search(tree: Uri, documentId: String, depth: Int): String? {
+        if (depth <= 0) return null
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, documentId)
+        val folders = ArrayList<String>()
+        context.contentResolver.query(
+            children,
+            arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE),
+            null,
+            null,
+            null,
+        )?.use { c ->
+            while (c.moveToNext()) {
+                if (c.getString(2) != DocumentsContract.Document.MIME_TYPE_DIR) continue
+                val id = c.getString(0) ?: continue
+                if (c.getString(1) == STATUSES) return id
+                folders += id
+            }
+        }
+        return folders.firstNotNullOfOrNull { search(tree, it, depth - 1) }
+    }
+
+    /** The statuses of the folder, newest first. */
+    private suspend fun list(tree: Uri, folder: String): List<StatusItem> {
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, folder)
+        val items = ArrayList<StatusItem>()
+        val cursor = context.contentResolver.query(
+            children,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE,
+                DocumentsContract.Document.COLUMN_SIZE,
+                DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+            ),
+            null,
+            null,
+            null,
+        ) ?: throw FileNotFoundException(folder)
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                coroutineContext.ensureActive()
+                val id = c.getString(0) ?: continue
+                val name = c.getString(1) ?: continue
+                val kind = statusKind(name, c.getString(2)) ?: continue
+                val size = if (c.isNull(3)) 0L else c.getLong(3)
+                if (size <= 0L) continue // still being downloaded by WhatsApp
+                val uri = DocumentsContract.buildDocumentUriUsingTree(tree, id)
+                items += StatusItem(uri, name, kind, size, if (c.isNull(4)) 0L else c.getLong(4))
+            }
+        }
+        return items
+            .sortedByDescending { it.modifiedAt }
+            .map { if (it.kind == StatusKind.VIDEO) it.copy(durationMs = duration(it.uri)) else it }
+    }
+
+    private fun duration(uri: Uri): Long? {
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(file.absolutePath)
+            retriever.setDataSource(context, uri)
             retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
-        } catch (e: RuntimeException) {
+        } catch (e: Exception) {
             null
         } finally {
             runCatching { retriever.release() }
         }
     }
 
-    private inline fun update(token: Int, crossinline change: (StatusUiState) -> StatusUiState) {
-        _state.update { if (generation.get() == token) change(it) else it }
+    // MARK: - Kept statuses
+
+    /** Names kept before that are still in the folder (the others expired: forgotten so the list stays small). */
+    private fun keptNames(items: List<StatusItem>): Set<String> {
+        val present = items.map { it.key }.toSet()
+        val kept = prefs.getStringSet(KEY_SAVED, emptySet()).orEmpty().filterTo(HashSet()) { it in present }
+        prefs.edit().putStringSet(KEY_SAVED, kept).apply()
+        return kept
     }
 
-    private fun working(token: Int, index: Int, count: Int, progress: Float, step: String) {
-        update(token) { if (it.phase is StatusPhase.Working) it.copy(phase = StatusPhase.Working(index, count, progress, step)) else it }
+    @Synchronized
+    private fun remember(key: String) {
+        val kept = HashSet(prefs.getStringSet(KEY_SAVED, emptySet()).orEmpty())
+        kept += key
+        prefs.edit().putStringSet(KEY_SAVED, kept).apply()
     }
 
-    private fun fail(token: Int, message: String, debug: String?, saved: List<SavedFile>) {
-        update(token) { it.copy(phase = StatusPhase.Failed(message, debug, saved.toList())) }
-    }
-
-    private companion object {
-        const val FRAMES = 12
-        const val FRAME_SIZE = 240
+    companion object {
+        private const val EXTERNAL_STORAGE = "com.android.externalstorage.documents"
+        private const val KEY_APP = "app"
+        private const val KEY_TREE = "tree_"
+        private const val KEY_FOLDER = "folder_"
+        private const val KEY_SAVED = "saved"
+        private const val MAX_BYTES: Long = 512L * 1024 * 1024
     }
 }

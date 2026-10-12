@@ -1,10 +1,5 @@
 package com.powermaxv2.ytdownloader.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.LinearGradient
-import android.graphics.Paint
-import android.graphics.Shader
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,12 +12,11 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.core.SavedFile
 import com.powermaxv2.ytdownloader.core.Skin
-import com.powermaxv2.ytdownloader.core.files.LocalFile
-import com.powermaxv2.ytdownloader.core.status.StatusLength
+import com.powermaxv2.ytdownloader.core.status.StatusItem
+import com.powermaxv2.ytdownloader.core.status.StatusKept
+import com.powermaxv2.ytdownloader.core.status.StatusKind
 import com.powermaxv2.ytdownloader.core.status.StatusPhase
-import com.powermaxv2.ytdownloader.core.status.StatusPlan
 import com.powermaxv2.ytdownloader.core.status.StatusUiState
-import com.powermaxv2.ytdownloader.core.trim.TrimSource
 import com.powermaxv2.ytdownloader.ui.skin.SkinBackground
 import com.powermaxv2.ytdownloader.ui.tools.ToolScaffold
 import com.powermaxv2.ytdownloader.ui.tools.status.STATUS_COMMAND
@@ -37,7 +31,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The Découpe statut in the three skins, with sample data (no App, controller or FFmpeg). */
+/** The Statuts tool in the three skins, with sample statuses (no App, controller or WhatsApp folder). */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xxhdpi", application = android.app.Application::class)
@@ -45,30 +39,27 @@ class StatusScreenshotTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    @Test fun classicIdle() = shot(Skin.CLASSIC, "classic_status_idle") { StatusUiState() }
-    @Test fun paperIdle() = shot(Skin.PAPER, "paper_status_idle") { StatusUiState() }
-    @Test fun terminalIdle() = shot(Skin.TERMINAL, "terminal_status_idle") { StatusUiState() }
+    @Test fun classicSetup() = shot(Skin.CLASSIC, "classic_statuts_setup", StatusUiState())
+    @Test fun paperSetup() = shot(Skin.PAPER, "paper_statuts_setup", StatusUiState())
+    @Test fun terminalSetup() = shot(Skin.TERMINAL, "terminal_statuts_setup", StatusUiState())
 
-    @Test fun classicEdit() = shot(Skin.CLASSIC, "classic_status_edit") { edit() }
-    @Test fun paperEdit() = shot(Skin.PAPER, "paper_status_edit") { edit() }
-    @Test fun terminalEdit() = shot(Skin.TERMINAL, "terminal_status_edit") { edit() }
+    @Test fun classicGrid() = shot(Skin.CLASSIC, "classic_statuts_grid", grid)
+    @Test fun paperGrid() = shot(Skin.PAPER, "paper_statuts_grid", grid)
+    @Test fun terminalGrid() = shot(Skin.TERMINAL, "terminal_statuts_grid", grid)
 
-    @Test fun classicHalfMinute() = shot(Skin.CLASSIC, "classic_status_30s") { edit().copy(length = StatusLength.HALF_MINUTE, equal = false) }
-    @Test fun paperHalfMinute() = shot(Skin.PAPER, "paper_status_30s") { edit().copy(length = StatusLength.HALF_MINUTE, equal = false) }
-    @Test fun terminalHalfMinute() = shot(Skin.TERMINAL, "terminal_status_30s") { edit().copy(length = StatusLength.HALF_MINUTE, equal = false) }
+    @Test fun classicEmpty() = shot(Skin.CLASSIC, "classic_statuts_empty", empty)
+    @Test fun paperEmpty() = shot(Skin.PAPER, "paper_statuts_empty", empty)
+    @Test fun terminalEmpty() = shot(Skin.TERMINAL, "terminal_statuts_empty", empty)
 
-    @Test fun classicProgress() = shot(Skin.CLASSIC, "classic_status_progress") { progress() }
-    @Test fun paperProgress() = shot(Skin.PAPER, "paper_status_progress") { progress() }
-    @Test fun terminalProgress() = shot(Skin.TERMINAL, "terminal_status_progress") { progress() }
+    @Test fun classicProgress() = shot(Skin.CLASSIC, "classic_statuts_progress", working, settle = 900)
+    @Test fun paperProgress() = shot(Skin.PAPER, "paper_statuts_progress", working, settle = 900)
+    @Test fun terminalProgress() = shot(Skin.TERMINAL, "terminal_statuts_progress", working, settle = 900)
 
-    @Test fun classicDone() = shot(Skin.CLASSIC, "classic_status_done") { done() }
-    @Test fun paperDone() = shot(Skin.PAPER, "paper_status_done") { done() }
-    @Test fun terminalDone() = shot(Skin.TERMINAL, "terminal_status_done") { done() }
+    @Test fun classicDone() = shot(Skin.CLASSIC, "classic_statuts_done", done)
+    @Test fun paperDone() = shot(Skin.PAPER, "paper_statuts_done", done)
+    @Test fun terminalDone() = shot(Skin.TERMINAL, "terminal_statuts_done", done)
 
-    @Test fun classicTooShort() = shot(Skin.CLASSIC, "classic_status_short") { short() }
-
-    private fun shot(skin: Skin, name: String, state: () -> StatusUiState) {
-        val sample = state()
+    private fun shot(skin: Skin, name: String, state: StatusUiState, settle: Long = 2_500) {
         composeRule.setContent {
             AppTheme(Platform.YOUTUBE, skin) {
                 Box(Modifier.fillMaxSize()) {
@@ -80,49 +71,50 @@ class StatusScreenshotTest {
                         onHome = {},
                         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
                     ) {
-                        StatusContent(sample, StatusActions())
+                        StatusContent(state, StatusActions())
                     }
                 }
             }
         }
-        composeRule.mainClock.advanceTimeBy(2_500)
+        composeRule.mainClock.advanceTimeBy(settle)
         composeRule.waitForIdle()
         composeRule.onRoot().captureRoboImage("build/outputs/roborazzi/$name.png")
     }
 
     private companion object {
-        val video = TrimSource(LocalFile(Uri.parse("content://sample/1"), "anniversaire-lea.mp4", 186_000_000L, "video/mp4"), 247_000L, true, 1080, 1920)
+        const val HOUR = 60L * 60 * 1000
+        const val NOW = 1_791_729_120_000L
 
-        /** Twelve made-up frames, from sunset orange to night blue (a party filmed into the evening). */
-        fun frames(): List<Bitmap> = (0 until 12).map { i ->
-            val bitmap = Bitmap.createBitmap(135, 240, Bitmap.Config.ARGB_8888)
-            val t = i / 11f
-            val top = android.graphics.Color.HSVToColor(floatArrayOf(30f + 200f * t, 0.75f, 0.95f - 0.4f * t))
-            val bottom = android.graphics.Color.HSVToColor(floatArrayOf(330f - 60f * t, 0.8f, 0.55f - 0.2f * t))
-            val paint = Paint().apply { shader = LinearGradient(0f, 0f, 0f, 240f, top, bottom, Shader.TileMode.CLAMP) }
-            Canvas(bitmap).apply {
-                drawRect(0f, 0f, 135f, 240f, paint)
-                drawCircle(40f + 50f * t, 150f, 34f, Paint().apply { color = android.graphics.Color.argb(150, 255, 240, 200) })
-            }
-            bitmap
-        }
+        fun item(n: Int, hoursAgo: Double, video: Long? = null) = StatusItem(
+            uri = Uri.parse("content://sample/status/$n"),
+            name = "status$n.${if (video != null) "mp4" else "jpg"}",
+            kind = if (video != null) StatusKind.VIDEO else StatusKind.PHOTO,
+            size = 900_000L,
+            modifiedAt = NOW - (hoursAgo * HOUR).toLong(),
+            durationMs = video,
+        )
 
-        fun edit() = StatusUiState(StatusPhase.Ready, video, StatusLength.MINUTE, equal = true, frames = frames())
-
-        fun progress() = edit().copy(phase = StatusPhase.Working(2, 5, 0.5f, "Statut 3 sur 5…"))
-
-        fun done(): StatusUiState {
-            val saved = (0 until 5).map { i ->
-                val name = StatusPlan.outputName(video.file.name, i, 5, "mp4")
-                SavedFile(Uri.parse("content://media/$i"), "video/mp4", name, 37_000_000L, "Movies/Gulp")
-            }
-            return edit().copy(phase = StatusPhase.Done(saved, copied = true))
-        }
-
-        fun short() = StatusUiState(
-            StatusPhase.Ready,
-            TrimSource(LocalFile(Uri.parse("content://sample/2"), "chat-qui-saute.mp4", 9_400_000L, "video/mp4"), 48_000L, true, 720, 1280),
-            StatusLength.MINUTE,
+        val items = listOf(
+            item(1, 1.5, 28_000), item(2, 2.5), item(3, 6.2, 12_000),
+            item(4, 9.4), item(5, 14.8), item(6, 17.1, 30_000),
+            item(7, 20.6), item(8, 21.5, 7_000), item(9, 22.9),
+        )
+        val grid = StatusUiState(
+            phase = StatusPhase.Ready,
+            items = items,
+            saved = setOf("status2.jpg", "status6.mp4"),
+            saving = setOf("status4.jpg"),
+            now = NOW,
+        )
+        val empty = StatusUiState(phase = StatusPhase.Ready, now = NOW)
+        val working = grid.copy(phase = StatusPhase.Working(2, 6), saving = emptySet())
+        val done = grid.copy(
+            phase = StatusPhase.Done(
+                listOf(items[0], items[2], items[3], items[4], items[6], items[7], items[8]).mapIndexed { i, it ->
+                    val mime = if (it.kind == StatusKind.VIDEO) "video/mp4" else "image/jpeg"
+                    StatusKept(it, SavedFile(Uri.parse("content://media/${i + 1}"), mime, it.name, it.size, "Pictures/Gulp"))
+                },
+            ),
         )
     }
 }

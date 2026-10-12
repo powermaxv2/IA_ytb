@@ -56,6 +56,8 @@ import com.powermaxv2.ytdownloader.core.Skin
 import com.powermaxv2.ytdownloader.core.chat.Buckets
 import com.powermaxv2.ytdownloader.core.chat.ChatStats
 import com.powermaxv2.ytdownloader.core.chat.Gap
+import com.powermaxv2.ytdownloader.core.chat.ReplyOptions
+import com.powermaxv2.ytdownloader.core.chat.weight
 import com.powermaxv2.ytdownloader.core.chat.ReplyStats
 import com.powermaxv2.ytdownloader.core.chat.duration
 import com.powermaxv2.ytdownloader.core.chat.percent
@@ -286,7 +288,7 @@ private fun Bubble(line: DemoLine) {
 
 /** Which discussion, its dates, and the "new conversation after" threshold. */
 @Composable
-internal fun SourceCard(stats: ChatStats, name: String, sample: Boolean, gap: Gap, onGap: (Gap) -> Unit, key: Any?) {
+internal fun SourceCard(stats: ChatStats, name: String, sample: Boolean, options: ReplyOptions, actions: ChatActions, key: Any?) {
     val accent = LocalAccent.current.start
     Column(
         Modifier
@@ -335,8 +337,20 @@ internal fun SourceCard(stats: ChatStats, name: String, sample: Boolean, gap: Ga
                 lineHeight = 16.sp,
             )
         }
+        stats.media?.let { media ->
+            Text(
+                "Export avec médias : ${count(media.found)} fichiers lus dans le .zip (${weight(media.totalBytes)})" +
+                    if (media.missing > 0) ", ${count(media.missing)} absents." else ".",
+                color = Palette.TextTertiary,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+            )
+        }
         BlockLabel("Nouvelle conversation après")
-        OptionChips(Gap.entries, gap, { it.label }, onGap)
+        OptionChips(Gap.entries, options.gap, { it.label }, actions.onGap)
+        BlockLabel("Précision")
+        ToggleRow("Nuits exclues", "Les heures de 0 h à 7 h ne comptent pas dans l'attente (sauf si on discute en pleine nuit).", options.nights, actions.onNights)
+        ToggleRow("Attente réelle", "L'attente part du premier message de l'autre, pas du dernier de sa rafale.", options.realWait, actions.onRealWait)
     }
 }
 
@@ -351,7 +365,7 @@ internal fun KpiGrid(stats: ChatStats, replies: ReplyStats, key: Any?) {
                 "Temps de réponse moyen",
                 replies.average,
                 { duration(it) },
-                "médiane ${duration(replies.median)}",
+                "médiane ${duration(replies.median)} · sans extrêmes ${duration(replies.trimmed)}",
                 index = 0,
                 key = key,
                 highlight = true,

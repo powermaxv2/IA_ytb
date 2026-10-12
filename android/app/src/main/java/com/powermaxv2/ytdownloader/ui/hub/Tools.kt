@@ -26,9 +26,11 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
-import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
+import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
+import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
@@ -95,6 +97,9 @@ object ToolRegistry {
 
     /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
     const val STICKERS = "stickers"
+
+    /** Statuts: keeps the photos and videos of WhatsApp statuses before they vanish (24 h). */
+    const val STATUSES = "statuses"
 
     /** Texte stylé: a text in WhatsApp's styles (*gras*, _italique_, ~barré~…) and in Unicode fonts, ready to paste. */
     const val STYLED_TEXT = "styled-text"
@@ -222,14 +227,22 @@ object ToolRegistry {
             screen = { vm -> StyledTextTool(vm) },
         ),
         GulpTool(
+            id = STATUSES,
+            name = "Statuts",
+            tagline = "Garde les photos et vidéos des statuts WhatsApp de tes contacts avant qu'ils disparaissent.",
+            tags = listOf("WhatsApp", "Photo · Vidéo", "Hors ligne"),
+            icon = StatusIcon,
+            screen = { vm -> StatusTool(vm) },
+        ),
+        GulpTool(
             id = STATUS_SPLIT,
             name = "Découpe statut",
             tagline = "Coupe une longue vidéo en morceaux d'une minute, prêts à poster à la suite en statut WhatsApp.",
             tags = listOf("WhatsApp", "30 s · 1 min", "Sans réencodage"),
             icon = Icons.Rounded.DonutLarge,
-            screen = { vm -> StatusTool(vm) },
+            screen = { vm -> SplitTool(vm) },
         ),
-        comingSoon(16),
+        comingSoon(17),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
