@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,6 +29,7 @@ import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
+import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
@@ -93,8 +95,12 @@ object ToolRegistry {
 
     /** Stickers: photos, a video or a GIF into a WhatsApp sticker pack, added to WhatsApp directly. */
     const val STICKERS = "stickers"
+
     /** Statuts: keeps the photos and videos of WhatsApp statuses before they vanish (24 h). */
     const val STATUSES = "statuses"
+
+    /** Texte stylé: a text in WhatsApp's styles (*gras*, _italique_, ~barré~…) and in Unicode fonts, ready to paste. */
+    const val STYLED_TEXT = "styled-text"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -206,6 +212,16 @@ object ToolRegistry {
             tags = listOf("WhatsApp", "Photo · Vidéo · GIF", "Fond effacé"),
             icon = StickerIcon,
             screen = { vm -> StickerTool(vm) },
+        ),
+        GulpTool(
+            id = STYLED_TEXT,
+            name = "Texte stylé",
+            tagline = "Écris une fois, colle-le en gras, barré, gothique ou en bulles dans WhatsApp.",
+            tags = listOf("WhatsApp", "24 styles", "Copier · Envoyer"),
+            icon = Icons.Rounded.TextFormat,
+            screen = { vm -> StyledTextTool(vm) },
+        ),
+        GulpTool(
             id = STATUSES,
             name = "Statuts",
             tagline = "Garde les photos et vidéos des statuts WhatsApp de tes contacts avant qu'ils disparaissent.",
@@ -213,7 +229,7 @@ object ToolRegistry {
             icon = StatusIcon,
             screen = { vm -> StatusTool(vm) },
         ),
-        comingSoon(15),
+        comingSoon(16),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
