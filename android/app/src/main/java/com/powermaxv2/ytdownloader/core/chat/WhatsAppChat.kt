@@ -1,13 +1,14 @@
 package com.powermaxv2.ytdownloader.core.chat
 
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 // Reading of a WhatsApp discussion export: one line per message,
 // "15/09/2026 18:02 - Inès: Moi !!" (Android) or "[15/09/2026 18:02:41] Inès: Moi !!" (iPhone), in the order
 // of dates of the phone's language (J/M/A, M/J/A or A/M/J), with or without AM/PM. A line that does not start
 // with a date continues the message above it. Media, stickers, calls, deleted and edited messages are recognised
-// in French and English, exported with or without media. Pure Kotlin: tested on the JVM.
+// in French, English and Spanish, exported with or without media. Pure Kotlin: tested on the JVM.
 
 /** What a message is: written text, or what WhatsApp wrote in its place. */
 enum class Kind(val label: String) {
@@ -34,8 +35,11 @@ enum class Kind(val label: String) {
 }
 
 /**
- * One message of the discussion. [time] is in seconds on a clock without time zone (only differences matter);
+ * One message of the discussion. [time] is in seconds and only its differences matter: real elapsed seconds
+ * (summer/winter time change taken into account when the export is read with a time zone). [clock] is the date
+ * and time as written in the export, in seconds as if it were UTC: days, hours and calendars come from it.
  * [withSeconds] = the export wrote the seconds (iPhone), else the time is to the minute (Android).
+ * [file] = the attached file's name in an export "with media" (looked up in the .zip).
  */
 data class ChatMessage(
     val time: Long,
@@ -45,6 +49,8 @@ data class ChatMessage(
     val kind: Kind = Kind.TEXT,
     val edited: Boolean = false,
     val withSeconds: Boolean = false,
+    val clock: Long = time,
+    val file: String? = null,
 )
 
 object WhatsAppChat {
@@ -68,25 +74,28 @@ object WhatsAppChat {
     /** Android notices with a colon in them ("Inès a changé le sujet en « Soirée : samedi »") are not authors. */
     private val NOTICE_AUTHOR = Regex(
         "\\s(a|vous a|avez|s'est|est|ont) (créé|ajouté|retiré|quitté|changé|rejoint|épinglé|supprimé|modifié|été|parti|activé|désactivé)|" +
-            "\\s(added|created|changed|removed|left|joined|pinned|deleted|turned|was|is now)\\s|[«»\"“”]",
+            "\\s(added|created|changed|removed|left|joined|pinned|deleted|turned|was|is now)\\s|" +
+            "\\s(añadió|creó|cambió|eliminó|salió|se unió|fijó|te añadió)\\s|[«»\"“”]",
         RegexOption.IGNORE_CASE,
     )
 
     private val IOS_NOTICE = Regex(
-        "chiffrés de bout en bout|end-to-end encrypted|code de sécurité|security code|messages éphémères|disappearing messages|" +
+        "chiffrés de bout en bout|end-to-end encrypted|cifrados de extremo a extremo|code de sécurité|security code|código de seguridad|messages éphémères|disappearing messages|mensajes temporales|" +
             "\\b(a|vous a|avez|s'est|est|ont) (créé|ajouté|retiré|quitté|changé|rejoint|épinglé|bloqué|débloqué|activé|désactivé)\\b|" +
-            "\\b(created|added|removed|left|changed|joined|pinned|blocked|unblocked|turned on|turned off)\\b|administrat|\\badmin\\b",
+            "\\b(created|added|removed|left|changed|joined|pinned|blocked|unblocked|turned on|turned off)\\b|" +
+            "\\b(creó|añadió|eliminó|salió|cambió|se unió|bloqueaste|desbloqueaste)\\b|administrat|\\badmin\\b",
         RegexOption.IGNORE_CASE,
     )
 
-    private val EDITED = Regex("\\s*$MARK?<(ce message a été modifié|this message was edited|message modifié)>\\s*$", RegexOption.IGNORE_CASE)
+    private val EDITED = Regex("\\s*$MARK?<(ce message a été modifié|this message was edited|message modifié|se editó este mensaje\\.?)>\\s*$", RegexOption.IGNORE_CASE)
 
     private val DELETED = Regex(
         "^(ce message a été supprimé|vous avez supprimé ce message|this message was deleted|you deleted this message" +
-            "|message supprimé|ce message a été supprimé par un administrateur|this message was deleted by admin.*)\\.?$",
+            "|message supprimé|ce message a été supprimé par un administrateur|this message was deleted by admin.*" +
+            "|se eliminó este mensaje|eliminaste este mensaje|este mensaje fue eliminado)\\.?$",
         RegexOption.IGNORE_CASE,
     )
-    private val OMITTED = Regex("^<?\\s*(médias? omis|media omitted|fichier omis|null)\\s*>?$", RegexOption.IGNORE_CASE)
+    private val OMITTED = Regex("^<?\\s*(médias? omis|media omitted|fichier omis|multimedia omitido|archivo omitido|null)\\s*>?$", RegexOption.IGNORE_CASE)
 
     /** iPhone without media: "image absente", "sticker omitted", "document omis" (after the file name). */
     private val IOS_OMITTED = Regex(
@@ -96,11 +105,12 @@ object WhatsAppChat {
     )
 
     /** Export with media. Android: "IMG-20260915-WA0003.jpg (fichier joint)"; iPhone: "<attached: 00000012-PHOTO-….jpg>". */
-    private val ANDROID_FILE = Regex("^(\\S.*?\\.[A-Za-z0-9]{2,5})\\s+\\((fichier joint|file attached|pièce jointe)\\)", RegexOption.IGNORE_CASE)
-    private val IOS_FILE = Regex("^<(?:attached|pièce jointe|joint)\\s*:\\s*(.+?)>", RegexOption.IGNORE_CASE)
+    private val ANDROID_FILE = Regex("^(\\S.*?\\.[A-Za-z0-9]{2,5})\\s+\\((fichier joint|file attached|pièce jointe|archivo adjunto)\\)", RegexOption.IGNORE_CASE)
+    private val IOS_FILE = Regex("^<(?:attached|pièce jointe|joint|adjunto)\\s*:\\s*(.+?)>", RegexOption.IGNORE_CASE)
 
     private val CALL = Regex(
-        "^(appel (vocal|vidéo)( de groupe)?( manqué)?|(missed )?(group )?(voice|video) call|appel manqué)\\b.*",
+        "^(appel (vocal|vidéo)( de groupe)?( manqué)?|(missed )?(group )?(voice|video) call|appel manqué|" +
+            "(llamada|videollamada)( de voz| grupal)?( perdida)?)\\b.*",
         RegexOption.IGNORE_CASE,
     )
     private val POLL = Regex("^(SONDAGE|POLL)\\s*:", RegexOption.IGNORE_CASE)
@@ -129,6 +139,27 @@ object WhatsAppChat {
             IOS_OMITTED.matchEntire(t)?.let { return omittedKind(it.groupValues[1]) }
         }
         return Kind.TEXT
+    }
+
+    /** The attached file's name of a message "with media" ("IMG-…jpg (fichier joint)", "<attached: …>"), or null. */
+    fun fileOf(text: String): String? {
+        val t = text.replace(MARK.toString(), "").trim()
+        val name = ANDROID_FILE.find(t)?.groupValues?.get(1) ?: IOS_FILE.find(t)?.groupValues?.get(1) ?: return null
+        return name.trim().substringAfterLast('/')
+    }
+
+    private val CALL_H = Regex("(\\d+)\\s*(h|hr|hrs|heures?|hours?|horas?)\\b", RegexOption.IGNORE_CASE)
+    private val CALL_MIN = Regex("(\\d+)\\s*(min|mins|minutes?|minutos?)\\b", RegexOption.IGNORE_CASE)
+    private val CALL_S = Regex("(\\d+)\\s*(s|sec|secs|secondes?|seconds?|segundos?)\\b", RegexOption.IGNORE_CASE)
+
+    /** Length of a call when the export writes it ("Appel vocal • 12 min", "Voice call, 1 hr 3 min"), else null. */
+    fun callSeconds(text: String): Long? {
+        var total = 0L
+        var found = false
+        CALL_H.find(text)?.let { total += it.groupValues[1].toLong() * 3_600; found = true }
+        CALL_MIN.find(text)?.let { total += it.groupValues[1].toLong() * 60; found = true }
+        CALL_S.find(text)?.let { total += it.groupValues[1].toLong(); found = true }
+        return if (found) total else null
     }
 
     /** Kept for the callers that only need "written or not". */
@@ -172,8 +203,11 @@ object WhatsAppChat {
         val marked: Boolean = false,
     )
 
-    /** The messages of [text], oldest first, or null when it does not look like a WhatsApp export. */
-    fun parse(text: String): List<ChatMessage>? {
+    /**
+     * The messages of [text], oldest first, or null when it does not look like a WhatsApp export. With a [zone]
+     * (the phone's), the hour lost or won at the summer/winter time change is not counted in answer times.
+     */
+    fun parse(text: String, zone: ZoneId? = null): List<ChatMessage>? {
         val lines = text.replace("\r", "").replace(NBSP, " ").split('\n')
         val raw = ArrayList<Raw>()
         var current: Raw? = null
@@ -224,17 +258,25 @@ object WhatsAppChat {
                 if (pm && hour < 12) hour += 12
                 if (!pm && hour == 12) hour = 0
             }
-            val time = runCatching {
-                LocalDateTime.of(year, month, day, hour, r.mi, r.s).toEpochSecond(ZoneOffset.UTC)
-            }.getOrNull() ?: return@mapNotNull null
+            val local = runCatching { LocalDateTime.of(year, month, day, hour, r.mi, r.s) }.getOrNull() ?: return@mapNotNull null
+            val clock = local.toEpochSecond(ZoneOffset.UTC)
+            // Real seconds, shifted so that they read as the clock in winter: only differences are used.
+            val time = if (zone == null) clock else runCatching { local.atZone(zone).toEpochSecond() + standardOffset(zone, local) }.getOrDefault(clock)
             var body = r.text.toString()
             val edited = EDITED.containsMatchIn(body)
             if (edited) body = body.replace(EDITED, "")
             val kind = kindOf(body.trim())
-            ChatMessage(time, hour, r.author, body.replace(MARK.toString(), "").trim(), kind, edited, r.withSeconds)
+            ChatMessage(
+                time, hour, r.author, body.replace(MARK.toString(), "").trim(), kind, edited, r.withSeconds,
+                clock = clock,
+                file = if (kind.isMedia) fileOf(body) else null,
+            )
         }
         return messages.ifEmpty { null }
     }
+
+    private fun standardOffset(zone: ZoneId, local: LocalDateTime): Long =
+        zone.rules.getStandardOffset(local.atZone(zone).toInstant()).totalSeconds.toLong()
 
     private enum class DateOrder { DMY, MDY, YMD }
 
@@ -243,19 +285,25 @@ object WhatsAppChat {
         if (raw.any { it.a > 31 }) return DateOrder.YMD
         if (raw.any { it.a > 12 }) return DateOrder.DMY
         if (raw.any { it.b > 12 }) return DateOrder.MDY
-        fun score(key: (Raw) -> Int): Int {
-            var k = 0
+        // Dates of an export only go forward: the reading with the fewest and smallest steps back wins.
+        fun score(key: (Raw) -> Int): Pair<Int, Long> {
+            var back = 0
+            var distance = 0L
             var prev = 0
             for (r in raw) {
                 val v = r.c * 400 + key(r)
-                if (v >= prev) k++
+                if (v < prev) {
+                    back++
+                    distance += prev - v
+                }
                 prev = v
             }
-            return k
+            return back to distance
         }
         val dmy = score { it.b * 32 + it.a }
         val mdy = score { it.a * 32 + it.b }
-        return if (mdy > dmy || (mdy == dmy && raw.any { it.ampm != null })) DateOrder.MDY else DateOrder.DMY
+        val better = compareValuesBy(mdy, dmy, { it.first }, { it.second })
+        return if (better < 0 || (better == 0 && raw.any { it.ampm != null })) DateOrder.MDY else DateOrder.DMY
     }
 
     /** "WhatsApp Chat with Coloc.txt" → "Coloc". */

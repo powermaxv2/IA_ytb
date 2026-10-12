@@ -226,4 +226,87 @@ class ChatStatsTest {
         assertTrue(r.all.none { it == 0L })
         assertTrue(r.rows.all { (it.average ?: 1.0) > 0.0 })
     }
+
+    @Test fun nightsLeftOut() {
+        // Asked at 1:00, answered at 9:00: 8 h, or 2 h without the night (0 h to 7 h).
+        val s = stats(
+            """
+            01/01/2026 01:00 - A: dodo ?
+            01/01/2026 09:00 - B: oui
+            """,
+        )
+        assertEquals(8 * 3_600L, s.replies(ReplyOptions(Gap.H24)).all.first())
+        assertEquals(2 * 3_600L, s.replies(ReplyOptions(Gap.H24, nights = true)).all.first())
+        // Chatting at 2 a.m. still counts.
+        val night = stats("01/01/2026 02:00 - A: t'es là ?\n01/01/2026 02:03 - B: oui")
+        assertEquals(180L, night.replies(ReplyOptions(Gap.H24, nights = true)).all.first())
+    }
+
+    @Test fun realWaitStartsAtTheFirstMessageOfTheRun() {
+        val s = stats(
+            """
+            01/01/2026 10:00 - A: hé
+            01/01/2026 10:20 - A: tu es là ?
+            01/01/2026 10:25 - B: oui
+            """,
+        )
+        assertEquals(listOf(300L), s.replies(ReplyOptions()).all)
+        assertEquals(listOf(1_500L), s.replies(ReplyOptions(realWait = true)).all)
+    }
+
+    @Test fun pairsRecordsAndUnanswered() {
+        val s = stats(
+            """
+            01/01/2026 10:00 - A: a
+            01/01/2026 10:01 - B: b
+            01/01/2026 10:02 - A: c
+            01/01/2026 10:05 - B: d
+            01/01/2026 10:06 - C: e
+            01/01/2026 10:16 - A: on mange où ?
+            02/01/2026 18:00 - B: salut
+            02/01/2026 18:00 - B: ça va ? un très long message avec beaucoup de mots pour le record
+            """,
+        )
+        val r = s.replies(ReplyOptions(Gap.H6))
+        val ab = r.pairs.first { it.from.name == "A" && it.to.name == "B" }
+        assertEquals(2, ab.count)
+        assertEquals(120.0, ab.average!!, 0.01) // 60 s and 180 s
+        assertEquals(1, r.rows.first { it.person.name == "A" }.unanswered)
+        assertEquals(0, r.rows.first { it.person.name == "B" }.unanswered) // last message of the export: not counted
+        assertEquals(60L, r.fastest!!.seconds)
+        assertEquals("A", r.slowest!!.person)
+        assertEquals("B", s.longestMessage!!.person)
+        assertEquals("B", s.longestMonologue!!.person)
+        assertEquals(2, s.longestMonologue!!.value)
+        assertEquals(listOf("A", "B"), r.talkativePairs.first().first.toList().map { it.name }.sorted())
+    }
+
+    @Test fun trimmedMeanLeavesExtremesOut() {
+        val a = List(9) { 60L } + listOf(100_000L)
+        assertEquals(60.0, ChatStats.trimmedMean(a)!!, 0.01)
+        assertEquals(10_054.0, ChatStats.mean(a)!!, 0.01)
+    }
+
+    @Test fun wordsAndSites() {
+        val s = stats(
+            """
+            01/01/2026 10:00 - A: grave mdr regarde https://youtu.be/abc
+            01/01/2026 10:01 - B: mdr
+            01/01/2026 10:02 - A: grave mdr les https://www.tiktok.com/@x et https://youtube.com/watch?v=1
+            """,
+        )
+        assertEquals(listOf("YouTube" to 2, "TikTok" to 1), s.sites)
+        assertEquals(listOf("grave" to 2, "mdr" to 2), s.people.first { it.name == "A" }.topWords.sortedBy { it.first })
+    }
+
+    @Test fun periodsByMonthForLongDiscussions() {
+        val s = stats("15/01/2026 10:00 - A: a\n15/01/2026 10:01 - B: b\n02/04/2026 10:00 - A: c\n02/04/2026 10:05 - B: d")
+        assertTrue(!s.weekly)
+        assertEquals(listOf("janv.", "févr.", "mars", "avr."), s.periods.map { it.label })
+        assertEquals(listOf(2, 0, 0, 2), s.periods.map { it.messages })
+        val r = s.replies(Gap.DEFAULT)
+        assertEquals(4, r.perPeriod.size)
+        assertEquals(300.0, r.perPeriod.last()!!, 0.01)
+        assertNull(r.perPeriod[1])
+    }
 }
