@@ -13,6 +13,7 @@ import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
+import com.powermaxv2.ytdownloader.core.rename.RenameController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.split.SplitController
 import com.powermaxv2.ytdownloader.core.sticker.StickerController
@@ -67,6 +68,9 @@ class App : Application() {
     val stickers: StickerController by lazy { StickerController(this, scope, engine) }
     /** The Statuts tool's state, kept the same way (a copy survives leaving its screen). */
     val statuses: StatusController by lazy { StatusController(this, scope) }
+
+    /** The Renommeur's files and rule, kept the same way (a renaming survives leaving its screen). */
+    val renamer: RenameController by lazy { RenameController(this, scope) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile

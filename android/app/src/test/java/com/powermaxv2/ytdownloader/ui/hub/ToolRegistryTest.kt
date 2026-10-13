@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER),
-            ids.take(18),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.RENAMER),
+            ids.take(19),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -38,7 +38,8 @@ class ToolRegistryTest {
         assertEquals("status-split", ToolRegistry.STATUS_SPLIT)
         assertEquals("whatsapp-direct", ToolRegistry.DIRECT_CHAT)
         assertEquals("chat-reader", ToolRegistry.CHAT_READER)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER).forEach { id ->
+        assertEquals("file-renamer", ToolRegistry.RENAMER)
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.RENAMER).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -64,11 +65,12 @@ class ToolRegistryTest {
         assertEquals("Découpe statut", ToolRegistry.find(ToolRegistry.STATUS_SPLIT)?.name)
         assertEquals("Écrire sans enregistrer", ToolRegistry.find(ToolRegistry.DIRECT_CHAT)?.name)
         assertEquals("Lecteur de discussion", ToolRegistry.find(ToolRegistry.CHAT_READER)?.name)
+        assertEquals("Renommeur", ToolRegistry.find(ToolRegistry.RENAMER)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-19"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(18, ToolRegistry.available.size)
+        assertEquals(listOf("soon-20"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(19, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -104,7 +106,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-19").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-20").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
@@ -120,6 +122,7 @@ class ToolRegistryTest {
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_STATS)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.DIRECT_CHAT)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_READER)!!))
+        assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.RENAMER)!!))
     }
 
     @Test fun newToolsAreFiledByTheirWordsElseInAutres() {

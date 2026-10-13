@@ -29,6 +29,8 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
+import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
+import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
@@ -116,6 +118,9 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Renommeur: renames many files at once from pieces (text, number, date, old name, replace), with a live preview. */
+    const val RENAMER = "file-renamer"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -268,7 +273,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Forum,
             screen = { vm -> ReaderTool(vm) },
         ),
-        comingSoon(19),
+        GulpTool(
+            id = RENAMER,
+            name = "Renommeur",
+            tagline = "Renomme plein de fichiers d'un coup avec un compteur, une date ou un texte remplacé, et vois le résultat avant.",
+            tags = listOf("Plusieurs fichiers", "Date · Compteur", "Annulable"),
+            icon = RenameIcon,
+            screen = { vm -> RenameTool(vm) },
+        ),
+        comingSoon(20),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
