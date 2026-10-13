@@ -15,6 +15,7 @@ import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.rename.RenameController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
+import com.powermaxv2.ytdownloader.core.signpdf.SignController
 import com.powermaxv2.ytdownloader.core.split.SplitController
 import com.powermaxv2.ytdownloader.core.sticker.StickerController
 import com.powermaxv2.ytdownloader.core.status.StatusController
@@ -71,6 +72,9 @@ class App : Application() {
 
     /** The Renommeur's files and rule, kept the same way (a renaming survives leaving its screen). */
     val renamer: RenameController by lazy { RenameController(this, scope) }
+
+    /** Signature PDF's open PDF and placed signature, kept the same way (a signing survives leaving its screen). */
+    val signPdf: SignController by lazy { SignController(this, scope) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile
