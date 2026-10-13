@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -54,6 +55,7 @@ import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.vault.VaultTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.watermark.WatermarkTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
@@ -161,6 +163,9 @@ object ToolRegistry {
 
     /** Renommeur: renames many files at once from pieces (text, number, date, old name, replace), with a live preview. */
     const val RENAMER = "file-renamer"
+
+    /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
+    const val VAULT = "vault"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -385,7 +390,15 @@ object ToolRegistry {
             icon = RenameIcon,
             screen = { vm -> RenameTool(vm) },
         ),
-        comingSoon(28),
+        GulpTool(
+            id = VAULT,
+            name = "Coffre-fort",
+            tagline = "Cache tes photos et fichiers dans un coffre chiffré, ouvert par ton code ou ton empreinte.",
+            tags = listOf("Chiffré AES-256", "Code · Empreinte", "Hors ligne"),
+            icon = Icons.Rounded.Lock,
+            screen = { vm -> VaultTool(vm) },
+        ),
+        comingSoon(29),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
