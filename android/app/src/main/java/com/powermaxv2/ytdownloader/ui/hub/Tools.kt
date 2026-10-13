@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.Dialpad
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -30,6 +31,7 @@ import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -116,6 +118,9 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Signature PDF: a signature drawn once with the finger, placed on a page of a PDF, saved as a signed copy. */
+    const val SIGN_PDF = "sign-pdf"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -268,7 +273,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Forum,
             screen = { vm -> ReaderTool(vm) },
         ),
-        comingSoon(19),
+        GulpTool(
+            id = SIGN_PDF,
+            name = "Signature PDF",
+            tagline = "Dessine ta signature une fois avec le doigt, pose-la sur n'importe quel PDF et enregistre-le signé.",
+            tags = listOf("PDF", "Au doigt", "Date · Initiales"),
+            icon = Icons.Rounded.Draw,
+            screen = { vm -> SignPdfTool(vm) },
+        ),
+        comingSoon(20),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
