@@ -1,6 +1,8 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -8,11 +10,13 @@ import androidx.compose.material.icons.rounded.Dialpad
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
-import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
@@ -26,12 +30,15 @@ import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
-import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
+import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
+import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
+import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -40,6 +47,7 @@ import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
+import com.powermaxv2.ytdownloader.ui.tools.watermark.WatermarkTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
@@ -118,6 +126,18 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Réponses rapides: ready-made messages with {variables}, copied or sent to WhatsApp in one touch. */
+    const val QUICK_REPLIES = "quick-replies"
+
+    /** Photo de profil entière: a whole photo shrunk into WhatsApp's round profile picture, on a blurred or plain backdrop. */
+    const val PROFILE_FIT = "profile-fit"
+
+    /** Signature PDF: a signature drawn once with the finger, placed on a page of a PDF, saved as a signed copy. */
+    const val SIGN_PDF = "sign-pdf"
+
+    /** Filigrane: a see-through text ("Copie pour location – date") across a photo or every page of a PDF, saved as a copy. */
+    const val WATERMARK = "watermark"
 
     /** Mon lien WhatsApp: the user's own wa.me link and its QR code, with a message ready for whoever opens it. */
     const val MY_LINK = "whatsapp-link"
@@ -274,6 +294,38 @@ object ToolRegistry {
             screen = { vm -> ReaderTool(vm) },
         ),
         GulpTool(
+            id = QUICK_REPLIES,
+            name = "Réponses rapides",
+            tagline = "Tes messages tout faits, avec l'heure ou un prénom glissés dedans, copiés ou envoyés dans WhatsApp en un geste.",
+            tags = listOf("WhatsApp", "{heure} · {prénom}", "Copier · Envoyer"),
+            icon = Icons.Rounded.Quickreply,
+            screen = { vm -> QuickReplyTool(vm) },
+        ),
+        GulpTool(
+            id = PROFILE_FIT,
+            name = "Photo de profil entière",
+            tagline = "Mets toute ta photo dans le rond WhatsApp, sans tête ni ami coupé, sur un fond flou ou de sa couleur.",
+            tags = listOf("WhatsApp", "Fond flou", "Hors ligne"),
+            icon = Icons.Rounded.AccountCircle,
+            screen = { vm -> ProfileFitTool(vm) },
+        ),
+        GulpTool(
+            id = SIGN_PDF,
+            name = "Signature PDF",
+            tagline = "Dessine ta signature une fois avec le doigt, pose-la sur n'importe quel PDF et enregistre-le signé.",
+            tags = listOf("PDF", "Au doigt", "Date · Initiales"),
+            icon = Icons.Rounded.Draw,
+            screen = { vm -> SignPdfTool(vm) },
+        ),
+        GulpTool(
+            id = WATERMARK,
+            name = "Filigrane",
+            tagline = "Écris « Copie pour location » en travers d'une image ou d'un PDF avant de l'envoyer, pour qu'il ne serve qu'à ça.",
+            tags = listOf("Image · PDF", "Texte + date", "Hors ligne"),
+            icon = Icons.Rounded.BrandingWatermark,
+            screen = { vm -> WatermarkTool(vm) },
+        ),
+        GulpTool(
             id = MY_LINK,
             name = "Mon lien WhatsApp",
             tagline = "Ton lien wa.me et son QR code, avec un message prêt : à copier, partager ou imprimer.",
@@ -281,7 +333,7 @@ object ToolRegistry {
             icon = Icons.Rounded.QrCode2,
             screen = { vm -> MyLinkTool(vm) },
         ),
-        comingSoon(20),
+        comingSoon(24),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
