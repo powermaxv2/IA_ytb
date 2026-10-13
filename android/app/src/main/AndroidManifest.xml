@@ -19,6 +19,12 @@
         android:required="false" />
     <!-- Gomme: lets Gulp read the real GPS of the photos it cleans (Android 10+ blanks it otherwise), to show it. -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <!-- Doublons photos: reads the gallery's photos to find the copies (asked when the tool opens). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <!-- Only needed to save into the public folders on Android 9 and older. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
