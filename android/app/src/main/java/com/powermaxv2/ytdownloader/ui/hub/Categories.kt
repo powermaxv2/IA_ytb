@@ -51,6 +51,8 @@ object ToolCategories {
         "voice-notes" to ToolCategory.WHATSAPP,
         "whatsapp-cleaner" to ToolCategory.WHATSAPP,
         "cleaner" to ToolCategory.WHATSAPP,
+        ToolRegistry.DIRECT_CHAT to ToolCategory.WHATSAPP,
+        ToolRegistry.CHAT_READER to ToolCategory.WHATSAPP,
         "styled-text" to ToolCategory.HANDY,
         "fancy-text" to ToolCategory.HANDY,
     )
@@ -67,6 +69,8 @@ object ToolCategories {
         ToolRegistry.TRIMMER to "couper decouper extrait sonnerie gif passage",
         ToolRegistry.WIPER to "metadonnees exif gps localisation vie privee effacer photo",
         ToolRegistry.PDF_JOIN to "fusionner assembler coller pdf pages separer diviser",
+        ToolRegistry.DIRECT_CHAT to "numero telephone contact inconnu annonce leboncoin message direct ecrire lien wa me",
+        ToolRegistry.CHAT_READER to "lire relire lecteur export discussion conversation historique recherche imprimer pdf archive",
     )
 
     /** Words that file a tool missing from [byId] in a category (checked in this order). */

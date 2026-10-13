@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT),
-            ids.take(16),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER),
+            ids.take(18),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -36,7 +36,9 @@ class ToolRegistryTest {
         assertEquals("styled-text", ToolRegistry.STYLED_TEXT)
         assertEquals("statuses", ToolRegistry.STATUSES)
         assertEquals("status-split", ToolRegistry.STATUS_SPLIT)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT).forEach { id ->
+        assertEquals("whatsapp-direct", ToolRegistry.DIRECT_CHAT)
+        assertEquals("chat-reader", ToolRegistry.CHAT_READER)
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -60,11 +62,13 @@ class ToolRegistryTest {
         assertEquals("Texte stylé", ToolRegistry.find(ToolRegistry.STYLED_TEXT)?.name)
         assertEquals("Statuts", ToolRegistry.find(ToolRegistry.STATUSES)?.name)
         assertEquals("Découpe statut", ToolRegistry.find(ToolRegistry.STATUS_SPLIT)?.name)
+        assertEquals("Écrire sans enregistrer", ToolRegistry.find(ToolRegistry.DIRECT_CHAT)?.name)
+        assertEquals("Lecteur de discussion", ToolRegistry.find(ToolRegistry.CHAT_READER)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-17"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(16, ToolRegistry.available.size)
+        assertEquals(listOf("soon-19"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(18, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -100,7 +104,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-17").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-19").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
@@ -114,6 +118,8 @@ class ToolRegistryTest {
         assertEquals(ToolCategory.MEDIA, ToolCategories.of(ToolRegistry.find(ToolRegistry.DOWNLOADER)!!))
         assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.PDF_JOIN)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_STATS)!!))
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.DIRECT_CHAT)!!))
+        assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_READER)!!))
     }
 
     @Test fun newToolsAreFiledByTheirWordsElseInAutres() {
@@ -133,6 +139,8 @@ class ToolRegistryTest {
         assertTrue(ToolRegistry.PDF_JOIN in found("pdf"))
         assertTrue(ToolRegistry.SCANNER in found("pdf"))
         assertEquals(listOf(ToolRegistry.CHAT_STATS), found("whatsapp réponse"))
+        assertEquals(listOf(ToolRegistry.DIRECT_CHAT), found("numéro"))
+        assertTrue(ToolRegistry.CHAT_READER in found("relire pdf"))
         assertTrue(found("karaoké").isEmpty())
         assertEquals(ToolRegistry.available.size, found("  ").size)
     }
