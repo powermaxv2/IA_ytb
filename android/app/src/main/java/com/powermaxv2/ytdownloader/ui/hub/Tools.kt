@@ -40,6 +40,8 @@ import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
+import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
+import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
@@ -156,6 +158,9 @@ object ToolRegistry {
 
     /** Mon lien WhatsApp: the user's own wa.me link and its QR code, with a message ready for whoever opens it. */
     const val MY_LINK = "whatsapp-link"
+
+    /** Renommeur: renames many files at once from pieces (text, number, date, old name, replace), with a live preview. */
+    const val RENAMER = "file-renamer"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -372,7 +377,15 @@ object ToolRegistry {
             icon = Icons.Rounded.QrCode2,
             screen = { vm -> MyLinkTool(vm) },
         ),
-        comingSoon(27),
+        GulpTool(
+            id = RENAMER,
+            name = "Renommeur",
+            tagline = "Renomme plein de fichiers d'un coup avec un compteur, une date ou un texte remplacé, et vois le résultat avant.",
+            tags = listOf("Plusieurs fichiers", "Date · Compteur", "Annulable"),
+            icon = RenameIcon,
+            screen = { vm -> RenameTool(vm) },
+        ),
+        comingSoon(28),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

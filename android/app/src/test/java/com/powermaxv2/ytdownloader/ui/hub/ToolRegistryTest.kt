@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK),
-            ids.take(26),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER),
+            ids.take(27),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -38,6 +38,7 @@ class ToolRegistryTest {
         assertEquals("status-split", ToolRegistry.STATUS_SPLIT)
         assertEquals("whatsapp-direct", ToolRegistry.DIRECT_CHAT)
         assertEquals("chat-reader", ToolRegistry.CHAT_READER)
+        assertEquals("file-renamer", ToolRegistry.RENAMER)
         assertEquals("quick-replies", ToolRegistry.QUICK_REPLIES)
         assertEquals("profile-fit", ToolRegistry.PROFILE_FIT)
         assertEquals("sign-pdf", ToolRegistry.SIGN_PDF)
@@ -46,7 +47,7 @@ class ToolRegistryTest {
         assertEquals("image-resizer", ToolRegistry.IMAGE_RESIZER)
         assertEquals("slideshow", ToolRegistry.SLIDESHOW)
         assertEquals("whatsapp-link", ToolRegistry.MY_LINK)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK).forEach { id ->
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -72,6 +73,7 @@ class ToolRegistryTest {
         assertEquals("Découpe statut", ToolRegistry.find(ToolRegistry.STATUS_SPLIT)?.name)
         assertEquals("Écrire sans enregistrer", ToolRegistry.find(ToolRegistry.DIRECT_CHAT)?.name)
         assertEquals("Lecteur de discussion", ToolRegistry.find(ToolRegistry.CHAT_READER)?.name)
+        assertEquals("Renommeur", ToolRegistry.find(ToolRegistry.RENAMER)?.name)
         assertEquals("Réponses rapides", ToolRegistry.find(ToolRegistry.QUICK_REPLIES)?.name)
         assertEquals("Photo de profil entière", ToolRegistry.find(ToolRegistry.PROFILE_FIT)?.name)
         assertEquals("Signature PDF", ToolRegistry.find(ToolRegistry.SIGN_PDF)?.name)
@@ -83,8 +85,8 @@ class ToolRegistryTest {
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-27"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(26, ToolRegistry.available.size)
+        assertEquals(listOf("soon-28"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(27, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -120,7 +122,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-27").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-28").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
@@ -136,6 +138,7 @@ class ToolRegistryTest {
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_STATS)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.DIRECT_CHAT)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.CHAT_READER)!!))
+        assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.RENAMER)!!))
         assertEquals(ToolCategory.MEDIA, ToolCategories.of(ToolRegistry.find(ToolRegistry.SLIDESHOW)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.QUICK_REPLIES)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.PROFILE_FIT)!!))
