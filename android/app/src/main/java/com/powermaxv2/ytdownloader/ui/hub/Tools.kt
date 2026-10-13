@@ -2,6 +2,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -46,6 +47,7 @@ import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
+import com.powermaxv2.ytdownloader.ui.tools.watermark.WatermarkTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
 
@@ -133,6 +135,9 @@ object ToolRegistry {
 
     /** Signature PDF: a signature drawn once with the finger, placed on a page of a PDF, saved as a signed copy. */
     const val SIGN_PDF = "sign-pdf"
+
+    /** Filigrane: a see-through text ("Copie pour location – date") across a photo or every page of a PDF, saved as a copy. */
+    const val WATERMARK = "watermark"
 
     /** Doublons photos: the photos of the gallery that are the same or look the same, the best one kept, the others deleted. */
     const val PHOTO_DUPLICATES = "photo-duplicates"
@@ -313,6 +318,14 @@ object ToolRegistry {
             screen = { vm -> SignPdfTool(vm) },
         ),
         GulpTool(
+            id = WATERMARK,
+            name = "Filigrane",
+            tagline = "Écris « Copie pour location » en travers d'une image ou d'un PDF avant de l'envoyer, pour qu'il ne serve qu'à ça.",
+            tags = listOf("Image · PDF", "Texte + date", "Hors ligne"),
+            icon = Icons.Rounded.BrandingWatermark,
+            screen = { vm -> WatermarkTool(vm) },
+        ),
+        GulpTool(
             id = PHOTO_DUPLICATES,
             name = "Doublons photos",
             tagline = "Repère les photos en double ou presque pareilles dans la galerie, garde la meilleure et libère de la place.",
@@ -320,7 +333,7 @@ object ToolRegistry {
             icon = Icons.Rounded.PhotoLibrary,
             screen = { vm -> PhotoDupTool(vm) },
         ),
-        comingSoon(23),
+        comingSoon(24),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
