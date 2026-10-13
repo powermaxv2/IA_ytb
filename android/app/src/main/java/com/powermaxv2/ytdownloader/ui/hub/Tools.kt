@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -28,6 +29,7 @@ import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
+import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
@@ -121,6 +123,9 @@ object ToolRegistry {
 
     /** Réponses rapides: ready-made messages with {variables}, copied or sent to WhatsApp in one touch. */
     const val QUICK_REPLIES = "quick-replies"
+
+    /** Photo de profil entière: a whole photo shrunk into WhatsApp's round profile picture, on a blurred or plain backdrop. */
+    const val PROFILE_FIT = "profile-fit"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -281,7 +286,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Quickreply,
             screen = { vm -> QuickReplyTool(vm) },
         ),
-        comingSoon(20),
+        GulpTool(
+            id = PROFILE_FIT,
+            name = "Photo de profil entière",
+            tagline = "Mets toute ta photo dans le rond WhatsApp, sans tête ni ami coupé, sur un fond flou ou de sa couleur.",
+            tags = listOf("WhatsApp", "Fond flou", "Hors ligne"),
+            icon = Icons.Rounded.AccountCircle,
+            screen = { vm -> ProfileFitTool(vm) },
+        ),
+        comingSoon(21),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
