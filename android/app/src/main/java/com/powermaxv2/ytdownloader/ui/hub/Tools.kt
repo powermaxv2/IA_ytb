@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
@@ -27,7 +29,9 @@ import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
+import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
+import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
@@ -118,6 +122,12 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Réponses rapides: ready-made messages with {variables}, copied or sent to WhatsApp in one touch. */
+    const val QUICK_REPLIES = "quick-replies"
+
+    /** Photo de profil entière: a whole photo shrunk into WhatsApp's round profile picture, on a blurred or plain backdrop. */
+    const val PROFILE_FIT = "profile-fit"
 
     /** Redimensionneur: several photos made smaller (side, percentage or weight), cut to a shape, as JPG / PNG / WebP copies. */
     const val IMAGE_RESIZER = "image-resizer"
@@ -274,6 +284,22 @@ object ToolRegistry {
             screen = { vm -> ReaderTool(vm) },
         ),
         GulpTool(
+            id = QUICK_REPLIES,
+            name = "Réponses rapides",
+            tagline = "Tes messages tout faits, avec l'heure ou un prénom glissés dedans, copiés ou envoyés dans WhatsApp en un geste.",
+            tags = listOf("WhatsApp", "{heure} · {prénom}", "Copier · Envoyer"),
+            icon = Icons.Rounded.Quickreply,
+            screen = { vm -> QuickReplyTool(vm) },
+        ),
+        GulpTool(
+            id = PROFILE_FIT,
+            name = "Photo de profil entière",
+            tagline = "Mets toute ta photo dans le rond WhatsApp, sans tête ni ami coupé, sur un fond flou ou de sa couleur.",
+            tags = listOf("WhatsApp", "Fond flou", "Hors ligne"),
+            icon = Icons.Rounded.AccountCircle,
+            screen = { vm -> ProfileFitTool(vm) },
+        ),
+        GulpTool(
             id = IMAGE_RESIZER,
             name = "Redimensionneur",
             tagline = "Réduis ou recadre plusieurs photos d'un coup : taille en pixels, poids maximum, carré ou 16:9, JPG ou WebP.",
@@ -281,7 +307,7 @@ object ToolRegistry {
             icon = ResizeIcon,
             screen = { vm -> ResizeTool(vm) },
         ),
-        comingSoon(20),
+        comingSoon(22),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
