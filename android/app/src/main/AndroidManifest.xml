@@ -19,6 +19,8 @@
         android:required="false" />
     <!-- Gomme: lets Gulp read the real GPS of the photos it cleans (Android 10+ blanks it otherwise), to show it. -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <!-- Coffre-fort: optional fingerprint unlock (the code always works). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <!-- Only needed to save into the public folders on Android 9 and older. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"

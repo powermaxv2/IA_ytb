@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -37,6 +38,7 @@ import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.vault.VaultTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.wipe.EraserIcon
 import com.powermaxv2.ytdownloader.ui.tools.wipe.WipeTool
@@ -116,6 +118,9 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
+    const val VAULT = "vault"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -268,7 +273,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Forum,
             screen = { vm -> ReaderTool(vm) },
         ),
-        comingSoon(19),
+        GulpTool(
+            id = VAULT,
+            name = "Coffre-fort",
+            tagline = "Cache tes photos et fichiers dans un coffre chiffré, ouvert par ton code ou ton empreinte.",
+            tags = listOf("Chiffré AES-256", "Code · Empreinte", "Hors ligne"),
+            icon = Icons.Rounded.Lock,
+            screen = { vm -> VaultTool(vm) },
+        ),
+        comingSoon(20),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
