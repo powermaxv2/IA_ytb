@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -25,6 +26,7 @@ import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
@@ -116,6 +118,9 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Mon lien WhatsApp: the user's own wa.me link and its QR code, with a message ready for whoever opens it. */
+    const val MY_LINK = "whatsapp-link"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -268,7 +273,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Forum,
             screen = { vm -> ReaderTool(vm) },
         ),
-        comingSoon(19),
+        GulpTool(
+            id = MY_LINK,
+            name = "Mon lien WhatsApp",
+            tagline = "Ton lien wa.me et son QR code, avec un message prêt : à copier, partager ou imprimer.",
+            tags = listOf("WhatsApp", "QR code", "Carte à imprimer"),
+            icon = Icons.Rounded.QrCode2,
+            screen = { vm -> MyLinkTool(vm) },
+        ),
+        comingSoon(20),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
