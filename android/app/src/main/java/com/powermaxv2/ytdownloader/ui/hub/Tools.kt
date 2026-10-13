@@ -35,6 +35,8 @@ import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
+import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
+import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
@@ -136,6 +138,9 @@ object ToolRegistry {
 
     /** Filigrane: a see-through text ("Copie pour location – date") across a photo or every page of a PDF, saved as a copy. */
     const val WATERMARK = "watermark"
+
+    /** Redimensionneur: several photos made smaller (side, percentage or weight), cut to a shape, as JPG / PNG / WebP copies. */
+    const val IMAGE_RESIZER = "image-resizer"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -320,7 +325,15 @@ object ToolRegistry {
             icon = Icons.Rounded.BrandingWatermark,
             screen = { vm -> WatermarkTool(vm) },
         ),
-        comingSoon(23),
+        GulpTool(
+            id = IMAGE_RESIZER,
+            name = "Redimensionneur",
+            tagline = "Réduis ou recadre plusieurs photos d'un coup : taille en pixels, poids maximum, carré ou 16:9, JPG ou WebP.",
+            tags = listOf("Lot de photos", "Poids cible", "1:1 · 4:5 · 16:9"),
+            icon = ResizeIcon,
+            screen = { vm -> ResizeTool(vm) },
+        ),
+        comingSoon(24),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
