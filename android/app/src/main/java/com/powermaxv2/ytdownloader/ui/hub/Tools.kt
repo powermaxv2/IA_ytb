@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.Dialpad
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -34,6 +35,7 @@ import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -126,6 +128,9 @@ object ToolRegistry {
 
     /** Photo de profil entière: a whole photo shrunk into WhatsApp's round profile picture, on a blurred or plain backdrop. */
     const val PROFILE_FIT = "profile-fit"
+
+    /** Signature PDF: a signature drawn once with the finger, placed on a page of a PDF, saved as a signed copy. */
+    const val SIGN_PDF = "sign-pdf"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -294,7 +299,15 @@ object ToolRegistry {
             icon = Icons.Rounded.AccountCircle,
             screen = { vm -> ProfileFitTool(vm) },
         ),
-        comingSoon(21),
+        GulpTool(
+            id = SIGN_PDF,
+            name = "Signature PDF",
+            tagline = "Dessine ta signature une fois avec le doigt, pose-la sur n'importe quel PDF et enregistre-le signé.",
+            tags = listOf("PDF", "Au doigt", "Date · Initiales"),
+            icon = Icons.Rounded.Draw,
+            screen = { vm -> SignPdfTool(vm) },
+        ),
+        comingSoon(22),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
