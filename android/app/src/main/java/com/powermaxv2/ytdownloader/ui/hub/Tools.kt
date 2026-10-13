@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -116,6 +118,9 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Diaporama: photos into a short MP4 (durations, transitions, Ken Burns zoom, music), made on the phone. */
+    const val SLIDESHOW = "slideshow"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -268,7 +273,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Forum,
             screen = { vm -> ReaderTool(vm) },
         ),
-        comingSoon(19),
+        GulpTool(
+            id = SLIDESHOW,
+            name = "Diaporama",
+            tagline = "Transforme quelques photos en petite vidéo, avec transitions, effet Ken Burns et ta musique.",
+            tags = listOf("Photos → vidéo", "Fondu · Zoom", "Musique"),
+            icon = Icons.Rounded.Slideshow,
+            screen = { vm -> SlideshowTool(vm) },
+        ),
+        comingSoon(20),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
