@@ -208,23 +208,31 @@ fun SkinCategoryChips(
     }
 }
 
-/** Card of a tool that is out ([index] = its place among them); a tap opens it. */
+/** Card of a tool that is out ([index] = its place among them); a tap opens it, its star ([onStar]) pins it. */
 @Composable
-fun SkinToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
+fun SkinToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar: (() -> Unit)? = null, onOpen: () -> Unit) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicToolCard(tool, index, onOpen)
-        Skin.PAPER -> PaperToolCard(tool, index, onOpen)
-        Skin.TERMINAL -> TerminalToolCard(tool, index, onOpen)
+        Skin.CLASSIC -> ClassicToolCard(tool, index, starred, onStar, onOpen)
+        Skin.PAPER -> PaperToolCard(tool, index, starred, onStar, onOpen)
+        Skin.TERMINAL -> TerminalToolCard(tool, index, starred, onStar, onOpen)
     }
 }
 
 /** Small card of a tool that is out (half the width of [SkinToolCard]); [order] staggers its entrance. */
 @Composable
-fun SkinToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+fun SkinToolBubble(
+    tool: GulpTool,
+    index: Int,
+    order: Int,
+    modifier: Modifier = Modifier,
+    starred: Boolean = false,
+    onStar: (() -> Unit)? = null,
+    onOpen: () -> Unit,
+) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicToolBubble(tool, order, modifier, onOpen)
-        Skin.PAPER -> PaperToolBubble(tool, index, order, modifier, onOpen)
-        Skin.TERMINAL -> TerminalToolBubble(tool, index, order, modifier, onOpen)
+        Skin.CLASSIC -> ClassicToolBubble(tool, order, modifier, starred, onStar, onOpen)
+        Skin.PAPER -> PaperToolBubble(tool, index, order, modifier, starred, onStar, onOpen)
+        Skin.TERMINAL -> TerminalToolBubble(tool, index, order, modifier, starred, onStar, onOpen)
     }
 }
 

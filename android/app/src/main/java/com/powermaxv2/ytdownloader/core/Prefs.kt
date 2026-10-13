@@ -95,6 +95,11 @@ class Prefs(context: Context) {
         get() = sp.getString("lastToolId", null)
         set(value) = sp.edit().putString("lastToolId", value).apply()
 
+    /** Ids of the tools starred on the home screen, in the order they were starred (Favorites.encode). */
+    var favoriteTools: String?
+        get() = sp.getString("favoriteTools", null)
+        set(value) = sp.edit().putString("favoriteTools", value).apply()
+
     /** Last version announced by a notification, so that each version is announced once. */
     var notifiedAppVersion: String?
         get() = sp.getString("notifiedAppVersion", null)

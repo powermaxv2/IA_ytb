@@ -6,7 +6,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,23 +29,28 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.powermaxv2.ytdownloader.core.Skin
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
 import com.powermaxv2.ytdownloader.ui.UpdateBanner
+import com.powermaxv2.ytdownloader.ui.skin.LocalSkin
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.skin.SkinCategoryChips
 import com.powermaxv2.ytdownloader.ui.skin.SkinComingSoon
@@ -56,14 +65,16 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Home screen of the hub: search bar and category chips, the last tool used in a big card, the other tools that
- * are out as small bubbles grouped by category, then the "À venir" ones.
+ * Home screen of the hub: search bar and category chips, the starred tools ("Favoris"), the last tool used in a
+ * big card, the other tools that are out as small bubbles grouped by category, then the "À venir" ones.
  */
 @Composable
 fun HomeScreen(vm: MainViewModel, insets: PaddingValues) {
     HomeContent(
         tools = ToolRegistry.tools,
         lastUsedId = vm.lastToolId,
+        favoriteIds = vm.favorites,
+        onStar = { vm.toggleFavorite(it.id) },
         onOpen = { vm.openTool(it.id) },
         onSettings = vm::openSettings,
         contentPadding = PaddingValues(
@@ -77,13 +88,16 @@ fun HomeScreen(vm: MainViewModel, insets: PaddingValues) {
 
 /**
  * Stateless form of [HomeScreen] (also used by the screenshot tests): the search bar and the category chips
- * filter the tools; with neither, the last tool used is big and the others are grouped by category.
+ * filter the tools; with neither, the starred tools come first, then the last tool used big (unless it is
+ * starred), and the others grouped by category. Every tool wears its star when [onStar] is given.
  */
 @Composable
 fun HomeContent(
     tools: List<GulpTool>,
     lastUsedId: String?,
     onOpen: (GulpTool) -> Unit,
+    favoriteIds: List<String> = emptyList(),
+    onStar: ((GulpTool) -> Unit)? = null,
     onSettings: () -> Unit,
     contentPadding: PaddingValues,
     banner: @Composable () -> Unit = {},
@@ -104,66 +118,138 @@ fun HomeContent(
     }
     // Numbers follow the registry, so a tool keeps its number wherever it sits on the screen.
     fun number(tool: GulpTool) = ready.indexOf(tool)
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(contentPadding)
-            .padding(horizontal = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        SkinHomeHeader(ready.size, upcoming.size, onSettings)
-        banner()
-        SkinSearchBar(query, onQueryChange = { query = it }, suggestions = ready.map { it.name })
-        SkinCategoryChips(
-            categories = categories,
-            counts = categories.associateWith { c -> ready.count { ToolCategories.of(it) == c } },
-            total = ready.size,
-            selected = category,
-            onSelect = { categoryName = it?.name },
-        )
-        if (filtering) {
-            val found = ready.filter { (category == null || ToolCategories.of(it) == category) && ToolCategories.matches(it, query) }
-            val title = when {
-                query.isNotBlank() -> resultsText(found.size)
-                else -> category!!.label
+    val favorites = Favorites.of(favoriteIds, ready)
+    var justStarred by remember { mutableStateOf<String?>(null) }
+    val stars = StarRef(
+        favoriteIds,
+        onStar?.let { star ->
+            { tool: GulpTool ->
+                justStarred = if (tool.id in favoriteIds) null else tool.name
+                star(tool)
             }
-            // Keyed by the filter: every new search deals its bubbles again, in cascade.
-            key(category, ToolCategories.fold(listOf(query))) {
-                SkinHomeSection(title, order = 0)
-                if (found.isEmpty()) HomeEmpty(query, category) else BubbleGrid(found, ::number, firstOrder = 1, onOpen = onOpen)
-            }
-        } else {
-            val featured = featuredTool(ready, lastUsedId)
-            SkinHomeSection(if (featured.id == lastUsedId) "Dernier utilisé" else "Pour commencer", order = 0)
-            // Keyed by the tool, so a new featured tool plays its entrance again instead of morphing the old card.
-            key(featured.id) { SkinToolCard(featured, number(featured)) { onOpen(featured) } }
-            var order = 1
-            categories.forEach { c ->
-                val inCategory = ready.filter { it != featured && ToolCategories.of(it) == c }
-                if (inCategory.isNotEmpty()) {
-                    SkinHomeSection(c.label, order = order++)
-                    BubbleGrid(inCategory, ::number, firstOrder = order, onOpen = onOpen)
-                    order += inCategory.size
+        },
+    )
+    CompositionLocalProvider(LocalJustStarred provides justStarred) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(contentPadding)
+                .padding(horizontal = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SkinHomeHeader(ready.size, upcoming.size, onSettings)
+            banner()
+            SkinSearchBar(query, onQueryChange = { query = it }, suggestions = ready.map { it.name })
+            SkinCategoryChips(
+                categories = categories,
+                counts = categories.associateWith { c -> ready.count { ToolCategories.of(it) == c } },
+                total = ready.size,
+                selected = category,
+                onSelect = { categoryName = it?.name },
+            )
+            if (filtering) {
+                val found = ready.filter { (category == null || ToolCategories.of(it) == category) && ToolCategories.matches(it, query) }
+                val title = when {
+                    query.isNotBlank() -> resultsText(found.size)
+                    else -> category!!.label
                 }
+                // Keyed by the filter: every new search deals its bubbles again, in cascade.
+                key(category, ToolCategories.fold(listOf(query))) {
+                    SkinHomeSection(title, order = 0)
+                    if (found.isEmpty()) HomeEmpty(query, category) else BubbleGrid(found, ::number, firstOrder = 1, stars, onOpen = onOpen)
+                }
+            } else {
+                var order = 0
+                if (favorites.isNotEmpty()) {
+                    // Keyed by the list: a new star deals the favourites again, in cascade, with the new one in place.
+                    key(favoriteIds) {
+                        FavoritesSection(favorites.size, order = order++)
+                        BubbleGrid(favorites, ::number, firstOrder = order, stars, onOpen = onOpen)
+                    }
+                    order += favorites.size
+                } else if (onStar != null) {
+                    FavoritesHint(order = order++)
+                }
+                // The big card shows the last tool used, unless it is already up there in the favourites.
+                val others = ready.filterNot { it in favorites }
+                val featured = if (others.isEmpty() || favorites.any { it.id == lastUsedId }) null else featuredTool(others, lastUsedId)
+                if (featured != null) {
+                    SkinHomeSection(if (featured.id == lastUsedId) "Dernier utilisé" else "Pour commencer", order = order++)
+                    // Keyed by the tool, so a new featured tool plays its entrance again instead of morphing the old card.
+                    key(featured.id) {
+                        SkinToolCard(featured, number(featured), featured.id in favoriteIds, stars.onStar?.let { star -> { star(featured) } }) { onOpen(featured) }
+                    }
+                }
+                categories.forEach { c ->
+                    val inCategory = ready.filter { it != featured && it !in favorites && ToolCategories.of(it) == c }
+                    if (inCategory.isNotEmpty()) {
+                        SkinHomeSection(c.label, order = order++)
+                        BubbleGrid(inCategory, ::number, firstOrder = order, stars, onOpen = onOpen)
+                        order += inCategory.size
+                    }
+                }
+                if (upcoming.isNotEmpty()) SkinComingSoon(upcoming, firstNumber = ready.size + 1)
             }
-            if (upcoming.isNotEmpty()) SkinComingSoon(upcoming, firstNumber = ready.size + 1)
         }
     }
 }
 
-/** Tools as small bubbles, two per row of equal height. */
+/** Which tools are starred, and what a star does (null: no stars drawn). */
+private class StarRef(val ids: List<String>, val onStar: ((GulpTool) -> Unit)?)
+
+/** Tools as small bubbles, two per row of equal height, each with its star. */
 @Composable
-private fun BubbleGrid(tools: List<GulpTool>, number: (GulpTool) -> Int, firstOrder: Int, onOpen: (GulpTool) -> Unit) {
+private fun BubbleGrid(tools: List<GulpTool>, number: (GulpTool) -> Int, firstOrder: Int, stars: StarRef, onOpen: (GulpTool) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         tools.chunked(2).forEachIndexed { row, pair ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEachIndexed { col, tool ->
-                    SkinToolBubble(tool, number(tool), order = firstOrder + row * 2 + col, Modifier.weight(1f).fillMaxHeight()) { onOpen(tool) }
+                    SkinToolBubble(
+                        tool,
+                        number(tool),
+                        order = firstOrder + row * 2 + col,
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        starred = tool.id in stars.ids,
+                        onStar = stars.onStar?.let { star -> { star(tool) } },
+                    ) { onOpen(tool) }
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
+    }
+}
+
+/** Title of the starred tools: the skin's section title, with a slowly turning star in front. */
+@Composable
+private fun FavoritesSection(count: Int, order: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FavoritesGlyph(Modifier.padding(end = 8.dp, top = 4.dp).staggeredEntrance(order, baseDelay = 220))
+        Box(Modifier.weight(1f)) { SkinHomeSection(if (count > 1) "Favoris · $count" else "Favoris", order = order) }
+    }
+}
+
+/** No star yet: one line telling where they are, its star turning. */
+@Composable
+private fun FavoritesHint(order: Int) {
+    val terminal = LocalSkin.current == Skin.TERMINAL
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .staggeredEntrance(order, baseDelay = 220)
+            .clip(RoundedCornerShape(LocalTokens.current.cardRadius))
+            .background(Palette.Surface.copy(alpha = 0.6f))
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        FavoritesGlyph(size = 16.dp)
+        Spacer(Modifier.width(10.dp))
+        Text(
+            if (terminal) "# touche [ ] sur un outil pour l'épingler ici" else "Touche l'étoile d'un outil pour l'épingler ici, en haut.",
+            color = Palette.TextSecondary,
+            fontSize = 13.sp,
+            lineHeight = 17.sp,
+        )
     }
 }
 

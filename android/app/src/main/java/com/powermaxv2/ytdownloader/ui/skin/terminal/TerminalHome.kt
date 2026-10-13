@@ -45,6 +45,7 @@ import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.bounceClick
 import com.powermaxv2.ytdownloader.ui.brand.GulpMark
 import com.powermaxv2.ytdownloader.ui.brand.GulpStyle
+import com.powermaxv2.ytdownloader.ui.hub.FavoriteStar
 import com.powermaxv2.ytdownloader.ui.hub.GulpTool
 import com.powermaxv2.ytdownloader.ui.hub.bob
 import com.powermaxv2.ytdownloader.ui.hub.toolNumber
@@ -140,7 +141,7 @@ private fun slug(name: String): String = java.text.Normalizer.normalize(name, ja
 /** A tool that is out: accent-outlined block with its listing line, a blinking "PRÊT", tags and the "OUVRIR" button. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TerminalToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
+fun TerminalToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar: (() -> Unit)? = null, onOpen: () -> Unit) {
     val accent = LocalAccent.current.start
     val shape = RoundedCornerShape(LocalTokens.current.cardRadius)
     val line = "./" + slug(tool.name)
@@ -175,6 +176,7 @@ fun TerminalToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
             )
             Spacer(Modifier.width(6.dp))
             Text("PRÊT", color = accent, fontSize = 12.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+            if (onStar != null) FavoriteStar(starred, tool.name, onStar, size = 26.dp)
         }
         Spacer(Modifier.height(10.dp))
         Text(tool.name.uppercase(), color = Palette.TextPrimary, fontSize = 22.sp, lineHeight = 27.sp, fontFamily = LocalTokens.current.display)
@@ -298,7 +300,15 @@ fun TerminalHomeSection(title: String, order: Int) {
  * caret. A tap inverts the cell for a flash (via the press bounce) and opens the tool.
  */
 @Composable
-fun TerminalToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+fun TerminalToolBubble(
+    tool: GulpTool,
+    index: Int,
+    order: Int,
+    modifier: Modifier = Modifier,
+    starred: Boolean = false,
+    onStar: (() -> Unit)? = null,
+    onOpen: () -> Unit,
+) {
     val accent = LocalAccent.current.start
     val shape = RoundedCornerShape(LocalTokens.current.cardRadius)
     val line = slug(tool.name)
@@ -354,6 +364,10 @@ fun TerminalToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifie
                     .blinking()
                     .background(accent),
             )
+            if (onStar != null) {
+                Spacer(Modifier.weight(1f))
+                FavoriteStar(starred, tool.name, onStar, size = 22.dp)
+            }
         }
     }
 }

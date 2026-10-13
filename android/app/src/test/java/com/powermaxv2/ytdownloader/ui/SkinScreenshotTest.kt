@@ -80,6 +80,10 @@ class SkinScreenshotTest {
     @Test fun paperHome() = home(Skin.PAPER, "paper")
     @Test fun terminalHome() = home(Skin.TERMINAL, "terminal")
 
+    @Test fun classicHomeFavorites() = homeFavorites(Skin.CLASSIC, "classic")
+    @Test fun paperHomeFavorites() = homeFavorites(Skin.PAPER, "paper")
+    @Test fun terminalHomeFavorites() = homeFavorites(Skin.TERMINAL, "terminal")
+
     // Taller screen: the whole home screen, "À venir" included, in one picture.
     @Config(qualifiers = "w411dp-h1300dp-xxhdpi")
     @Test fun classicHomeLastUsed() = homeLastUsed(Skin.CLASSIC, "classic")
@@ -177,6 +181,7 @@ class SkinScreenshotTest {
                         tools = ToolRegistry.tools,
                         lastUsedId = null,
                         onOpen = {},
+                        onStar = {},
                         onSettings = {},
                         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
                     )
@@ -184,6 +189,27 @@ class SkinScreenshotTest {
             }
         }
         capture("${name}_home")
+    }
+
+    /** Home screen with three starred tools: "Favoris" first, then the last tool used, then the categories. */
+    private fun homeFavorites(skin: Skin, name: String) {
+        composeRule.setContent {
+            AppTheme(Platform.YOUTUBE, skin) {
+                Box(Modifier.fillMaxSize()) {
+                    SkinBackground()
+                    HomeContent(
+                        tools = ToolRegistry.tools,
+                        lastUsedId = ToolRegistry.CHAT_STATS,
+                        onOpen = {},
+                        favoriteIds = listOf(ToolRegistry.QR_CODE, ToolRegistry.PDF_JOIN, ToolRegistry.STICKERS),
+                        onStar = {},
+                        onSettings = {},
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                    )
+                }
+            }
+        }
+        capture("${name}_home_favorites")
     }
 
     /** Home screen once "Vu, répondu" was the last tool used: it is the big card, the downloader a bubble. */
