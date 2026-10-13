@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
@@ -30,6 +31,7 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
+import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
@@ -118,6 +120,9 @@ object ToolRegistry {
 
     /** Lecteur de discussion: a WhatsApp export read back in bubbles, searched, and printed to PDF. */
     const val CHAT_READER = "chat-reader"
+
+    /** Réponses rapides: ready-made messages with {variables}, copied or sent to WhatsApp in one touch. */
+    const val QUICK_REPLIES = "quick-replies"
 
     /** Photo de profil entière: a whole photo shrunk into WhatsApp's round profile picture, on a blurred or plain backdrop. */
     const val PROFILE_FIT = "profile-fit"
@@ -274,6 +279,14 @@ object ToolRegistry {
             screen = { vm -> ReaderTool(vm) },
         ),
         GulpTool(
+            id = QUICK_REPLIES,
+            name = "Réponses rapides",
+            tagline = "Tes messages tout faits, avec l'heure ou un prénom glissés dedans, copiés ou envoyés dans WhatsApp en un geste.",
+            tags = listOf("WhatsApp", "{heure} · {prénom}", "Copier · Envoyer"),
+            icon = Icons.Rounded.Quickreply,
+            screen = { vm -> QuickReplyTool(vm) },
+        ),
+        GulpTool(
             id = PROFILE_FIT,
             name = "Photo de profil entière",
             tagline = "Mets toute ta photo dans le rond WhatsApp, sans tête ni ami coupé, sur un fond flou ou de sa couleur.",
@@ -281,7 +294,7 @@ object ToolRegistry {
             icon = Icons.Rounded.AccountCircle,
             screen = { vm -> ProfileFitTool(vm) },
         ),
-        comingSoon(20),
+        comingSoon(21),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
