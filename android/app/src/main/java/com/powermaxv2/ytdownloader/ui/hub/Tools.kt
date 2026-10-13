@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -31,6 +32,7 @@ import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
+import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
@@ -143,6 +145,9 @@ object ToolRegistry {
 
     /** Redimensionneur: several photos made smaller (side, percentage or weight), cut to a shape, as JPG / PNG / WebP copies. */
     const val IMAGE_RESIZER = "image-resizer"
+
+    /** Doublons photos: the photos of the gallery that are the same or look the same, the best one kept, the others deleted. */
+    const val PHOTO_DUPLICATES = "photo-duplicates"
 
     /** Diaporama: photos into a short MP4 (durations, transitions, Ken Burns zoom, music), made on the phone. */
     const val SLIDESHOW = "slideshow"
@@ -339,6 +344,14 @@ object ToolRegistry {
             screen = { vm -> ResizeTool(vm) },
         ),
         GulpTool(
+            id = PHOTO_DUPLICATES,
+            name = "Doublons photos",
+            tagline = "Repère les photos en double ou presque pareilles dans la galerie, garde la meilleure et libère de la place.",
+            tags = listOf("Galerie", "Identiques · Ressemblantes", "Hors ligne"),
+            icon = Icons.Rounded.PhotoLibrary,
+            screen = { vm -> PhotoDupTool(vm) },
+        ),
+        GulpTool(
             id = SLIDESHOW,
             name = "Diaporama",
             tagline = "Transforme quelques photos en petite vidéo, avec transitions, effet Ken Burns et ta musique.",
@@ -346,7 +359,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Slideshow,
             screen = { vm -> SlideshowTool(vm) },
         ),
-        comingSoon(25),
+        comingSoon(26),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

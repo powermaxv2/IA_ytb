@@ -13,6 +13,7 @@ import com.powermaxv2.ytdownloader.core.compress.CompressorController
 import com.powermaxv2.ytdownloader.core.convert.ConverterController
 import com.powermaxv2.ytdownloader.core.files.WorkDir
 import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
+import com.powermaxv2.ytdownloader.core.photodup.PhotoDupController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.signpdf.SignController
 import com.powermaxv2.ytdownloader.core.slideshow.SlideController
@@ -72,6 +73,9 @@ class App : Application() {
 
     /** Signature PDF's open PDF and placed signature, kept the same way (a signing survives leaving its screen). */
     val signPdf: SignController by lazy { SignController(this, scope) }
+
+    /** Doublons photos' scan and selection, kept the same way (a scan of the gallery survives leaving its screen). */
+    val photoDuplicates: PhotoDupController by lazy { PhotoDupController(this, scope) }
 
     /** The Diaporama's photos and work, kept the same way (a video being made survives leaving its screen). */
     val slideshow: SlideController by lazy { SlideController(this, scope, engine) }
