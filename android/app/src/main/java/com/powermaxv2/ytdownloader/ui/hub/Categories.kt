@@ -61,15 +61,11 @@ object ToolCategories {
         ToolRegistry.SIGN_PDF to ToolCategory.FILES,
         ToolRegistry.WATERMARK to ToolCategory.FILES,
         ToolRegistry.IMAGE_RESIZER to ToolCategory.MEDIA,
-        ToolRegistry.PHOTO_DUPLICATES to ToolCategory.MEDIA,
+        ToolRegistry.PHOTO_DUPLICATES to ToolCategory.FILES,
         ToolRegistry.SLIDESHOW to ToolCategory.MEDIA,
-        // Still being written in parallel: their likely ids (the word guess below covers the others).
-        "whatsapp-link" to ToolCategory.WHATSAPP,
-        "my-whatsapp-link" to ToolCategory.WHATSAPP,
-        "vault" to ToolCategory.FILES,
-        "safe" to ToolCategory.FILES,
-        "renamer" to ToolCategory.FILES,
-        "file-renamer" to ToolCategory.FILES,
+        ToolRegistry.MY_LINK to ToolCategory.WHATSAPP,
+        ToolRegistry.RENAMER to ToolCategory.FILES,
+        ToolRegistry.VAULT to ToolCategory.HANDY,
     )
 
     /** Extra words people may type to find a tool (synonyms, formats, sites), on top of its name, tagline and tags. */
@@ -93,11 +89,9 @@ object ToolCategories {
         ToolRegistry.IMAGE_RESIZER to "redimensionner reduire agrandir taille dimension pixels photo image lot",
         ToolRegistry.PHOTO_DUPLICATES to "doublons double identique ressemblante galerie trier supprimer place photo",
         ToolRegistry.SLIDESHOW to "diaporama montage video photos musique transition souvenir",
-        "whatsapp-link" to "lien qr code whatsapp numero partager carte visite",
-        "my-whatsapp-link" to "lien qr code whatsapp numero partager carte visite",
-        "vault" to "coffre fort cache secret code verrou prive chiffre",
-        "renamer" to "renommer nom fichiers lot date numero",
-        "file-renamer" to "renommer nom fichiers lot date numero",
+        ToolRegistry.MY_LINK to "lien qr code whatsapp partager carte visite wa me",
+        ToolRegistry.RENAMER to "renommer nom fichiers lot date compteur",
+        ToolRegistry.VAULT to "coffre fort cache secret code verrou prive chiffre",
     )
 
     /** Words that file a tool missing from [byId] in a category (checked in this order). */
