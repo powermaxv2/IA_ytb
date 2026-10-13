@@ -57,6 +57,7 @@ import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.bounceClick
 import com.powermaxv2.ytdownloader.ui.brand.GulpLockup
 import com.powermaxv2.ytdownloader.ui.brand.GulpMark
+import com.powermaxv2.ytdownloader.ui.hub.FavoriteStar
 import com.powermaxv2.ytdownloader.ui.hub.GulpTool
 import com.powermaxv2.ytdownloader.ui.hub.bob
 import com.powermaxv2.ytdownloader.ui.hub.nudgeRight
@@ -156,7 +157,7 @@ internal fun LiveDot(color: Color) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ClassicToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
+fun ClassicToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar: (() -> Unit)? = null, onOpen: () -> Unit) {
     val accent = LocalAccent.current
     val radius = LocalTokens.current.cardRadius
     val transition = rememberInfiniteTransition(label = "toolBorder")
@@ -248,6 +249,10 @@ fun ClassicToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Text("Prêt", color = Palette.Success, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
+                if (onStar != null) {
+                    FavoriteStar(starred, tool.name, onStar)
+                    Spacer(Modifier.width(6.dp))
+                }
                 Row(
                     Modifier
                         .clip(CircleShape)
@@ -380,7 +385,14 @@ fun ClassicHomeSection(title: String, order: Int) {
  * and the arrow pushes forward now and then. The whole bubble opens the tool.
  */
 @Composable
-fun ClassicToolBubble(tool: GulpTool, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+fun ClassicToolBubble(
+    tool: GulpTool,
+    order: Int,
+    modifier: Modifier = Modifier,
+    starred: Boolean = false,
+    onStar: (() -> Unit)? = null,
+    onOpen: () -> Unit,
+) {
     val accent = LocalAccent.current
     val radius = LocalTokens.current.cardRadius
     val transition = rememberInfiniteTransition(label = "bubble")
@@ -439,6 +451,7 @@ fun ClassicToolBubble(tool: GulpTool, order: Int, modifier: Modifier = Modifier,
             Spacer(Modifier.width(6.dp))
             Text("Prêt", color = Palette.Success, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
+            if (onStar != null) FavoriteStar(starred, tool.name, onStar, size = 28.dp)
             Box(
                 Modifier
                     .size(32.dp)

@@ -32,6 +32,7 @@ import com.powermaxv2.ytdownloader.core.VideoContainer
 import com.powermaxv2.ytdownloader.core.VideoInfo
 import com.powermaxv2.ytdownloader.core.commonArguments
 import com.powermaxv2.ytdownloader.core.str
+import com.powermaxv2.ytdownloader.ui.hub.Favorites
 import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
 import com.yausername.youtubedl_android.YoutubeDLException
 import kotlinx.coroutines.CancellationException
@@ -98,6 +99,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var lastToolId by mutableStateOf(prefs.lastToolId)
         private set
 
+    /** Tools starred on the home screen, in the order they were starred; they open the home screen. */
+    var favorites by mutableStateOf(Favorites.decode(prefs.favoriteTools))
+        private set
+
     var tab by mutableStateOf(Tab.YOUTUBE)
         private set
 
@@ -146,6 +151,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             lastToolId = id
             prefs.lastToolId = id
         }
+    }
+
+    /** Stars or unstars a tool of the home screen. */
+    fun toggleFavorite(id: String) {
+        val starring = id !in favorites
+        favorites = Favorites.toggle(favorites, id)
+        prefs.favoriteTools = Favorites.encode(favorites)
+        // The tool leaves its category for the top of the screen: say where it went.
+        if (starring) ToolRegistry.find(id)?.let { toast("${it.name} épinglé dans les favoris") }
     }
 
     fun goHome() {

@@ -53,6 +53,7 @@ import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.bounceClick
 import com.powermaxv2.ytdownloader.ui.brand.GulpColors
 import com.powermaxv2.ytdownloader.ui.brand.GulpLockup
+import com.powermaxv2.ytdownloader.ui.hub.FavoriteStar
 import com.powermaxv2.ytdownloader.ui.hub.GulpTool
 import com.powermaxv2.ytdownloader.ui.hub.bob
 import com.powermaxv2.ytdownloader.ui.hub.nudgeRight
@@ -163,7 +164,7 @@ internal fun PaperStamp(text: String, color: Color, tilt: Float, delayMs: Long, 
 
 /** A tool that is out: big accent number, "PRÊT" stamp, floating platform logos and an ink "Ouvrir" bar. */
 @Composable
-fun PaperToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
+fun PaperToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar: (() -> Unit)? = null, onOpen: () -> Unit) {
     val accent = LocalAccent.current.start
     Column(
         Modifier
@@ -199,6 +200,10 @@ fun PaperToolCard(tool: GulpTool, index: Int, onOpen: () -> Unit) {
                 }
             }
             Spacer(Modifier.weight(1f))
+            if (onStar != null) {
+                FavoriteStar(starred, tool.name, onStar)
+                Spacer(Modifier.width(4.dp))
+            }
             PaperStamp("PRÊT", accent, tilt = -7f, delayMs = 650)
         }
         Spacer(Modifier.height(6.dp))
@@ -358,7 +363,15 @@ fun PaperHomeSection(title: String, order: Int) {
  * little ink tile whose arrow pushes forward now and then. The whole entry opens the tool.
  */
 @Composable
-fun PaperToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+fun PaperToolBubble(
+    tool: GulpTool,
+    index: Int,
+    order: Int,
+    modifier: Modifier = Modifier,
+    starred: Boolean = false,
+    onStar: (() -> Unit)? = null,
+    onOpen: () -> Unit,
+) {
     val accent = LocalAccent.current.start
     Column(
         modifier
@@ -411,6 +424,7 @@ fun PaperToolBubble(tool: GulpTool, index: Int, order: Int, modifier: Modifier =
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Ouvrir", color = Palette.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
+            if (onStar != null) FavoriteStar(starred, tool.name, onStar, size = 28.dp)
             Box(
                 Modifier
                     .size(30.dp)

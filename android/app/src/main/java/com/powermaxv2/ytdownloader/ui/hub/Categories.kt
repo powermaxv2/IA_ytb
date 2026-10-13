@@ -55,6 +55,17 @@ object ToolCategories {
         ToolRegistry.CHAT_READER to ToolCategory.WHATSAPP,
         "styled-text" to ToolCategory.HANDY,
         "fancy-text" to ToolCategory.HANDY,
+        // Tools of 1.16.0.
+        ToolRegistry.QUICK_REPLIES to ToolCategory.WHATSAPP,
+        ToolRegistry.PROFILE_FIT to ToolCategory.WHATSAPP,
+        ToolRegistry.SIGN_PDF to ToolCategory.FILES,
+        ToolRegistry.WATERMARK to ToolCategory.FILES,
+        ToolRegistry.IMAGE_RESIZER to ToolCategory.MEDIA,
+        ToolRegistry.PHOTO_DUPLICATES to ToolCategory.FILES,
+        ToolRegistry.SLIDESHOW to ToolCategory.MEDIA,
+        ToolRegistry.MY_LINK to ToolCategory.WHATSAPP,
+        ToolRegistry.RENAMER to ToolCategory.FILES,
+        ToolRegistry.VAULT to ToolCategory.HANDY,
     )
 
     /** Extra words people may type to find a tool (synonyms, formats, sites), on top of its name, tagline and tags. */
@@ -71,6 +82,16 @@ object ToolCategories {
         ToolRegistry.PDF_JOIN to "fusionner assembler coller pdf pages separer diviser",
         ToolRegistry.DIRECT_CHAT to "numero telephone contact inconnu annonce leboncoin message direct ecrire lien wa me",
         ToolRegistry.CHAT_READER to "lire relire lecteur export discussion conversation historique recherche imprimer pdf archive",
+        ToolRegistry.QUICK_REPLIES to "reponse rapide message tout fait modele copier envoyer raccourci texte",
+        ToolRegistry.PROFILE_FIT to "photo profil avatar rond cercle entiere recadrer fond flou",
+        ToolRegistry.SIGN_PDF to "signer signature contrat document pdf paraphe doigt",
+        ToolRegistry.WATERMARK to "filigrane copie identite carte location dossier tampon texte photo pdf",
+        ToolRegistry.IMAGE_RESIZER to "redimensionner reduire agrandir taille dimension pixels photo image lot",
+        ToolRegistry.PHOTO_DUPLICATES to "doublons double identique ressemblante galerie trier supprimer place photo",
+        ToolRegistry.SLIDESHOW to "diaporama montage video photos musique transition souvenir",
+        ToolRegistry.MY_LINK to "lien qr code whatsapp partager carte visite wa me",
+        ToolRegistry.RENAMER to "renommer nom fichiers lot date compteur",
+        ToolRegistry.VAULT to "coffre fort cache secret code verrou prive chiffre",
     )
 
     /** Words that file a tool missing from [byId] in a category (checked in this order). */
