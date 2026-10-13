@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER),
-            ids.take(23),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES),
+            ids.take(24),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -42,8 +42,9 @@ class ToolRegistryTest {
         assertEquals("profile-fit", ToolRegistry.PROFILE_FIT)
         assertEquals("sign-pdf", ToolRegistry.SIGN_PDF)
         assertEquals("watermark", ToolRegistry.WATERMARK)
+        assertEquals("photo-duplicates", ToolRegistry.PHOTO_DUPLICATES)
         assertEquals("image-resizer", ToolRegistry.IMAGE_RESIZER)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER).forEach { id ->
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -73,12 +74,13 @@ class ToolRegistryTest {
         assertEquals("Photo de profil entière", ToolRegistry.find(ToolRegistry.PROFILE_FIT)?.name)
         assertEquals("Signature PDF", ToolRegistry.find(ToolRegistry.SIGN_PDF)?.name)
         assertEquals("Filigrane", ToolRegistry.find(ToolRegistry.WATERMARK)?.name)
+        assertEquals("Doublons photos", ToolRegistry.find(ToolRegistry.PHOTO_DUPLICATES)?.name)
         assertEquals("Redimensionneur", ToolRegistry.find(ToolRegistry.IMAGE_RESIZER)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-24"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(23, ToolRegistry.available.size)
+        assertEquals(listOf("soon-25"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(24, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -114,7 +116,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-24").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-25").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
