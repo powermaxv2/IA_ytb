@@ -12,12 +12,14 @@ import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
+import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
@@ -41,6 +44,7 @@ import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
+import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -143,6 +147,12 @@ object ToolRegistry {
 
     /** Redimensionneur: several photos made smaller (side, percentage or weight), cut to a shape, as JPG / PNG / WebP copies. */
     const val IMAGE_RESIZER = "image-resizer"
+
+    /** Doublons photos: the photos of the gallery that are the same or look the same, the best one kept, the others deleted. */
+    const val PHOTO_DUPLICATES = "photo-duplicates"
+
+    /** Diaporama: photos into a short MP4 (durations, transitions, Ken Burns zoom, music), made on the phone. */
+    const val SLIDESHOW = "slideshow"
 
     /** Mon lien WhatsApp: the user's own wa.me link and its QR code, with a message ready for whoever opens it. */
     const val MY_LINK = "whatsapp-link"
@@ -339,6 +349,22 @@ object ToolRegistry {
             screen = { vm -> ResizeTool(vm) },
         ),
         GulpTool(
+            id = PHOTO_DUPLICATES,
+            name = "Doublons photos",
+            tagline = "Repère les photos en double ou presque pareilles dans la galerie, garde la meilleure et libère de la place.",
+            tags = listOf("Galerie", "Identiques · Ressemblantes", "Hors ligne"),
+            icon = Icons.Rounded.PhotoLibrary,
+            screen = { vm -> PhotoDupTool(vm) },
+        ),
+        GulpTool(
+            id = SLIDESHOW,
+            name = "Diaporama",
+            tagline = "Transforme quelques photos en petite vidéo, avec transitions, effet Ken Burns et ta musique.",
+            tags = listOf("Photos → vidéo", "Fondu · Zoom", "Musique"),
+            icon = Icons.Rounded.Slideshow,
+            screen = { vm -> SlideshowTool(vm) },
+        ),
+        GulpTool(
             id = MY_LINK,
             name = "Mon lien WhatsApp",
             tagline = "Ton lien wa.me et son QR code, avec un message prêt : à copier, partager ou imprimer.",
@@ -346,7 +372,7 @@ object ToolRegistry {
             icon = Icons.Rounded.QrCode2,
             screen = { vm -> MyLinkTool(vm) },
         ),
-        comingSoon(25),
+        comingSoon(27),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
