@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.Dialpad
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -36,6 +37,7 @@ import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
+import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -128,6 +130,9 @@ object ToolRegistry {
 
     /** Photo de profil entière: a whole photo shrunk into WhatsApp's round profile picture, on a blurred or plain backdrop. */
     const val PROFILE_FIT = "profile-fit"
+
+    /** Signature PDF: a signature drawn once with the finger, placed on a page of a PDF, saved as a signed copy. */
+    const val SIGN_PDF = "sign-pdf"
 
     /** Redimensionneur: several photos made smaller (side, percentage or weight), cut to a shape, as JPG / PNG / WebP copies. */
     const val IMAGE_RESIZER = "image-resizer"
@@ -300,6 +305,14 @@ object ToolRegistry {
             screen = { vm -> ProfileFitTool(vm) },
         ),
         GulpTool(
+            id = SIGN_PDF,
+            name = "Signature PDF",
+            tagline = "Dessine ta signature une fois avec le doigt, pose-la sur n'importe quel PDF et enregistre-le signé.",
+            tags = listOf("PDF", "Au doigt", "Date · Initiales"),
+            icon = Icons.Rounded.Draw,
+            screen = { vm -> SignPdfTool(vm) },
+        ),
+        GulpTool(
             id = IMAGE_RESIZER,
             name = "Redimensionneur",
             tagline = "Réduis ou recadre plusieurs photos d'un coup : taille en pixels, poids maximum, carré ou 16:9, JPG ou WebP.",
@@ -307,7 +320,7 @@ object ToolRegistry {
             icon = ResizeIcon,
             screen = { vm -> ResizeTool(vm) },
         ),
-        comingSoon(22),
+        comingSoon(23),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
