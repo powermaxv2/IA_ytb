@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Preview
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -41,6 +42,7 @@ import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
+import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -146,6 +148,9 @@ object ToolRegistry {
 
     /** Doublons photos: the photos of the gallery that are the same or look the same, the best one kept, the others deleted. */
     const val PHOTO_DUPLICATES = "photo-duplicates"
+
+    /** Diaporama: photos into a short MP4 (durations, transitions, Ken Burns zoom, music), made on the phone. */
+    const val SLIDESHOW = "slideshow"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -346,7 +351,15 @@ object ToolRegistry {
             icon = Icons.Rounded.PhotoLibrary,
             screen = { vm -> PhotoDupTool(vm) },
         ),
-        comingSoon(25),
+        GulpTool(
+            id = SLIDESHOW,
+            name = "Diaporama",
+            tagline = "Transforme quelques photos en petite vidéo, avec transitions, effet Ken Burns et ta musique.",
+            tags = listOf("Photos → vidéo", "Fondu · Zoom", "Musique"),
+            icon = Icons.Rounded.Slideshow,
+            screen = { vm -> SlideshowTool(vm) },
+        ),
+        comingSoon(26),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

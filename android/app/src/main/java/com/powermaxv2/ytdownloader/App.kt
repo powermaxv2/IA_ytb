@@ -16,6 +16,7 @@ import com.powermaxv2.ytdownloader.core.pdfjoin.JoinController
 import com.powermaxv2.ytdownloader.core.photodup.PhotoDupController
 import com.powermaxv2.ytdownloader.core.scan.ScanController
 import com.powermaxv2.ytdownloader.core.signpdf.SignController
+import com.powermaxv2.ytdownloader.core.slideshow.SlideController
 import com.powermaxv2.ytdownloader.core.split.SplitController
 import com.powermaxv2.ytdownloader.core.sticker.StickerController
 import com.powermaxv2.ytdownloader.core.status.StatusController
@@ -75,6 +76,9 @@ class App : Application() {
 
     /** Doublons photos' scan and selection, kept the same way (a scan of the gallery survives leaving its screen). */
     val photoDuplicates: PhotoDupController by lazy { PhotoDupController(this, scope) }
+
+    /** The Diaporama's photos and work, kept the same way (a video being made survives leaving its screen). */
+    val slideshow: SlideController by lazy { SlideController(this, scope, engine) }
 
     /** True while the main screen is visible (Android only lets a visible app open the install confirmation). */
     @Volatile
