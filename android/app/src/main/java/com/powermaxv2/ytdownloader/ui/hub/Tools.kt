@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
@@ -35,6 +36,7 @@ import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
+import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
@@ -151,6 +153,9 @@ object ToolRegistry {
 
     /** Diaporama: photos into a short MP4 (durations, transitions, Ken Burns zoom, music), made on the phone. */
     const val SLIDESHOW = "slideshow"
+
+    /** Mon lien WhatsApp: the user's own wa.me link and its QR code, with a message ready for whoever opens it. */
+    const val MY_LINK = "whatsapp-link"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -359,7 +364,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Slideshow,
             screen = { vm -> SlideshowTool(vm) },
         ),
-        comingSoon(26),
+        GulpTool(
+            id = MY_LINK,
+            name = "Mon lien WhatsApp",
+            tagline = "Ton lien wa.me et son QR code, avec un message prêt : à copier, partager ou imprimer.",
+            tags = listOf("WhatsApp", "QR code", "Carte à imprimer"),
+            icon = Icons.Rounded.QrCode2,
+            screen = { vm -> MyLinkTool(vm) },
+        ),
+        comingSoon(27),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
