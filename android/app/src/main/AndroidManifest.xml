@@ -21,6 +21,10 @@
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- Coffre-fort: optional fingerprint unlock (the code always works). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Sonneries: makes a cut sound the phone's ringtone / notification / alarm (the user allows it in a settings page). -->
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
     <!-- Doublons photos: reads the gallery's photos to find the copies (asked when the tool opens). -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />

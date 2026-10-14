@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.RingVolume
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
@@ -45,6 +46,7 @@ import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
+import com.powermaxv2.ytdownloader.ui.tools.ringtone.RingtoneTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
@@ -166,6 +168,9 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Sonneries: the best passage of a song cut into a ringtone, a notification or an alarm, set as the phone's default. */
+    const val RINGTONES = "ringtones"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -398,7 +403,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Lock,
             screen = { vm -> VaultTool(vm) },
         ),
-        comingSoon(29),
+        GulpTool(
+            id = RINGTONES,
+            name = "Sonneries",
+            tagline = "Coupe le refrain d'une musique et fais-en ta sonnerie, ta notification ou ton réveil, réglé en un geste.",
+            tags = listOf("Sonnerie · Réveil", "Refrain repéré", "Fondu"),
+            icon = Icons.Rounded.RingVolume,
+            screen = { vm -> RingtoneTool(vm) },
+        ),
+        comingSoon(30),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
