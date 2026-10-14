@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -48,6 +49,7 @@ import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
+import com.powermaxv2.ytdownloader.ui.tools.speed.SpeedTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -166,6 +168,9 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Vitesse vidéo: a video slowed down (×0.25…) or sped up (…×8), its sound following, warped like a tape, or removed. */
+    const val VIDEO_SPEED = "video-speed"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -398,7 +403,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Lock,
             screen = { vm -> VaultTool(vm) },
         ),
-        comingSoon(29),
+        GulpTool(
+            id = VIDEO_SPEED,
+            name = "Vitesse vidéo",
+            tagline = "Passe une vidéo au ralenti ou en accéléré, de ×0,25 à ×8, avec ou sans le son.",
+            tags = listOf("Ralenti · Accéléré", "Voix naturelle", "Hors ligne"),
+            icon = Icons.Rounded.Speed,
+            screen = { vm -> SpeedTool(vm) },
+        ),
+        comingSoon(30),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
