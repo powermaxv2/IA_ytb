@@ -36,6 +36,8 @@ import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -181,6 +183,9 @@ object ToolRegistry {
 
     /** Convertisseur d'unités: lengths, weights, temperatures, speeds, cooking… from one unit to another, offline. Not the file Convertisseur. */
     const val UNIT_CONVERTER = "unit-converter"
+
+    /** Niveau à bulle: the phone's tilt sensor as a spirit level, lying flat (round vial) or on an edge (tube). */
+    const val LEVEL = "bubble-level"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -437,7 +442,15 @@ object ToolRegistry {
             icon = UnitsIcon,
             screen = { vm -> UnitsTool(vm) },
         ),
-        comingSoon(32),
+        GulpTool(
+            id = LEVEL,
+            name = "Niveau à bulle",
+            tagline = "Pose le téléphone sur une étagère ou contre un cadre : la bulle te dit si c'est bien droit, en degrés et en mm par mètre.",
+            tags = listOf("À plat · Tranche", "Calibrage", "Écran allumé"),
+            icon = LevelIcon,
+            screen = { vm -> LevelTool(vm) },
+        ),
+        comingSoon(33),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
