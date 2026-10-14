@@ -153,7 +153,7 @@ object GifPlan {
         return GifCrop((sw - cw) / 2, (sh - ch) / 2, cw, ch)
     }
 
-    private fun even(v: Double): Int = max(2, (v / 2).roundToInt() * 2)
+    private fun even(v: Double): Int = max(2, ((v + 1e-6) / 2).toInt() * 2)
 
     // MARK: - Durations
 

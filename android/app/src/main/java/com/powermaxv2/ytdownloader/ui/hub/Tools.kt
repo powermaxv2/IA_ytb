@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Gif
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
@@ -33,6 +34,7 @@ import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.gif.GifTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -166,6 +168,9 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
+    const val GIF_MAKER = "gif-maker"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -398,7 +403,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Lock,
             screen = { vm -> VaultTool(vm) },
         ),
-        comingSoon(29),
+        GulpTool(
+            id = GIF_MAKER,
+            name = "Créateur de GIF",
+            tagline = "Transforme un bout de vidéo ou quelques photos en GIF animé léger, en boomerang, au ralenti ou avec une légende.",
+            tags = listOf("Vidéo · Photos", "Boomerang · Légende", "Poids estimé"),
+            icon = Icons.Rounded.Gif,
+            screen = { vm -> GifTool(vm) },
+        ),
+        comingSoon(30),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
