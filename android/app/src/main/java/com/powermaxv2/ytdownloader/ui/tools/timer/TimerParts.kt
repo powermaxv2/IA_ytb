@@ -37,7 +37,11 @@ import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -423,9 +427,9 @@ internal fun PickChip(text: String, selected: Boolean, index: Int, onClick: () -
 /** One column of the duration picker: − value + ; the value rolls up or down with the change. */
 @Composable
 internal fun DurationColumn(value: Int, unit: String, onChange: (Int) -> Unit, max: Int, modifier: Modifier = Modifier) {
-    var last by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(value) }
+    var last by remember { mutableIntStateOf(value) }
     val down = value >= last
-    androidx.compose.runtime.SideEffect { last = value }
+    SideEffect { last = value }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         RoundAction(Icons.Rounded.Add, "Plus", size = 38.dp) { onChange(if (value >= max) 0 else value + 1) }
         RollingDigits("%02d".format(value), 34.sp, Palette.TextPrimary, down = down)
