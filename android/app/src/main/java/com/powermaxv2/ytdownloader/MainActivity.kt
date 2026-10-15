@@ -104,6 +104,8 @@ class MainActivity : ComponentActivity() {
             ACTION_SHOW_DOWNLOADS -> viewModel.showInDownloader(Tab.DOWNLOADS)
             // Only from our own notification (non-exported alias): MainActivity is exported for the launcher and Partager.
             ACTION_APP_UPDATE -> if (intent.component?.className == UPDATE_ENTRY) viewModel.startAppUpdate()
+            // From a Minuteur et chrono notification: only opens the tool.
+            ACTION_OPEN_TIMERS -> viewModel.openTool(ToolRegistry.TIMER)
         }
     }
 
@@ -118,6 +120,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val ACTION_SHOW_DOWNLOADS = "com.powermaxv2.ytdownloader.SHOW_DOWNLOADS"
         const val ACTION_APP_UPDATE = "com.powermaxv2.ytdownloader.APP_UPDATE"
+        const val ACTION_OPEN_TIMERS = "com.powermaxv2.ytdownloader.OPEN_TIMERS"
 
         /** activity-alias of the manifest that the update notification opens. */
         const val UPDATE_ENTRY = "com.powermaxv2.ytdownloader.UpdateEntry"

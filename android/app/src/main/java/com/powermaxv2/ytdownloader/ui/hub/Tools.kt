@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,6 +55,7 @@ import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
+import com.powermaxv2.ytdownloader.ui.tools.timer.TimerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.vault.VaultTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
@@ -166,6 +168,9 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Minuteur et chrono: named countdowns that ring like an alarm clock, screen off, and a stopwatch with laps. */
+    const val TIMER = "timer"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -398,7 +403,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Lock,
             screen = { vm -> VaultTool(vm) },
         ),
-        comingSoon(29),
+        GulpTool(
+            id = TIMER,
+            name = "Minuteur et chrono",
+            tagline = "Lance plusieurs minuteurs avec un nom et un chronomètre avec des tours, qui sonnent même écran éteint.",
+            tags = listOf("Plusieurs minuteurs", "Tours", "Écran éteint"),
+            icon = Icons.Rounded.Timer,
+            screen = { vm -> TimerTool(vm) },
+        ),
+        comingSoon(30),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
