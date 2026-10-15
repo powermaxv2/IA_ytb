@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -57,6 +58,7 @@ import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
+import com.powermaxv2.ytdownloader.ui.tools.speed.SpeedTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -196,6 +198,9 @@ object ToolRegistry {
 
     /** Mots de passe: strong random passwords, passphrases of French words or PIN codes (SecureRandom), with a strength gauge. */
     const val PASSWORDS = "password-generator"
+
+    /** Vitesse vidéo: a video slowed down (×0.25…) or sped up (…×8), its sound following, warped like a tape, or removed. */
+    const val VIDEO_SPEED = "video-speed"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -476,7 +481,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Password,
             screen = { vm -> PasswordTool(vm) },
         ),
-        comingSoon(35),
+        GulpTool(
+            id = VIDEO_SPEED,
+            name = "Vitesse vidéo",
+            tagline = "Passe une vidéo au ralenti ou en accéléré, de ×0,25 à ×8, avec ou sans le son.",
+            tags = listOf("Ralenti · Accéléré", "Voix naturelle", "Hors ligne"),
+            icon = Icons.Rounded.Speed,
+            screen = { vm -> SpeedTool(vm) },
+        ),
+        comingSoon(36),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
