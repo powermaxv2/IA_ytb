@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -29,6 +31,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
 import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
@@ -43,6 +46,7 @@ import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
+import com.powermaxv2.ytdownloader.ui.tools.recorder.RecorderTool
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
@@ -168,6 +172,12 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Enregistreur vocal: voice memos recorded, played back (speed, seek), renamed, shared or copied to Music/Gulp. */
+    const val VOICE_RECORDER = "voice-recorder"
+
+    /** Partage d'addition: a restaurant bill split between friends (tip, different parts, own orders), to the cent. */
+    const val BILL_SPLIT = "bill-split"
 
     /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
     const val PHOTO_BLUR = "photo-blur"
@@ -404,6 +414,22 @@ object ToolRegistry {
             screen = { vm -> VaultTool(vm) },
         ),
         GulpTool(
+            id = VOICE_RECORDER,
+            name = "Enregistreur vocal",
+            tagline = "Enregistre un mémo d'un toucher, réécoute-le plus vite ou au bon moment, donne-lui un nom et partage-le.",
+            tags = listOf("Mémo audio", "Pause · Vitesse", "Partager"),
+            icon = Icons.Rounded.Mic,
+            screen = { vm -> RecorderTool(vm) },
+        ),
+        GulpTool(
+            id = BILL_SPLIT,
+            name = "Partage d'addition",
+            tagline = "Divise la note du resto entre amis : pourboire, parts différentes, commandes perso, et qui doit combien à qui.",
+            tags = listOf("Pourboire · Arrondi", "Parts au choix", "Récap texte"),
+            icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+            screen = { vm -> BillTool(vm) },
+        ),
+        GulpTool(
             id = PHOTO_BLUR,
             name = "Flouter une photo",
             tagline = "Floute ou pixelise un visage, une plaque ou une adresse au doigt avant d'envoyer la photo.",
@@ -411,7 +437,7 @@ object ToolRegistry {
             icon = Icons.Rounded.BlurOn,
             screen = { vm -> BlurTool(vm) },
         ),
-        comingSoon(30),
+        comingSoon(32),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
