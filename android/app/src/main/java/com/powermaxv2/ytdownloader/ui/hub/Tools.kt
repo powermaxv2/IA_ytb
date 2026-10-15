@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -39,6 +40,7 @@ import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
+import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -191,6 +193,9 @@ object ToolRegistry {
 
     /** Compteur de texte: words, characters, reading time, SMS / X / Instagram limits, and the case changed in one touch. */
     const val TEXT_COUNTER = "text-counter"
+
+    /** Mots de passe: strong random passwords, passphrases of French words or PIN codes (SecureRandom), with a strength gauge. */
+    const val PASSWORDS = "password-generator"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -463,7 +468,15 @@ object ToolRegistry {
             icon = Icons.Rounded.FormatSize,
             screen = { vm -> TextCountTool(vm) },
         ),
-        comingSoon(34),
+        GulpTool(
+            id = PASSWORDS,
+            name = "Mots de passe",
+            tagline = "Crée un mot de passe solide ou facile à retenir, vois sa force sur la jauge, ou teste le tien.",
+            tags = listOf("Aléatoire sûr", "Texte · Phrase · PIN", "Hors ligne"),
+            icon = Icons.Rounded.Password,
+            screen = { vm -> PasswordTool(vm) },
+        ),
+        comingSoon(35),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

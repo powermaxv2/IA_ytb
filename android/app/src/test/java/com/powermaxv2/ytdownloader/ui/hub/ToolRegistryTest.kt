@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.VOICE_RECORDER, ToolRegistry.BILL_SPLIT, ToolRegistry.UNIT_CONVERTER, ToolRegistry.LEVEL, ToolRegistry.TEXT_COUNTER),
-            ids.take(33),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.VOICE_RECORDER, ToolRegistry.BILL_SPLIT, ToolRegistry.UNIT_CONVERTER, ToolRegistry.LEVEL, ToolRegistry.TEXT_COUNTER, ToolRegistry.PASSWORDS),
+            ids.take(34),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -48,12 +48,13 @@ class ToolRegistryTest {
         assertEquals("slideshow", ToolRegistry.SLIDESHOW)
         assertEquals("whatsapp-link", ToolRegistry.MY_LINK)
         assertEquals("vault", ToolRegistry.VAULT)
+        assertEquals("password-generator", ToolRegistry.PASSWORDS)
         assertEquals("text-counter", ToolRegistry.TEXT_COUNTER)
         assertEquals("voice-recorder", ToolRegistry.VOICE_RECORDER)
         assertEquals("bill-split", ToolRegistry.BILL_SPLIT)
         assertEquals("unit-converter", ToolRegistry.UNIT_CONVERTER)
         assertEquals("bubble-level", ToolRegistry.LEVEL)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.VOICE_RECORDER, ToolRegistry.BILL_SPLIT, ToolRegistry.UNIT_CONVERTER, ToolRegistry.LEVEL, ToolRegistry.TEXT_COUNTER).forEach { id ->
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.VOICE_RECORDER, ToolRegistry.BILL_SPLIT, ToolRegistry.UNIT_CONVERTER, ToolRegistry.LEVEL, ToolRegistry.TEXT_COUNTER, ToolRegistry.PASSWORDS).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -89,6 +90,7 @@ class ToolRegistryTest {
         assertEquals("Diaporama", ToolRegistry.find(ToolRegistry.SLIDESHOW)?.name)
         assertEquals("Mon lien WhatsApp", ToolRegistry.find(ToolRegistry.MY_LINK)?.name)
         assertEquals("Coffre-fort", ToolRegistry.find(ToolRegistry.VAULT)?.name)
+        assertEquals("Mots de passe", ToolRegistry.find(ToolRegistry.PASSWORDS)?.name)
         assertEquals("Compteur de texte", ToolRegistry.find(ToolRegistry.TEXT_COUNTER)?.name)
         assertEquals("Enregistreur vocal", ToolRegistry.find(ToolRegistry.VOICE_RECORDER)?.name)
         assertEquals("Partage d'addition", ToolRegistry.find(ToolRegistry.BILL_SPLIT)?.name)
@@ -97,8 +99,8 @@ class ToolRegistryTest {
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-34"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(33, ToolRegistry.available.size)
+        assertEquals(listOf("soon-35"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(34, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -157,6 +159,7 @@ class ToolRegistryTest {
         assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.SIGN_PDF)!!))
         assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.WATERMARK)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.MY_LINK)!!))
+        assertEquals(ToolCategory.HANDY, ToolCategories.of(ToolRegistry.find(ToolRegistry.PASSWORDS)!!))
         assertEquals(ToolCategory.HANDY, ToolCategories.of(ToolRegistry.find(ToolRegistry.TEXT_COUNTER)!!))
         assertEquals(ToolCategory.HANDY, ToolCategories.of(ToolRegistry.find(ToolRegistry.BILL_SPLIT)!!))
     }
@@ -187,6 +190,7 @@ class ToolRegistryTest {
         assertTrue(ToolRegistry.MY_LINK in found("qr whatsapp"))
         assertTrue(found("karaoké").isEmpty())
         assertTrue(ToolRegistry.SLIDESHOW in found("diaporama musique"))
+        assertTrue(ToolRegistry.PASSWORDS in found("mot de passe"))
         assertEquals(listOf(ToolRegistry.BILL_SPLIT), found("resto pourboire"))
         assertEquals(ToolRegistry.available.size, found("  ").size)
     }
