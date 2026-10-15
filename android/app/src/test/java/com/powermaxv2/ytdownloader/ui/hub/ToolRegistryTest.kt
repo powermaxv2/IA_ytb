@@ -17,8 +17,8 @@ class ToolRegistryTest {
     @Test fun fileToolsFollowTheDownloader() {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
-            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT),
-            ids.take(28),
+            listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.PDF_IMAGES),
+            ids.take(29),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
@@ -48,7 +48,8 @@ class ToolRegistryTest {
         assertEquals("slideshow", ToolRegistry.SLIDESHOW)
         assertEquals("whatsapp-link", ToolRegistry.MY_LINK)
         assertEquals("vault", ToolRegistry.VAULT)
-        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT).forEach { id ->
+        assertEquals("pdf-images", ToolRegistry.PDF_IMAGES)
+        listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.PDF_IMAGES).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
             tool!!
@@ -84,11 +85,12 @@ class ToolRegistryTest {
         assertEquals("Diaporama", ToolRegistry.find(ToolRegistry.SLIDESHOW)?.name)
         assertEquals("Mon lien WhatsApp", ToolRegistry.find(ToolRegistry.MY_LINK)?.name)
         assertEquals("Coffre-fort", ToolRegistry.find(ToolRegistry.VAULT)?.name)
+        assertEquals("PDF en images", ToolRegistry.find(ToolRegistry.PDF_IMAGES)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-29"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(28, ToolRegistry.available.size)
+        assertEquals(listOf("soon-30"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(29, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -124,7 +126,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-29").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-30").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
@@ -147,6 +149,7 @@ class ToolRegistryTest {
         assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.SIGN_PDF)!!))
         assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.WATERMARK)!!))
         assertEquals(ToolCategory.WHATSAPP, ToolCategories.of(ToolRegistry.find(ToolRegistry.MY_LINK)!!))
+        assertEquals(ToolCategory.FILES, ToolCategories.of(ToolRegistry.find(ToolRegistry.PDF_IMAGES)!!))
     }
 
     @Test fun newToolsAreFiledByTheirWordsElseInAutres() {
@@ -165,6 +168,7 @@ class ToolRegistryTest {
         assertTrue(ToolRegistry.DOWNLOADER in found("tiktok"))
         assertTrue(ToolRegistry.PDF_JOIN in found("pdf"))
         assertTrue(ToolRegistry.SCANNER in found("pdf"))
+        assertTrue(ToolRegistry.PDF_IMAGES in found("pdf jpg"))
         assertEquals(listOf(ToolRegistry.CHAT_STATS, ToolRegistry.QUICK_REPLIES), found("whatsapp réponse"))
         assertEquals(listOf(ToolRegistry.QUICK_REPLIES), found("message tout fait"))
         assertEquals(listOf(ToolRegistry.DIRECT_CHAT), found("numéro"))
