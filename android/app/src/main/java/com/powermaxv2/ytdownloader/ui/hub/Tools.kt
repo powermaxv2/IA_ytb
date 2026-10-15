@@ -25,7 +25,9 @@ import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.RingVolume
 import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -56,9 +58,11 @@ import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
+import com.powermaxv2.ytdownloader.ui.tools.ringtone.RingtoneTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
+import com.powermaxv2.ytdownloader.ui.tools.speed.SpeedTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -198,6 +202,12 @@ object ToolRegistry {
 
     /** Mots de passe: strong random passwords, passphrases of French words or PIN codes (SecureRandom), with a strength gauge. */
     const val PASSWORDS = "password-generator"
+
+    /** Vitesse vidéo: a video slowed down (×0.25…) or sped up (…×8), its sound following, warped like a tape, or removed. */
+    const val VIDEO_SPEED = "video-speed"
+
+    /** Sonneries: the best passage of a song cut into a ringtone, a notification or an alarm, set as the phone's default. */
+    const val RINGTONES = "ringtones"
 
     /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
     const val GIF_MAKER = "gif-maker"
@@ -482,6 +492,22 @@ object ToolRegistry {
             screen = { vm -> PasswordTool(vm) },
         ),
         GulpTool(
+            id = VIDEO_SPEED,
+            name = "Vitesse vidéo",
+            tagline = "Passe une vidéo au ralenti ou en accéléré, de ×0,25 à ×8, avec ou sans le son.",
+            tags = listOf("Ralenti · Accéléré", "Voix naturelle", "Hors ligne"),
+            icon = Icons.Rounded.Speed,
+            screen = { vm -> SpeedTool(vm) },
+        ),
+        GulpTool(
+            id = RINGTONES,
+            name = "Sonneries",
+            tagline = "Coupe le refrain d'une musique et fais-en ta sonnerie, ta notification ou ton réveil, réglé en un geste.",
+            tags = listOf("Sonnerie · Réveil", "Refrain repéré", "Fondu"),
+            icon = Icons.Rounded.RingVolume,
+            screen = { vm -> RingtoneTool(vm) },
+        ),
+        GulpTool(
             id = GIF_MAKER,
             name = "Créateur de GIF",
             tagline = "Transforme un bout de vidéo ou quelques photos en GIF animé léger, en boomerang, au ralenti ou avec une légende.",
@@ -489,7 +515,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Gif,
             screen = { vm -> GifTool(vm) },
         ),
-        comingSoon(36),
+        comingSoon(38),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
