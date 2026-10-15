@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CleaningServices
@@ -11,9 +12,12 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
+import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -29,11 +33,15 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
+import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -43,6 +51,7 @@ import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
 import com.powermaxv2.ytdownloader.ui.tools.readaloud.ReadAloudTool
+import com.powermaxv2.ytdownloader.ui.tools.recorder.RecorderTool
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
@@ -56,7 +65,10 @@ import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
+import com.powermaxv2.ytdownloader.ui.tools.textcount.TextCountTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.units.UnitsIcon
+import com.powermaxv2.ytdownloader.ui.tools.units.UnitsTool
 import com.powermaxv2.ytdownloader.ui.tools.vault.VaultTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.watermark.WatermarkTool
@@ -168,6 +180,24 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Enregistreur vocal: voice memos recorded, played back (speed, seek), renamed, shared or copied to Music/Gulp. */
+    const val VOICE_RECORDER = "voice-recorder"
+
+    /** Partage d'addition: a restaurant bill split between friends (tip, different parts, own orders), to the cent. */
+    const val BILL_SPLIT = "bill-split"
+
+    /** Convertisseur d'unités: lengths, weights, temperatures, speeds, cooking… from one unit to another, offline. Not the file Convertisseur. */
+    const val UNIT_CONVERTER = "unit-converter"
+
+    /** Niveau à bulle: the phone's tilt sensor as a spirit level, lying flat (round vial) or on an edge (tube). */
+    const val LEVEL = "bubble-level"
+
+    /** Compteur de texte: words, characters, reading time, SMS / X / Instagram limits, and the case changed in one touch. */
+    const val TEXT_COUNTER = "text-counter"
+
+    /** Mots de passe: strong random passwords, passphrases of French words or PIN codes (SecureRandom), with a strength gauge. */
+    const val PASSWORDS = "password-generator"
 
     /** Lecture à voix haute: a text (typed, pasted or from a file) read by the phone's voice, and saved as audio. */
     const val READ_ALOUD = "read-aloud"
@@ -404,6 +434,54 @@ object ToolRegistry {
             screen = { vm -> VaultTool(vm) },
         ),
         GulpTool(
+            id = VOICE_RECORDER,
+            name = "Enregistreur vocal",
+            tagline = "Enregistre un mémo d'un toucher, réécoute-le plus vite ou au bon moment, donne-lui un nom et partage-le.",
+            tags = listOf("Mémo audio", "Pause · Vitesse", "Partager"),
+            icon = Icons.Rounded.Mic,
+            screen = { vm -> RecorderTool(vm) },
+        ),
+        GulpTool(
+            id = BILL_SPLIT,
+            name = "Partage d'addition",
+            tagline = "Divise la note du resto entre amis : pourboire, parts différentes, commandes perso, et qui doit combien à qui.",
+            tags = listOf("Pourboire · Arrondi", "Parts au choix", "Récap texte"),
+            icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+            screen = { vm -> BillTool(vm) },
+        ),
+        GulpTool(
+            id = UNIT_CONVERTER,
+            name = "Convertisseur d'unités",
+            tagline = "Kilomètres en miles, °C en °F, tasse de farine en grammes : tape un nombre, tout se convertit en direct.",
+            tags = listOf("9 grandeurs", "Cuisine", "Hors ligne"),
+            icon = UnitsIcon,
+            screen = { vm -> UnitsTool(vm) },
+        ),
+        GulpTool(
+            id = LEVEL,
+            name = "Niveau à bulle",
+            tagline = "Pose le téléphone sur une étagère ou contre un cadre : la bulle te dit si c'est bien droit, en degrés et en mm par mètre.",
+            tags = listOf("À plat · Tranche", "Calibrage", "Écran allumé"),
+            icon = LevelIcon,
+            screen = { vm -> LevelTool(vm) },
+        ),
+        GulpTool(
+            id = TEXT_COUNTER,
+            name = "Compteur de texte",
+            tagline = "Compte les mots, les caractères et le temps de lecture d'un texte, et change sa casse d'un toucher.",
+            tags = listOf("Mots · Caractères", "SMS · X · Insta", "MAJ · min"),
+            icon = Icons.Rounded.FormatSize,
+            screen = { vm -> TextCountTool(vm) },
+        ),
+        GulpTool(
+            id = PASSWORDS,
+            name = "Mots de passe",
+            tagline = "Crée un mot de passe solide ou facile à retenir, vois sa force sur la jauge, ou teste le tien.",
+            tags = listOf("Aléatoire sûr", "Texte · Phrase · PIN", "Hors ligne"),
+            icon = Icons.Rounded.Password,
+            screen = { vm -> PasswordTool(vm) },
+        ),
+        GulpTool(
             id = READ_ALOUD,
             name = "Lecture à voix haute",
             tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
@@ -411,7 +489,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Headphones,
             screen = { vm -> ReadAloudTool(vm) },
         ),
-        comingSoon(30),
+        comingSoon(36),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
