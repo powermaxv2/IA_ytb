@@ -59,6 +59,8 @@ import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.units.UnitsIcon
+import com.powermaxv2.ytdownloader.ui.tools.units.UnitsTool
 import com.powermaxv2.ytdownloader.ui.tools.vault.VaultTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.watermark.WatermarkTool
@@ -176,6 +178,9 @@ object ToolRegistry {
 
     /** Partage d'addition: a restaurant bill split between friends (tip, different parts, own orders), to the cent. */
     const val BILL_SPLIT = "bill-split"
+
+    /** Convertisseur d'unités: lengths, weights, temperatures, speeds, cooking… from one unit to another, offline. Not the file Convertisseur. */
+    const val UNIT_CONVERTER = "unit-converter"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -424,7 +429,15 @@ object ToolRegistry {
             icon = Icons.AutoMirrored.Rounded.ReceiptLong,
             screen = { vm -> BillTool(vm) },
         ),
-        comingSoon(31),
+        GulpTool(
+            id = UNIT_CONVERTER,
+            name = "Convertisseur d'unités",
+            tagline = "Kilomètres en miles, °C en °F, tasse de farine en grammes : tape un nombre, tout se convertit en direct.",
+            tags = listOf("9 grandeurs", "Cuisine", "Hors ligne"),
+            icon = UnitsIcon,
+            screen = { vm -> UnitsTool(vm) },
+        ),
+        comingSoon(32),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
