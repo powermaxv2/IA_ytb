@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
+import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
@@ -62,6 +63,7 @@ import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
+import com.powermaxv2.ytdownloader.ui.tools.textcount.TextCountTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.units.UnitsIcon
 import com.powermaxv2.ytdownloader.ui.tools.units.UnitsTool
@@ -188,6 +190,9 @@ object ToolRegistry {
 
     /** Niveau à bulle: the phone's tilt sensor as a spirit level, lying flat (round vial) or on an edge (tube). */
     const val LEVEL = "bubble-level"
+
+    /** Compteur de texte: words, characters, reading time, SMS / X / Instagram limits, and the case changed in one touch. */
+    const val TEXT_COUNTER = "text-counter"
 
     /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
     const val PHOTO_BLUR = "photo-blur"
@@ -456,6 +461,14 @@ object ToolRegistry {
             screen = { vm -> LevelTool(vm) },
         ),
         GulpTool(
+            id = TEXT_COUNTER,
+            name = "Compteur de texte",
+            tagline = "Compte les mots, les caractères et le temps de lecture d'un texte, et change sa casse d'un toucher.",
+            tags = listOf("Mots · Caractères", "SMS · X · Insta", "MAJ · min"),
+            icon = Icons.Rounded.FormatSize,
+            screen = { vm -> TextCountTool(vm) },
+        ),
+        GulpTool(
             id = PHOTO_BLUR,
             name = "Flouter une photo",
             tagline = "Floute ou pixelise un visage, une plaque ou une adresse au doigt avant d'envoyer la photo.",
@@ -463,7 +476,7 @@ object ToolRegistry {
             icon = Icons.Rounded.BlurOn,
             screen = { vm -> BlurTool(vm) },
         ),
-        comingSoon(34),
+        comingSoon(35),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
