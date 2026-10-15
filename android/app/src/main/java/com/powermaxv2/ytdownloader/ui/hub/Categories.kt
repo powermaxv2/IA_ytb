@@ -66,6 +66,23 @@ object ToolCategories {
         ToolRegistry.MY_LINK to ToolCategory.WHATSAPP,
         ToolRegistry.RENAMER to ToolCategory.FILES,
         ToolRegistry.VAULT to ToolCategory.HANDY,
+        // Tools of 1.17.0 (the ones still being written are filed by their planned ids).
+        ToolRegistry.VOICE_RECORDER to ToolCategory.MEDIA,
+        ToolRegistry.BILL_SPLIT to ToolCategory.HANDY,
+        ToolRegistry.UNIT_CONVERTER to ToolCategory.HANDY,
+        ToolRegistry.LEVEL to ToolCategory.HANDY,
+        ToolRegistry.TEXT_COUNTER to ToolCategory.HANDY,
+        "gif-maker" to ToolCategory.MEDIA,
+        "photo-collage" to ToolCategory.MEDIA,
+        "photo-blur" to ToolCategory.MEDIA,
+        "ringtones" to ToolCategory.MEDIA,
+        "frame-grab" to ToolCategory.MEDIA,
+        "video-speed" to ToolCategory.MEDIA,
+        "pdf-images" to ToolCategory.FILES,
+        "read-aloud" to ToolCategory.HANDY,
+        "password-generator" to ToolCategory.HANDY,
+        "color-picker" to ToolCategory.HANDY,
+        "timer" to ToolCategory.HANDY,
     )
 
     /** Extra words people may type to find a tool (synonyms, formats, sites), on top of its name, tagline and tags. */
@@ -92,6 +109,22 @@ object ToolCategories {
         ToolRegistry.MY_LINK to "lien qr code whatsapp partager carte visite wa me",
         ToolRegistry.RENAMER to "renommer nom fichiers lot date compteur",
         ToolRegistry.VAULT to "coffre fort cache secret code verrou prive chiffre",
+        ToolRegistry.VOICE_RECORDER to "enregistrer enregistreur dictaphone memo vocal audio micro note voix",
+        ToolRegistry.BILL_SPLIT to "addition note resto restaurant partager diviser pourboire amis payer rembourser tricount",
+        ToolRegistry.UNIT_CONVERTER to "unite mesure longueur poids temperature vitesse cuisine recette miles celsius fahrenheit metre kilo litre surface volume octet duree",
+        ToolRegistry.LEVEL to "niveau bulle equerre horizontal vertical etagere cadre tableau inclinaison pente degre bricolage",
+        ToolRegistry.TEXT_COUNTER to "compter mots caracteres lettres longueur majuscules minuscules casse lecture tweet sms",
+        "gif-maker" to "gif anime animation boucle video photos meme",
+        "photo-collage" to "collage montage mosaique grille plusieurs photos cadre assembler",
+        "photo-blur" to "flouter flou cacher visage plaque masquer pixeliser anonyme photo",
+        "ringtones" to "sonnerie couper audio musique mp3 extrait alarme notification",
+        "frame-grab" to "capture image video photo extraire arret sur image instant",
+        "video-speed" to "vitesse ralenti accelere video slow motion timelapse",
+        "pdf-images" to "pdf images pages jpg png extraire convertir",
+        "read-aloud" to "lire voix haute lecture synthese vocale ecouter texte parler",
+        "password-generator" to "mot de passe generateur securite aleatoire phrase secrete",
+        "color-picker" to "couleur pipette hex rgb palette teinte peinture",
+        "timer" to "minuteur chrono chronometre compte rebours temps cuisson sport tours",
     )
 
     /** Words that file a tool missing from [byId] in a category (checked in this order). */
