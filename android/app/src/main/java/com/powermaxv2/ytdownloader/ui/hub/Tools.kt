@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CleaningServices
@@ -29,6 +30,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
@@ -171,6 +173,9 @@ object ToolRegistry {
 
     /** Enregistreur vocal: voice memos recorded, played back (speed, seek), renamed, shared or copied to Music/Gulp. */
     const val VOICE_RECORDER = "voice-recorder"
+
+    /** Partage d'addition: a restaurant bill split between friends (tip, different parts, own orders), to the cent. */
+    const val BILL_SPLIT = "bill-split"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -411,7 +416,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Mic,
             screen = { vm -> RecorderTool(vm) },
         ),
-        comingSoon(30),
+        GulpTool(
+            id = BILL_SPLIT,
+            name = "Partage d'addition",
+            tagline = "Divise la note du resto entre amis : pourboire, parts différentes, commandes perso, et qui doit combien à qui.",
+            tags = listOf("Pourboire · Arrondi", "Parts au choix", "Récap texte"),
+            icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+            screen = { vm -> BillTool(vm) },
+        ),
+        comingSoon(31),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
