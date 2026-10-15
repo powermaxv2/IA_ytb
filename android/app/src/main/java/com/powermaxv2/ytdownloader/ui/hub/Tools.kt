@@ -1,6 +1,7 @@
 package com.powermaxv2.ytdownloader.ui.hub
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -29,6 +31,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
@@ -43,6 +46,7 @@ import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
+import com.powermaxv2.ytdownloader.ui.tools.recorder.RecorderTool
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
@@ -168,6 +172,12 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Enregistreur vocal: voice memos recorded, played back (speed, seek), renamed, shared or copied to Music/Gulp. */
+    const val VOICE_RECORDER = "voice-recorder"
+
+    /** Partage d'addition: a restaurant bill split between friends (tip, different parts, own orders), to the cent. */
+    const val BILL_SPLIT = "bill-split"
 
     /** Capture d'image: the perfect moment of a video, found image by image (or the sharpest one), saved as a full-size photo. */
     const val FRAME_GRAB = "frame-grab"
@@ -404,6 +414,22 @@ object ToolRegistry {
             screen = { vm -> VaultTool(vm) },
         ),
         GulpTool(
+            id = VOICE_RECORDER,
+            name = "Enregistreur vocal",
+            tagline = "Enregistre un mémo d'un toucher, réécoute-le plus vite ou au bon moment, donne-lui un nom et partage-le.",
+            tags = listOf("Mémo audio", "Pause · Vitesse", "Partager"),
+            icon = Icons.Rounded.Mic,
+            screen = { vm -> RecorderTool(vm) },
+        ),
+        GulpTool(
+            id = BILL_SPLIT,
+            name = "Partage d'addition",
+            tagline = "Divise la note du resto entre amis : pourboire, parts différentes, commandes perso, et qui doit combien à qui.",
+            tags = listOf("Pourboire · Arrondi", "Parts au choix", "Récap texte"),
+            icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+            screen = { vm -> BillTool(vm) },
+        ),
+        GulpTool(
             id = FRAME_GRAB,
             name = "Capture d'image",
             tagline = "Fige l'instant parfait d'une vidéo, image par image, et garde-le en photo nette, en pleine qualité.",
@@ -411,7 +437,7 @@ object ToolRegistry {
             icon = Icons.Rounded.CameraRoll,
             screen = { vm -> CaptureTool(vm) },
         ),
-        comingSoon(30),
+        comingSoon(32),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
