@@ -13,9 +13,11 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
+import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -37,6 +39,9 @@ import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
+import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfimages.PdfImagesTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
@@ -60,6 +65,7 @@ import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
+import com.powermaxv2.ytdownloader.ui.tools.textcount.TextCountTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.units.UnitsIcon
 import com.powermaxv2.ytdownloader.ui.tools.units.UnitsTool
@@ -183,6 +189,15 @@ object ToolRegistry {
 
     /** Convertisseur d'unités: lengths, weights, temperatures, speeds, cooking… from one unit to another, offline. Not the file Convertisseur. */
     const val UNIT_CONVERTER = "unit-converter"
+
+    /** Niveau à bulle: the phone's tilt sensor as a spirit level, lying flat (round vial) or on an edge (tube). */
+    const val LEVEL = "bubble-level"
+
+    /** Compteur de texte: words, characters, reading time, SMS / X / Instagram limits, and the case changed in one touch. */
+    const val TEXT_COUNTER = "text-counter"
+
+    /** Mots de passe: strong random passwords, passphrases of French words or PIN codes (SecureRandom), with a strength gauge. */
+    const val PASSWORDS = "password-generator"
 
     /** PDF en images: each chosen page of a PDF as a JPG / PNG picture, or the pictures it holds taken out. */
     const val PDF_IMAGES = "pdf-images"
@@ -443,6 +458,30 @@ object ToolRegistry {
             screen = { vm -> UnitsTool(vm) },
         ),
         GulpTool(
+            id = LEVEL,
+            name = "Niveau à bulle",
+            tagline = "Pose le téléphone sur une étagère ou contre un cadre : la bulle te dit si c'est bien droit, en degrés et en mm par mètre.",
+            tags = listOf("À plat · Tranche", "Calibrage", "Écran allumé"),
+            icon = LevelIcon,
+            screen = { vm -> LevelTool(vm) },
+        ),
+        GulpTool(
+            id = TEXT_COUNTER,
+            name = "Compteur de texte",
+            tagline = "Compte les mots, les caractères et le temps de lecture d'un texte, et change sa casse d'un toucher.",
+            tags = listOf("Mots · Caractères", "SMS · X · Insta", "MAJ · min"),
+            icon = Icons.Rounded.FormatSize,
+            screen = { vm -> TextCountTool(vm) },
+        ),
+        GulpTool(
+            id = PASSWORDS,
+            name = "Mots de passe",
+            tagline = "Crée un mot de passe solide ou facile à retenir, vois sa force sur la jauge, ou teste le tien.",
+            tags = listOf("Aléatoire sûr", "Texte · Phrase · PIN", "Hors ligne"),
+            icon = Icons.Rounded.Password,
+            screen = { vm -> PasswordTool(vm) },
+        ),
+        GulpTool(
             id = PDF_IMAGES,
             name = "PDF en images",
             tagline = "Sors chaque page d'un PDF en image JPG ou PNG, ou récupère les images qu'il contient.",
@@ -450,7 +489,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Collections,
             screen = { vm -> PdfImagesTool(vm) },
         ),
-        comingSoon(33),
+        comingSoon(36),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
