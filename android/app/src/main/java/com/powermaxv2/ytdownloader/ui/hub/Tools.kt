@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.Preview
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.RingVolume
 import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
 import androidx.compose.runtime.Composable
@@ -40,6 +42,7 @@ import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
+import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -57,6 +60,7 @@ import com.powermaxv2.ytdownloader.ui.tools.ringtone.RingtoneTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
+import com.powermaxv2.ytdownloader.ui.tools.speed.SpeedTool
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerIcon
 import com.powermaxv2.ytdownloader.ui.tools.sticker.StickerTool
 import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
@@ -193,6 +197,12 @@ object ToolRegistry {
 
     /** Compteur de texte: words, characters, reading time, SMS / X / Instagram limits, and the case changed in one touch. */
     const val TEXT_COUNTER = "text-counter"
+
+    /** Mots de passe: strong random passwords, passphrases of French words or PIN codes (SecureRandom), with a strength gauge. */
+    const val PASSWORDS = "password-generator"
+
+    /** Vitesse vidéo: a video slowed down (×0.25…) or sped up (…×8), its sound following, warped like a tape, or removed. */
+    const val VIDEO_SPEED = "video-speed"
 
     /** Sonneries: the best passage of a song cut into a ringtone, a notification or an alarm, set as the phone's default. */
     const val RINGTONES = "ringtones"
@@ -469,6 +479,22 @@ object ToolRegistry {
             screen = { vm -> TextCountTool(vm) },
         ),
         GulpTool(
+            id = PASSWORDS,
+            name = "Mots de passe",
+            tagline = "Crée un mot de passe solide ou facile à retenir, vois sa force sur la jauge, ou teste le tien.",
+            tags = listOf("Aléatoire sûr", "Texte · Phrase · PIN", "Hors ligne"),
+            icon = Icons.Rounded.Password,
+            screen = { vm -> PasswordTool(vm) },
+        ),
+        GulpTool(
+            id = VIDEO_SPEED,
+            name = "Vitesse vidéo",
+            tagline = "Passe une vidéo au ralenti ou en accéléré, de ×0,25 à ×8, avec ou sans le son.",
+            tags = listOf("Ralenti · Accéléré", "Voix naturelle", "Hors ligne"),
+            icon = Icons.Rounded.Speed,
+            screen = { vm -> SpeedTool(vm) },
+        ),
+        GulpTool(
             id = RINGTONES,
             name = "Sonneries",
             tagline = "Coupe le refrain d'une musique et fais-en ta sonnerie, ta notification ou ton réveil, réglé en un geste.",
@@ -476,7 +502,7 @@ object ToolRegistry {
             icon = Icons.Rounded.RingVolume,
             screen = { vm -> RingtoneTool(vm) },
         ),
-        comingSoon(35),
+        comingSoon(37),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
