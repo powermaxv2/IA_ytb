@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.BrandingWatermark
+import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
+import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
@@ -206,6 +208,9 @@ object ToolRegistry {
 
     /** Sonneries: the best passage of a song cut into a ringtone, a notification or an alarm, set as the phone's default. */
     const val RINGTONES = "ringtones"
+
+    /** Capture d'image: the perfect moment of a video, found image by image (or the sharpest one), saved as a full-size photo. */
+    const val FRAME_GRAB = "frame-grab"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -502,7 +507,15 @@ object ToolRegistry {
             icon = Icons.Rounded.RingVolume,
             screen = { vm -> RingtoneTool(vm) },
         ),
-        comingSoon(37),
+        GulpTool(
+            id = FRAME_GRAB,
+            name = "Capture d'image",
+            tagline = "Fige l'instant parfait d'une vidéo, image par image, et garde-le en photo nette, en pleine qualité.",
+            tags = listOf("Vidéo → photo", "Image par image", "La plus nette"),
+            icon = Icons.Rounded.CameraRoll,
+            screen = { vm -> CaptureTool(vm) },
+        ),
+        comingSoon(38),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
