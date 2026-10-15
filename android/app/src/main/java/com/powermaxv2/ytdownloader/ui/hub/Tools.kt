@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
+import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
@@ -38,6 +39,8 @@ import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
+import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -60,7 +63,10 @@ import com.powermaxv2.ytdownloader.ui.tools.split.SplitTool
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
+import com.powermaxv2.ytdownloader.ui.tools.textcount.TextCountTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
+import com.powermaxv2.ytdownloader.ui.tools.units.UnitsIcon
+import com.powermaxv2.ytdownloader.ui.tools.units.UnitsTool
 import com.powermaxv2.ytdownloader.ui.tools.vault.VaultTool
 import com.powermaxv2.ytdownloader.ui.tools.voice.VoiceTool
 import com.powermaxv2.ytdownloader.ui.tools.watermark.WatermarkTool
@@ -178,6 +184,15 @@ object ToolRegistry {
 
     /** Partage d'addition: a restaurant bill split between friends (tip, different parts, own orders), to the cent. */
     const val BILL_SPLIT = "bill-split"
+
+    /** Convertisseur d'unités: lengths, weights, temperatures, speeds, cooking… from one unit to another, offline. Not the file Convertisseur. */
+    const val UNIT_CONVERTER = "unit-converter"
+
+    /** Niveau à bulle: the phone's tilt sensor as a spirit level, lying flat (round vial) or on an edge (tube). */
+    const val LEVEL = "bubble-level"
+
+    /** Compteur de texte: words, characters, reading time, SMS / X / Instagram limits, and the case changed in one touch. */
+    const val TEXT_COUNTER = "text-counter"
 
     /** Capture d'image: the perfect moment of a video, found image by image (or the sharpest one), saved as a full-size photo. */
     const val FRAME_GRAB = "frame-grab"
@@ -430,6 +445,30 @@ object ToolRegistry {
             screen = { vm -> BillTool(vm) },
         ),
         GulpTool(
+            id = UNIT_CONVERTER,
+            name = "Convertisseur d'unités",
+            tagline = "Kilomètres en miles, °C en °F, tasse de farine en grammes : tape un nombre, tout se convertit en direct.",
+            tags = listOf("9 grandeurs", "Cuisine", "Hors ligne"),
+            icon = UnitsIcon,
+            screen = { vm -> UnitsTool(vm) },
+        ),
+        GulpTool(
+            id = LEVEL,
+            name = "Niveau à bulle",
+            tagline = "Pose le téléphone sur une étagère ou contre un cadre : la bulle te dit si c'est bien droit, en degrés et en mm par mètre.",
+            tags = listOf("À plat · Tranche", "Calibrage", "Écran allumé"),
+            icon = LevelIcon,
+            screen = { vm -> LevelTool(vm) },
+        ),
+        GulpTool(
+            id = TEXT_COUNTER,
+            name = "Compteur de texte",
+            tagline = "Compte les mots, les caractères et le temps de lecture d'un texte, et change sa casse d'un toucher.",
+            tags = listOf("Mots · Caractères", "SMS · X · Insta", "MAJ · min"),
+            icon = Icons.Rounded.FormatSize,
+            screen = { vm -> TextCountTool(vm) },
+        ),
+        GulpTool(
             id = FRAME_GRAB,
             name = "Capture d'image",
             tagline = "Fige l'instant parfait d'une vidéo, image par image, et garde-le en photo nette, en pleine qualité.",
@@ -437,7 +476,7 @@ object ToolRegistry {
             icon = Icons.Rounded.CameraRoll,
             screen = { vm -> CaptureTool(vm) },
         ),
-        comingSoon(32),
+        comingSoon(35),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
