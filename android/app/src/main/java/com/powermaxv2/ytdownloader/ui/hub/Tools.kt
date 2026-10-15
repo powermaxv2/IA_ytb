@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PictureAsPdf
@@ -41,6 +42,7 @@ import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
+import com.powermaxv2.ytdownloader.ui.tools.readaloud.ReadAloudTool
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
@@ -166,6 +168,9 @@ object ToolRegistry {
 
     /** Coffre-fort: photos and files sealed (AES-256-GCM) in Gulp's private folder, opened with a code or the fingerprint. */
     const val VAULT = "vault"
+
+    /** Lecture à voix haute: a text (typed, pasted or from a file) read by the phone's voice, and saved as audio. */
+    const val READ_ALOUD = "read-aloud"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -398,7 +403,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Lock,
             screen = { vm -> VaultTool(vm) },
         ),
-        comingSoon(29),
+        GulpTool(
+            id = READ_ALOUD,
+            name = "Lecture à voix haute",
+            tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
+            tags = listOf("Texte · PDF · EPUB", "Mot à mot", "Export MP3"),
+            icon = Icons.Rounded.Headphones,
+            screen = { vm -> ReadAloudTool(vm) },
+        ),
+        comingSoon(30),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
