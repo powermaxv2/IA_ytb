@@ -18,7 +18,7 @@ class ToolRegistryTest {
         val ids = ToolRegistry.tools.map { it.id }
         assertEquals(
             listOf(ToolRegistry.DOWNLOADER, ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.VOICE_RECORDER, ToolRegistry.BILL_SPLIT, ToolRegistry.UNIT_CONVERTER, ToolRegistry.LEVEL, ToolRegistry.TEXT_COUNTER, ToolRegistry.PASSWORDS, ToolRegistry.VIDEO_SPEED, ToolRegistry.RINGTONES, ToolRegistry.FRAME_GRAB, ToolRegistry.PHOTO_BLUR, ToolRegistry.COLOR_PICKER, ToolRegistry.GIF_MAKER, ToolRegistry.PDF_IMAGES, ToolRegistry.READ_ALOUD),
-            ids.take(41),
+            ids.take(42),
         )
         // Stable ids: intents (Partager → Gulp) and saved state use them.
         assertEquals("converter", ToolRegistry.CONVERTER)
