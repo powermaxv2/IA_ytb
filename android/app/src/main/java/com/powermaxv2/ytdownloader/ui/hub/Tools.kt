@@ -3,7 +3,9 @@ package com.powermaxv2.ytdownloader.ui.hub
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
+import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Quickreply
 import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.RingVolume
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -35,6 +38,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
+import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
+import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
@@ -57,6 +62,7 @@ import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeIcon
 import com.powermaxv2.ytdownloader.ui.tools.resize.ResizeTool
+import com.powermaxv2.ytdownloader.ui.tools.ringtone.RingtoneTool
 import com.powermaxv2.ytdownloader.ui.tools.scan.ScannerTool
 import com.powermaxv2.ytdownloader.ui.tools.signpdf.SignPdfTool
 import com.powermaxv2.ytdownloader.ui.tools.slideshow.SlideshowTool
@@ -203,6 +209,15 @@ object ToolRegistry {
 
     /** Vitesse vidéo: a video slowed down (×0.25…) or sped up (…×8), its sound following, warped like a tape, or removed. */
     const val VIDEO_SPEED = "video-speed"
+
+    /** Sonneries: the best passage of a song cut into a ringtone, a notification or an alarm, set as the phone's default. */
+    const val RINGTONES = "ringtones"
+
+    /** Capture d'image: the perfect moment of a video, found image by image (or the sharpest one), saved as a full-size photo. */
+    const val FRAME_GRAB = "frame-grab"
+
+    /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
+    const val PHOTO_BLUR = "photo-blur"
 
     /** Lecture à voix haute: a text (typed, pasted or from a file) read by the phone's voice, and saved as audio. */
     const val READ_ALOUD = "read-aloud"
@@ -495,6 +510,29 @@ object ToolRegistry {
             screen = { vm -> SpeedTool(vm) },
         ),
         GulpTool(
+            id = RINGTONES,
+            name = "Sonneries",
+            tagline = "Coupe le refrain d'une musique et fais-en ta sonnerie, ta notification ou ton réveil, réglé en un geste.",
+            tags = listOf("Sonnerie · Réveil", "Refrain repéré", "Fondu"),
+            icon = Icons.Rounded.RingVolume,
+            screen = { vm -> RingtoneTool(vm) },
+        ),
+        GulpTool(
+            id = FRAME_GRAB,
+            name = "Capture d'image",
+            tagline = "Fige l'instant parfait d'une vidéo, image par image, et garde-le en photo nette, en pleine qualité.",
+            tags = listOf("Vidéo → photo", "Image par image", "La plus nette"),
+            icon = Icons.Rounded.CameraRoll,
+            screen = { vm -> CaptureTool(vm) },
+        ),
+        GulpTool(
+            id = PHOTO_BLUR,
+            name = "Flouter une photo",
+            tagline = "Floute ou pixelise un visage, une plaque ou une adresse au doigt avant d'envoyer la photo.",
+            tags = listOf("Flou · Pixels · Noir", "Visages trouvés", "Hors ligne"),
+            icon = Icons.Rounded.BlurOn,
+            screen = { vm -> BlurTool(vm) },
+        ),
             id = READ_ALOUD,
             name = "Lecture à voix haute",
             tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
@@ -502,7 +540,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Headphones,
             screen = { vm -> ReadAloudTool(vm) },
         ),
-        comingSoon(37),
+        comingSoon(40),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
