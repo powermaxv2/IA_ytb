@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFormat
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -82,6 +83,7 @@ import com.powermaxv2.ytdownloader.ui.tools.status.StatusIcon
 import com.powermaxv2.ytdownloader.ui.tools.status.StatusTool
 import com.powermaxv2.ytdownloader.ui.tools.styled.StyledTextTool
 import com.powermaxv2.ytdownloader.ui.tools.textcount.TextCountTool
+import com.powermaxv2.ytdownloader.ui.tools.timer.TimerTool
 import com.powermaxv2.ytdownloader.ui.tools.trim.TrimTool
 import com.powermaxv2.ytdownloader.ui.tools.units.UnitsIcon
 import com.powermaxv2.ytdownloader.ui.tools.units.UnitsTool
@@ -220,6 +222,9 @@ object ToolRegistry {
 
     /** Sonneries: the best passage of a song cut into a ringtone, a notification or an alarm, set as the phone's default. */
     const val RINGTONES = "ringtones"
+
+    /** Minuteur et chrono: named countdowns that ring like an alarm clock, screen off, and a stopwatch with laps. */
+    const val TIMER = "timer"
 
     /** Capture d'image: the perfect moment of a video, found image by image (or the sharpest one), saved as a full-size photo. */
     const val FRAME_GRAB = "frame-grab"
@@ -591,7 +596,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Headphones,
             screen = { vm -> ReadAloudTool(vm) },
         ),
-        comingSoon(44),
+        GulpTool(
+            id = TIMER,
+            name = "Minuteur et chrono",
+            tagline = "Lance plusieurs minuteurs avec un nom et un chronomètre avec des tours, qui sonnent même écran éteint.",
+            tags = listOf("Plusieurs minuteurs", "Tours", "Écran éteint"),
+            icon = Icons.Rounded.Timer,
+            screen = { vm -> TimerTool(vm) },
+        ),
+        comingSoon(45),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

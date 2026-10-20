@@ -36,6 +36,14 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Minuteur et chrono: a timer rings to the second, screen off (alarm clock). Granted at install: USE_EXACT_ALARM on
+         Android 13+, SCHEDULE_EXACT_ALARM on 12 (older versions need neither). Without it the timer rings a bit late. -->
+    <uses-permission
+        android:name="android.permission.USE_EXACT_ALARM"
+        tools:ignore="ExactAlarm" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
     <!-- Only needed to save into the public folders on Android 9 and older. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -201,6 +209,18 @@
         <receiver
             android:name=".core.InstallStatusReceiver"
             android:exported="false" />
+
+        <!-- Minuteur et chrono: rings a timer (its own PendingIntents only, not exported) and puts the alarms back
+             after a reboot or an update of Gulp. -->
+        <receiver
+            android:name=".core.timer.TimerReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".core.AppReplacedReceiver"
