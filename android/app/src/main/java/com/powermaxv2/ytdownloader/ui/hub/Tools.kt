@@ -7,6 +7,8 @@ import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Collections
+import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Dialpad
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Gif
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
@@ -37,17 +40,21 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.readaloud.ReadAloudTool
 import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
 import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
+import com.powermaxv2.ytdownloader.ui.tools.colors.ColorPickerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.gif.GifTool
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
+import com.powermaxv2.ytdownloader.ui.tools.pdfimages.PdfImagesTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -56,7 +63,6 @@ import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
 import com.powermaxv2.ytdownloader.ui.tools.qr.QrTool
 import com.powermaxv2.ytdownloader.ui.tools.quickreply.QuickReplyTool
 import com.powermaxv2.ytdownloader.ui.tools.reader.ReaderTool
-import com.powermaxv2.ytdownloader.ui.tools.readaloud.ReadAloudTool
 import com.powermaxv2.ytdownloader.ui.tools.recorder.RecorderTool
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameIcon
 import com.powermaxv2.ytdownloader.ui.tools.rename.RenameTool
@@ -218,6 +224,15 @@ object ToolRegistry {
 
     /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
     const val PHOTO_BLUR = "photo-blur"
+
+    /** Pipette: a colour read by touching a photo (HEX, RVB, TSL, CMJN), and the photo's palette. */
+    const val COLOR_PICKER = "color-picker"
+
+    /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
+    const val GIF_MAKER = "gif-maker"
+
+    /** PDF en images: each chosen page of a PDF as a JPG / PNG picture, or the pictures it holds taken out. */
+    const val PDF_IMAGES = "pdf-images"
 
     /** Lecture à voix haute: a text (typed, pasted or from a file) read by the phone's voice, and saved as audio. */
     const val READ_ALOUD = "read-aloud"
@@ -534,6 +549,30 @@ object ToolRegistry {
             screen = { vm -> BlurTool(vm) },
         ),
         GulpTool(
+            id = COLOR_PICKER,
+            name = "Pipette",
+            tagline = "Touche une photo pour récupérer une couleur et son code, et sors toute la palette de l'image.",
+            tags = listOf("HEX · RVB · TSL", "Palette auto", "Hors ligne"),
+            icon = Icons.Rounded.Colorize,
+            screen = { vm -> ColorPickerTool(vm) },
+        ),
+        GulpTool(
+            id = GIF_MAKER,
+            name = "Créateur de GIF",
+            tagline = "Transforme un bout de vidéo ou quelques photos en GIF animé léger, en boomerang, au ralenti ou avec une légende.",
+            tags = listOf("Vidéo · Photos", "Boomerang · Légende", "Poids estimé"),
+            icon = Icons.Rounded.Gif,
+            screen = { vm -> GifTool(vm) },
+        ),
+        GulpTool(
+            id = PDF_IMAGES,
+            name = "PDF en images",
+            tagline = "Sors chaque page d'un PDF en image JPG ou PNG, ou récupère les images qu'il contient.",
+            tags = listOf("PDF → JPG · PNG", "Pages choisies", "Images d'origine"),
+            icon = Icons.Rounded.Collections,
+            screen = { vm -> PdfImagesTool(vm) },
+        ),
+        GulpTool(
             id = READ_ALOUD,
             name = "Lecture à voix haute",
             tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
@@ -541,7 +580,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Headphones,
             screen = { vm -> ReadAloudTool(vm) },
         ),
-        comingSoon(40),
+        comingSoon(43),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
