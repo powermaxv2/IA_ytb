@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Dialpad
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Gif
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Password
@@ -43,9 +45,11 @@ import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
 import com.powermaxv2.ytdownloader.ui.tools.collage.CollageTool
+import com.powermaxv2.ytdownloader.ui.tools.colors.ColorPickerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.gif.GifTool
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
@@ -218,6 +222,12 @@ object ToolRegistry {
 
     /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
     const val PHOTO_BLUR = "photo-blur"
+
+    /** Pipette: a colour read by touching a photo (HEX, RVB, TSL, CMJN), and the photo's palette. */
+    const val COLOR_PICKER = "color-picker"
+
+    /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
+    const val GIF_MAKER = "gif-maker"
     const val COLLAGE = "photo-collage"
 
     private fun comingSoon(slot: Int) = GulpTool(
@@ -532,6 +542,22 @@ object ToolRegistry {
             screen = { vm -> BlurTool(vm) },
         ),
         GulpTool(
+            id = COLOR_PICKER,
+            name = "Pipette",
+            tagline = "Touche une photo pour récupérer une couleur et son code, et sors toute la palette de l'image.",
+            tags = listOf("HEX · RVB · TSL", "Palette auto", "Hors ligne"),
+            icon = Icons.Rounded.Colorize,
+            screen = { vm -> ColorPickerTool(vm) },
+        ),
+        GulpTool(
+            id = GIF_MAKER,
+            name = "Créateur de GIF",
+            tagline = "Transforme un bout de vidéo ou quelques photos en GIF animé léger, en boomerang, au ralenti ou avec une légende.",
+            tags = listOf("Vidéo · Photos", "Boomerang · Légende", "Poids estimé"),
+            icon = Icons.Rounded.Gif,
+            screen = { vm -> GifTool(vm) },
+        ),
+        GulpTool(
             id = COLLAGE,
             name = "Collage photos",
             tagline = "Assemble plusieurs photos en une seule, en grille, une grande et des petites ou en pêle-mêle, prête à envoyer.",
@@ -539,7 +565,7 @@ object ToolRegistry {
             icon = Icons.Rounded.AutoAwesomeMosaic,
             screen = { vm -> CollageTool(vm) },
         ),
-        comingSoon(40),
+        comingSoon(42),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
