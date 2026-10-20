@@ -546,6 +546,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Colorize,
             screen = { vm -> ColorPickerTool(vm) },
         ),
+        GulpTool(
             id = PDF_IMAGES,
             name = "PDF en images",
             tagline = "Sors chaque page d'un PDF en image JPG ou PNG, ou récupère les images qu'il contient.",
