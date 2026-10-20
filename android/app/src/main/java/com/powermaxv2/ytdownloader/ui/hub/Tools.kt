@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Gif
+import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Password
@@ -41,6 +42,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
+import com.powermaxv2.ytdownloader.ui.tools.readaloud.ReadAloudTool
 import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
 import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
@@ -239,6 +241,9 @@ object ToolRegistry {
     /** PDF en images: each chosen page of a PDF as a JPG / PNG picture, or the pictures it holds taken out. */
     const val PDF_IMAGES = "pdf-images"
     const val COLLAGE = "photo-collage"
+
+    /** Lecture à voix haute: a text (typed, pasted or from a file) read by the phone's voice, and saved as audio. */
+    const val READ_ALOUD = "read-aloud"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -584,6 +589,14 @@ object ToolRegistry {
             screen = { vm -> CollageTool(vm) },
         ),
         GulpTool(
+            id = READ_ALOUD,
+            name = "Lecture à voix haute",
+            tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
+            tags = listOf("Texte · PDF · EPUB", "Mot à mot", "Export MP3"),
+            icon = Icons.Rounded.Headphones,
+            screen = { vm -> ReadAloudTool(vm) },
+        ),
+        GulpTool(
             id = TIMER,
             name = "Minuteur et chrono",
             tagline = "Lance plusieurs minuteurs avec un nom et un chronomètre avec des tours, qui sonnent même écran éteint.",
@@ -591,7 +604,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Timer,
             screen = { vm -> TimerTool(vm) },
         ),
-        comingSoon(44),
+        comingSoon(45),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
