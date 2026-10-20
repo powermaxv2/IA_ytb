@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Collections
 import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
@@ -53,6 +54,7 @@ import com.powermaxv2.ytdownloader.ui.tools.gif.GifTool
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
+import com.powermaxv2.ytdownloader.ui.tools.pdfimages.PdfImagesTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
 import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
@@ -228,6 +230,9 @@ object ToolRegistry {
 
     /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
     const val GIF_MAKER = "gif-maker"
+
+    /** PDF en images: each chosen page of a PDF as a JPG / PNG picture, or the pictures it holds taken out. */
+    const val PDF_IMAGES = "pdf-images"
     const val COLLAGE = "photo-collage"
 
     private fun comingSoon(slot: Int) = GulpTool(
@@ -558,6 +563,14 @@ object ToolRegistry {
             screen = { vm -> GifTool(vm) },
         ),
         GulpTool(
+            id = PDF_IMAGES,
+            name = "PDF en images",
+            tagline = "Sors chaque page d'un PDF en image JPG ou PNG, ou récupère les images qu'il contient.",
+            tags = listOf("PDF → JPG · PNG", "Pages choisies", "Images d'origine"),
+            icon = Icons.Rounded.Collections,
+            screen = { vm -> PdfImagesTool(vm) },
+        ),
+        GulpTool(
             id = COLLAGE,
             name = "Collage photos",
             tagline = "Assemble plusieurs photos en une seule, en grille, une grande et des petites ou en pêle-mêle, prête à envoyer.",
@@ -565,7 +578,7 @@ object ToolRegistry {
             icon = Icons.Rounded.AutoAwesomeMosaic,
             screen = { vm -> CollageTool(vm) },
         ),
-        comingSoon(42),
+        comingSoon(43),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
