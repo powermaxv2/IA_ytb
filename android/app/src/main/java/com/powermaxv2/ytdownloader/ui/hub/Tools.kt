@@ -3,6 +3,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
+import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
@@ -211,6 +213,9 @@ object ToolRegistry {
 
     /** Capture d'image: the perfect moment of a video, found image by image (or the sharpest one), saved as a full-size photo. */
     const val FRAME_GRAB = "frame-grab"
+
+    /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
+    const val PHOTO_BLUR = "photo-blur"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -515,7 +520,15 @@ object ToolRegistry {
             icon = Icons.Rounded.CameraRoll,
             screen = { vm -> CaptureTool(vm) },
         ),
-        comingSoon(38),
+        GulpTool(
+            id = PHOTO_BLUR,
+            name = "Flouter une photo",
+            tagline = "Floute ou pixelise un visage, une plaque ou une adresse au doigt avant d'envoyer la photo.",
+            tags = listOf("Flou · Pixels · Noir", "Visages trouvés", "Hors ligne"),
+            icon = Icons.Rounded.BlurOn,
+            screen = { vm -> BlurTool(vm) },
+        ),
+        comingSoon(39),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
