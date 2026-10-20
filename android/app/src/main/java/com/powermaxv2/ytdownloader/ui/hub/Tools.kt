@@ -533,6 +533,7 @@ object ToolRegistry {
             icon = Icons.Rounded.BlurOn,
             screen = { vm -> BlurTool(vm) },
         ),
+        GulpTool(
             id = READ_ALOUD,
             name = "Lecture à voix haute",
             tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
