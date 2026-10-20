@@ -61,6 +61,7 @@ class ToolRegistryTest {
         assertEquals("color-picker", ToolRegistry.COLOR_PICKER)
         assertEquals("pdf-images", ToolRegistry.PDF_IMAGES)
         assertEquals("gif-maker", ToolRegistry.GIF_MAKER)
+        assertEquals("read-aloud", ToolRegistry.READ_ALOUD)
         listOf(ToolRegistry.CONVERTER, ToolRegistry.PREVIEW, ToolRegistry.CHAT_STATS, ToolRegistry.COMPRESSOR, ToolRegistry.QR_CODE, ToolRegistry.SCANNER, ToolRegistry.TRIMMER, ToolRegistry.WIPER, ToolRegistry.PDF_JOIN, ToolRegistry.VOICE_TEXT, ToolRegistry.CLEANER, ToolRegistry.STICKERS, ToolRegistry.STYLED_TEXT, ToolRegistry.STATUSES, ToolRegistry.STATUS_SPLIT, ToolRegistry.DIRECT_CHAT, ToolRegistry.CHAT_READER, ToolRegistry.QUICK_REPLIES, ToolRegistry.PROFILE_FIT, ToolRegistry.SIGN_PDF, ToolRegistry.WATERMARK, ToolRegistry.IMAGE_RESIZER, ToolRegistry.PHOTO_DUPLICATES, ToolRegistry.SLIDESHOW, ToolRegistry.MY_LINK, ToolRegistry.RENAMER, ToolRegistry.VAULT, ToolRegistry.VOICE_RECORDER, ToolRegistry.BILL_SPLIT, ToolRegistry.UNIT_CONVERTER, ToolRegistry.LEVEL, ToolRegistry.TEXT_COUNTER, ToolRegistry.PASSWORDS, ToolRegistry.VIDEO_SPEED, ToolRegistry.RINGTONES, ToolRegistry.FRAME_GRAB, ToolRegistry.PHOTO_BLUR, ToolRegistry.COLOR_PICKER, ToolRegistry.GIF_MAKER, ToolRegistry.PDF_IMAGES).forEach { id ->
             val tool = ToolRegistry.find(id)
             assertNotNull(id, tool)
@@ -108,11 +109,12 @@ class ToolRegistryTest {
         assertEquals("Vitesse vidéo", ToolRegistry.find(ToolRegistry.VIDEO_SPEED)?.name)
         assertEquals("Flouter une photo", ToolRegistry.find(ToolRegistry.PHOTO_BLUR)?.name)
         assertEquals("PDF en images", ToolRegistry.find(ToolRegistry.PDF_IMAGES)?.name)
+        assertEquals("Lecture à voix haute", ToolRegistry.find(ToolRegistry.READ_ALOUD)?.name)
     }
 
     @Test fun oneSlotStaysComingSoon() {
-        assertEquals(listOf("soon-42"), ToolRegistry.upcoming.map { it.id })
-        assertEquals(41, ToolRegistry.available.size)
+        assertEquals(listOf("soon-43"), ToolRegistry.upcoming.map { it.id })
+        assertEquals(42, ToolRegistry.available.size)
     }
 
     @Test fun honestWording() {
@@ -148,7 +150,7 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, null).id)
         // A tool removed in a later version (or an "À venir" id) falls back to the downloader too.
         assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "gone").id)
-        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-42").id)
+        assertEquals(ToolRegistry.DOWNLOADER, featuredTool(ready, "soon-43").id)
     }
 
     @Test fun lastUsedToolIsFeatured() {
