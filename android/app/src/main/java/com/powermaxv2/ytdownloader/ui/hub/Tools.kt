@@ -3,6 +3,7 @@ package com.powermaxv2.ytdownloader.ui.hub
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.AutoAwesomeMosaic
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
@@ -46,6 +47,7 @@ import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
+import com.powermaxv2.ytdownloader.ui.tools.collage.CollageTool
 import com.powermaxv2.ytdownloader.ui.tools.colors.ColorPickerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
@@ -233,6 +235,7 @@ object ToolRegistry {
 
     /** PDF en images: each chosen page of a PDF as a JPG / PNG picture, or the pictures it holds taken out. */
     const val PDF_IMAGES = "pdf-images"
+    const val COLLAGE = "photo-collage"
 
     /** Lecture à voix haute: a text (typed, pasted or from a file) read by the phone's voice, and saved as audio. */
     const val READ_ALOUD = "read-aloud"
@@ -573,6 +576,14 @@ object ToolRegistry {
             screen = { vm -> PdfImagesTool(vm) },
         ),
         GulpTool(
+            id = COLLAGE,
+            name = "Collage photos",
+            tagline = "Assemble plusieurs photos en une seule, en grille, une grande et des petites ou en pêle-mêle, prête à envoyer.",
+            tags = listOf("2 à 9 photos", "Grille · Pêle-mêle", "Carré · Story"),
+            icon = Icons.Rounded.AutoAwesomeMosaic,
+            screen = { vm -> CollageTool(vm) },
+        ),
+        GulpTool(
             id = READ_ALOUD,
             name = "Lecture à voix haute",
             tagline = "Colle un texte ou ouvre un PDF, un Word ou un livre : ton téléphone te le lit et l'enregistre en MP3.",
@@ -580,7 +591,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Headphones,
             screen = { vm -> ReadAloudTool(vm) },
         ),
-        comingSoon(43),
+        comingSoon(44),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
