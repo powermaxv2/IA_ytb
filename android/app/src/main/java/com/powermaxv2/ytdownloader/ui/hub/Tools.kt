@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Draw
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Gif
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Password
@@ -46,6 +47,7 @@ import com.powermaxv2.ytdownloader.ui.tools.colors.ColorPickerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
+import com.powermaxv2.ytdownloader.ui.tools.gif.GifTool
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelIcon
 import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
@@ -221,6 +223,9 @@ object ToolRegistry {
 
     /** Pipette: a colour read by touching a photo (HEX, RVB, TSL, CMJN), and the photo's palette. */
     const val COLOR_PICKER = "color-picker"
+
+    /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
+    const val GIF_MAKER = "gif-maker"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -541,7 +546,15 @@ object ToolRegistry {
             icon = Icons.Rounded.Colorize,
             screen = { vm -> ColorPickerTool(vm) },
         ),
-        comingSoon(40),
+        GulpTool(
+            id = GIF_MAKER,
+            name = "Créateur de GIF",
+            tagline = "Transforme un bout de vidéo ou quelques photos en GIF animé léger, en boomerang, au ralenti ou avec une légende.",
+            tags = listOf("Vidéo · Photos", "Boomerang · Légende", "Poids estimé"),
+            icon = Icons.Rounded.Gif,
+            screen = { vm -> GifTool(vm) },
+        ),
+        comingSoon(41),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
