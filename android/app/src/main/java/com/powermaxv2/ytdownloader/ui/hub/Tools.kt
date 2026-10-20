@@ -568,15 +568,6 @@ object ToolRegistry {
             screen = { vm -> GifTool(vm) },
         ),
         GulpTool(
-<<<<<<< HEAD
-            id = TIMER,
-            name = "Minuteur et chrono",
-            tagline = "Lance plusieurs minuteurs avec un nom et un chronomètre avec des tours, qui sonnent même écran éteint.",
-            tags = listOf("Plusieurs minuteurs", "Tours", "Écran éteint"),
-            icon = Icons.Rounded.Timer,
-            screen = { vm -> TimerTool(vm) },
-        ),
-=======
             id = PDF_IMAGES,
             name = "PDF en images",
             tagline = "Sors chaque page d'un PDF en image JPG ou PNG, ou récupère les images qu'il contient.",
@@ -592,8 +583,15 @@ object ToolRegistry {
             icon = Icons.Rounded.AutoAwesomeMosaic,
             screen = { vm -> CollageTool(vm) },
         ),
+        GulpTool(
+            id = TIMER,
+            name = "Minuteur et chrono",
+            tagline = "Lance plusieurs minuteurs avec un nom et un chronomètre avec des tours, qui sonnent même écran éteint.",
+            tags = listOf("Plusieurs minuteurs", "Tours", "Écran éteint"),
+            icon = Icons.Rounded.Timer,
+            screen = { vm -> TimerTool(vm) },
+        ),
         comingSoon(44),
->>>>>>> origin/claude/youtube-downloader-mac-51ojpa
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
