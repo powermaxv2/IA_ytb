@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Dialpad
@@ -41,6 +42,7 @@ import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
+import com.powermaxv2.ytdownloader.ui.tools.colors.ColorPickerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
@@ -216,6 +218,9 @@ object ToolRegistry {
 
     /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
     const val PHOTO_BLUR = "photo-blur"
+
+    /** Pipette: a colour read by touching a photo (HEX, RVB, TSL, CMJN), and the photo's palette. */
+    const val COLOR_PICKER = "color-picker"
 
     private fun comingSoon(slot: Int) = GulpTool(
         id = "soon-$slot",
@@ -528,7 +533,15 @@ object ToolRegistry {
             icon = Icons.Rounded.BlurOn,
             screen = { vm -> BlurTool(vm) },
         ),
-        comingSoon(39),
+        GulpTool(
+            id = COLOR_PICKER,
+            name = "Pipette",
+            tagline = "Touche une photo pour récupérer une couleur et son code, et sors toute la palette de l'image.",
+            tags = listOf("HEX · RVB · TSL", "Palette auto", "Hors ligne"),
+            icon = Icons.Rounded.Colorize,
+            screen = { vm -> ColorPickerTool(vm) },
+        ),
+        comingSoon(40),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
