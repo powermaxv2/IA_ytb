@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.BrandingWatermark
 import androidx.compose.material.icons.rounded.CameraRoll
 import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Dialpad
@@ -42,6 +43,7 @@ import com.powermaxv2.ytdownloader.ui.tools.blur.BlurTool
 import com.powermaxv2.ytdownloader.ui.tools.capture.CaptureTool
 import com.powermaxv2.ytdownloader.ui.tools.chat.ChatStatsTool
 import com.powermaxv2.ytdownloader.ui.tools.cleaner.CleanerTool
+import com.powermaxv2.ytdownloader.ui.tools.colors.ColorPickerTool
 import com.powermaxv2.ytdownloader.ui.tools.compress.CompressorTool
 import com.powermaxv2.ytdownloader.ui.tools.convert.ConverterTool
 import com.powermaxv2.ytdownloader.ui.tools.direct.DirectTool
@@ -218,6 +220,9 @@ object ToolRegistry {
 
     /** Flouter une photo: faces, plates or numbers hidden (blur, pixels or black) with the finger, saved as a copy. */
     const val PHOTO_BLUR = "photo-blur"
+
+    /** Pipette: a colour read by touching a photo (HEX, RVB, TSL, CMJN), and the photo's palette. */
+    const val COLOR_PICKER = "color-picker"
 
     /** Créateur de GIF: a passage of a video or a few photos into a light looping GIF (boomerang, speed, caption). */
     const val GIF_MAKER = "gif-maker"
@@ -534,6 +539,14 @@ object ToolRegistry {
             screen = { vm -> BlurTool(vm) },
         ),
         GulpTool(
+            id = COLOR_PICKER,
+            name = "Pipette",
+            tagline = "Touche une photo pour récupérer une couleur et son code, et sors toute la palette de l'image.",
+            tags = listOf("HEX · RVB · TSL", "Palette auto", "Hors ligne"),
+            icon = Icons.Rounded.Colorize,
+            screen = { vm -> ColorPickerTool(vm) },
+        ),
+        GulpTool(
             id = GIF_MAKER,
             name = "Créateur de GIF",
             tagline = "Transforme un bout de vidéo ou quelques photos en GIF animé léger, en boomerang, au ralenti ou avec une légende.",
@@ -541,7 +554,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Gif,
             screen = { vm -> GifTool(vm) },
         ),
-        comingSoon(40),
+        comingSoon(41),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }
