@@ -23,6 +23,9 @@ import javax.crypto.spec.GCMParameterSpec
  * so the code is needed again then. The code always works too.
  */
 object VaultBiometric {
+    // BiometricConstants.BIOMETRIC_ERROR_NEGATIVE_BUTTON: hidden in the framework BiometricPrompt, so the value is inlined.
+    private const val ERROR_NEGATIVE_BUTTON = 13
+
     private const val ALIAS = "gulp-vault-fingerprint"
     private const val FILE = "fingerprint.bin"
 
@@ -120,7 +123,7 @@ object VaultBiometric {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     val closed = errorCode == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
                         errorCode == BiometricPrompt.BIOMETRIC_ERROR_CANCELED ||
-                        errorCode == BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON
+                        errorCode == ERROR_NEGATIVE_BUTTON
                     onFail(if (closed) null else errString.toString())
                 }
             },
