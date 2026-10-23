@@ -28,7 +28,6 @@ val AllToolsIcon: ImageVector = Icons.Rounded.Apps
 object ToolCategories {
     /** Tool id → category. A tool missing here is guessed by [of] from its words, else "Autres". */
     private val byId: Map<String, ToolCategory> = mapOf(
-        ToolRegistry.DOWNLOADER to ToolCategory.MEDIA,
         ToolRegistry.TRIMMER to ToolCategory.MEDIA,
         ToolRegistry.WIPER to ToolCategory.MEDIA,
         ToolRegistry.CONVERTER to ToolCategory.FILES,
@@ -61,7 +60,6 @@ object ToolCategories {
         ToolRegistry.SIGN_PDF to ToolCategory.FILES,
         ToolRegistry.WATERMARK to ToolCategory.FILES,
         ToolRegistry.IMAGE_RESIZER to ToolCategory.MEDIA,
-        ToolRegistry.PHOTO_DUPLICATES to ToolCategory.FILES,
         ToolRegistry.SLIDESHOW to ToolCategory.MEDIA,
         ToolRegistry.MY_LINK to ToolCategory.WHATSAPP,
         ToolRegistry.RENAMER to ToolCategory.FILES,
@@ -87,7 +85,6 @@ object ToolCategories {
 
     /** Extra words people may type to find a tool (synonyms, formats, sites), on top of its name, tagline and tags. */
     private val keywords: Map<String, String> = mapOf(
-        ToolRegistry.DOWNLOADER to "telecharger download youtube instagram tiktok twitter musique mp3 mp4 video reel short",
         ToolRegistry.CONVERTER to "convertir format jpg jpeg png webp heic mp3 m4a wav mp4 gif pdf",
         ToolRegistry.PREVIEW to "ouvrir voir lire visionneuse zip pdf texte image",
         ToolRegistry.CHAT_STATS to "whatsapp discussion groupe message reponse statistiques stats",
@@ -104,7 +101,6 @@ object ToolCategories {
         ToolRegistry.SIGN_PDF to "signer signature contrat document pdf paraphe doigt",
         ToolRegistry.WATERMARK to "filigrane copie identite carte location dossier tampon texte photo pdf",
         ToolRegistry.IMAGE_RESIZER to "redimensionner reduire agrandir taille dimension pixels photo image lot",
-        ToolRegistry.PHOTO_DUPLICATES to "doublons double identique ressemblante galerie trier supprimer place photo",
         ToolRegistry.SLIDESHOW to "diaporama montage video photos musique transition souvenir",
         ToolRegistry.MY_LINK to "lien qr code whatsapp partager carte visite wa me",
         ToolRegistry.RENAMER to "renommer nom fichiers lot date compteur",

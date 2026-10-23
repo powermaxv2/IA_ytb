@@ -69,25 +69,19 @@ import kotlinx.coroutines.flow.SharedFlow
 @Composable
 fun AppRoot(vm: MainViewModel) {
     val settings by vm.prefs.settings.collectAsStateWithLifecycle()
-    val gate = rememberDownloadGate()
     // Back: settings tab → previous tab, a tool → home screen, home settings → home screen; home → leaves the app.
     BackHandler(enabled = vm.place != Place.HOME) {
-        // (The Réglages tab only belongs to the downloader: from any other tool, back goes home.)
-        val inDownloaderSettings = vm.toolId == ToolRegistry.DOWNLOADER && vm.tab == Tab.SETTINGS
-        if (vm.place == Place.TOOL && !inDownloaderSettings) vm.goHome() else vm.closeSettings()
+        if (vm.place == Place.TOOL) vm.goHome() else vm.closeSettings()
     }
 
     val insets = WindowInsets.systemBars.asPaddingValues()
     Box(Modifier.fillMaxSize()) {
         // Switching skin crossfades the whole app; each side draws with its own skin's theme.
         Crossfade(targetState = settings.skin, animationSpec = tween(350), label = "skin") { skin ->
-            // The home screen and the file tools wear the Gulp colours; the downloader wears its current tab's.
-            val inDownloader = vm.place == Place.TOOL && vm.toolId == ToolRegistry.DOWNLOADER
-            AppTheme(if (inDownloader) vm.accentPlatform else Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 CompositionLocalProvider(
                     LocalHaptics provides settings.haptics,
-                    LocalDownloadGate provides gate,
-                    LocalGulpPulse provides vm.queuedPulse,
+                    LocalGulpPulse provides 0,
                 ) {
                     Box(Modifier.fillMaxSize()) {
                         SkinBackground()
@@ -124,7 +118,7 @@ fun AppRoot(vm: MainViewModel) {
         val toastModifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = insets.calculateBottomPadding() + 98.dp, start = 24.dp, end = 24.dp)
-        AppTheme(vm.accentPlatform, settings.skin) {
+        AppTheme(Platform.GULP, settings.skin) {
             ToastHost(vm.toasts, toastModifier)
         }
         // Gulp launch animation, once per launch (not again on rotation).
@@ -132,31 +126,6 @@ fun AppRoot(vm: MainViewModel) {
         if (!introDone) {
             val tokens = tokensFor(settings.skin)
             GulpIntro(tokens.background, tokens.textPrimary, onFinished = { introDone = true })
-        }
-    }
-}
-
-/** Asks for the notification permission (Android 13+) or storage permission (Android 9-) before a download. */
-@Composable
-private fun rememberDownloadGate(): (() -> Unit) -> Unit {
-    val context = LocalContext.current
-    var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        pending?.invoke()
-        pending = null
-    }
-    return remember(launcher) {
-        { action: () -> Unit ->
-            val needed = buildList {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }.filter { ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED }
-            if (needed.isEmpty()) {
-                action()
-            } else {
-                pending = action
-                launcher.launch(needed.toTypedArray())
-            }
         }
     }
 }

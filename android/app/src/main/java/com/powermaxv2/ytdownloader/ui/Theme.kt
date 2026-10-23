@@ -67,11 +67,8 @@ data class Accent(val start: Color, val end: Color) {
         val Web = Accent(Palette.WebCyan, Palette.WebIndigo)
 
         /** Classique accents; use `LocalTokens.current.accentFor` for the current skin's. */
-        fun of(platform: Platform) = when (platform) {
-            Platform.YOUTUBE -> YouTube
-            Platform.INSTAGRAM -> Instagram
-            else -> Web
-        }
+        @Suppress("UNUSED_PARAMETER")
+        fun of(platform: Platform) = YouTube
     }
 }
 

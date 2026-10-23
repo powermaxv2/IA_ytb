@@ -21,7 +21,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.powermaxv2.ytdownloader"
+        // Play Store id: different from the sideloaded app (com.powermaxv2.ytdownloader) so that both can live on one phone.
+        applicationId = "com.powermaxv2.gulp"
         minSdk = 24
         targetSdk = 35
         versionCode = appVersionCode
@@ -48,16 +49,6 @@ android {
         }
     }
 
-    // One APK per processor type (smaller) plus a universal one that works everywhere.
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
-            isUniversalApk = true
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -79,8 +70,12 @@ android {
     }
 
     packaging {
-        // Python, FFmpeg and QuickJS are shipped as native libraries and must be extracted on install.
-        jniLibs { useLegacyPackaging = true }
+        // FFmpeg is shipped as a native library and must be extracted on install.
+        jniLibs {
+            useLegacyPackaging = true
+            // Play Store version: the downloader (yt-dlp) is not part of it, so its Python and QuickJS runtimes are dropped.
+            excludes += listOf("**/libpython.so", "**/libpython.zip.so", "**/libqjs.so")
+        }
     }
 }
 
@@ -114,7 +109,8 @@ dependencies {
     // Vocaux en texte: offline speech recognition (Vosk / Kaldi, Apache-2.0; pulls JNA 5.18.1, Apache-2.0).
     implementation("com.alphacephei:vosk-android:0.3.75")
 
-    // yt-dlp + Python + FFmpeg + QuickJS packaged for Android.
+    // FFmpeg packaged for Android (GPL-3.0). Its wrapper library also carries yt-dlp's launcher, which is never started
+    // here: the Python runtime is excluded above and the yt-dlp script (res/raw/ytdlp) is stripped by the resource shrinker.
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
 

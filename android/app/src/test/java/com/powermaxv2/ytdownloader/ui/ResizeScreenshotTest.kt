@@ -67,7 +67,7 @@ class ResizeScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: ResizeUiState, settle: Long = 2_500) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

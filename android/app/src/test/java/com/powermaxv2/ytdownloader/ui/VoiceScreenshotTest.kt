@@ -65,7 +65,7 @@ class VoiceScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: VoiceUiState, settle: Long = 2_500) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

@@ -55,7 +55,7 @@ class VaultScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: VaultUiState, entered: Int = 0) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

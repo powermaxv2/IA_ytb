@@ -64,7 +64,7 @@ class QrScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: QrUiState) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Gulp</string>
-    <string name="share_label">Télécharger avec Gulp</string>
+    <string name="share_label">Ouvrir avec Gulp</string>
     <string name="convert_label">Convertir avec Gulp</string>
     <string name="preview_label">Aperçu avec Gulp</string>
     <string name="chat_label">Analyser avec Gulp</string>

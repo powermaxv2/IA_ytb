@@ -67,7 +67,7 @@ class CaptureScreenshotTest {
     private fun shot(skin: Skin, name: String, state: () -> CaptureUiState) {
         val s = state()
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

@@ -50,11 +50,8 @@ data class SkinTokens(
     val instagramAccent: Accent,
     val webAccent: Accent,
 ) {
-    fun accentFor(platform: Platform): Accent = when (platform) {
-        Platform.YOUTUBE -> youtubeAccent
-        Platform.INSTAGRAM -> instagramAccent
-        else -> webAccent
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun accentFor(platform: Platform): Accent = youtubeAccent
 }
 
 val BricolageFamily = FontFamily(

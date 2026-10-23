@@ -61,7 +61,7 @@ class ConverterScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: ConverterUiState) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

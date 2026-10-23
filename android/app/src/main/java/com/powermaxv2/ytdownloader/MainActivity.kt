@@ -16,7 +16,6 @@ import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.ui.AppRoot
 import com.powermaxv2.ytdownloader.ui.MainViewModel
-import com.powermaxv2.ytdownloader.ui.Tab
 import com.powermaxv2.ytdownloader.ui.hub.ToolRegistry
 import com.powermaxv2.ytdownloader.ui.skin.tokensFor
 import kotlinx.coroutines.launch
@@ -51,24 +50,6 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
-    override fun onStart() {
-        super.onStart()
-        App.instance.inForeground = true
-    }
-
-    override fun onResume() {
-        super.onResume()
-        val updater = App.instance.updater
-        // Back from "Installer des applis inconnues": the waiting update installs if it is now allowed.
-        updater.resumeInstall()
-        App.instance.scope.launch { runCatching { updater.check(force = false) } }
-    }
-
-    override fun onStop() {
-        App.instance.inForeground = false
-        super.onStop()
-    }
-
     private fun handleIntent(intent: Intent?) {
         // A file shared to "Convertir avec Gulp" / "Aperçu avec Gulp" / "Analyser avec Gulp" / "Compresser avec Gulp" /
         // "Transcrire avec Gulp" or
@@ -80,7 +61,7 @@ class MainActivity : ComponentActivity() {
             CHAT_ENTRY -> ToolRegistry.CHAT_STATS
             COMPRESS_ENTRY -> ToolRegistry.COMPRESSOR
             VOICE_ENTRY -> ToolRegistry.VOICE_TEXT
-            // A .txt file without a link shared to "Télécharger avec Gulp": a WhatsApp export "Sans médias". The
+            // A .txt file shared to "Ouvrir avec Gulp": a WhatsApp export "Sans médias". The
             // .txt cannot have its own alias: a second SEND text/plain filter made some phones refuse the APK.
             else -> ToolRegistry.CHAT_STATS.takeIf { intent != null && isSharedTextFile(intent) }
         }
@@ -100,10 +81,6 @@ class MainActivity : ComponentActivity() {
             return
         }
         when (intent?.action) {
-            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let(viewModel::onSharedText)
-            ACTION_SHOW_DOWNLOADS -> viewModel.showInDownloader(Tab.DOWNLOADS)
-            // Only from our own notification (non-exported alias): MainActivity is exported for the launcher and Partager.
-            ACTION_APP_UPDATE -> if (intent.component?.className == UPDATE_ENTRY) viewModel.startAppUpdate()
             // From a Minuteur et chrono notification: only opens the tool.
             ACTION_OPEN_TIMERS -> viewModel.openTool(ToolRegistry.TIMER)
         }
@@ -118,12 +95,7 @@ class MainActivity : ComponentActivity() {
             ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
 
     companion object {
-        const val ACTION_SHOW_DOWNLOADS = "com.powermaxv2.ytdownloader.SHOW_DOWNLOADS"
-        const val ACTION_APP_UPDATE = "com.powermaxv2.ytdownloader.APP_UPDATE"
         const val ACTION_OPEN_TIMERS = "com.powermaxv2.ytdownloader.OPEN_TIMERS"
-
-        /** activity-alias of the manifest that the update notification opens. */
-        const val UPDATE_ENTRY = "com.powermaxv2.ytdownloader.UpdateEntry"
 
         /** Exported activity-alias "Convertir avec Gulp" (SEND of any file). */
         const val CONVERT_ENTRY = "com.powermaxv2.ytdownloader.ConvertEntry"

@@ -53,7 +53,7 @@ class StyledTextScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: StyledUiState) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

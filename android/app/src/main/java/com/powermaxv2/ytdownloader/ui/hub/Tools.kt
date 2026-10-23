@@ -40,7 +40,6 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.powermaxv2.ytdownloader.core.Platform
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.tools.readaloud.ReadAloudTool
 import com.powermaxv2.ytdownloader.ui.tools.bill.BillTool
@@ -59,7 +58,6 @@ import com.powermaxv2.ytdownloader.ui.tools.level.LevelTool
 import com.powermaxv2.ytdownloader.ui.tools.password.PasswordTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfimages.PdfImagesTool
 import com.powermaxv2.ytdownloader.ui.tools.pdfjoin.PdfJoinTool
-import com.powermaxv2.ytdownloader.ui.tools.photodup.PhotoDupTool
 import com.powermaxv2.ytdownloader.ui.tools.preview.PreviewTool
 import com.powermaxv2.ytdownloader.ui.tools.profilefit.ProfileFitTool
 import com.powermaxv2.ytdownloader.ui.tools.mylink.MyLinkTool
@@ -103,11 +101,9 @@ class GulpTool(
     val id: String,
     val name: String,
     val tagline: String,
-    /** Platforms whose logos float on the card; empty for a tool that is not about a website. */
-    val platforms: List<Platform> = emptyList(),
     /** Short words shown as chips on the card. */
     val tags: List<String> = emptyList(),
-    /** Symbol of the tool, drawn on its home card when it has no [platforms]. */
+    /** Symbol of the tool, drawn on its home card. */
     val icon: ImageVector? = null,
     /** The tool's screen, drawn full screen over the skin background; null = "À venir" card, not openable. */
     val screen: (@Composable (MainViewModel) -> Unit)? = null,
@@ -116,8 +112,6 @@ class GulpTool(
 }
 
 object ToolRegistry {
-    const val DOWNLOADER = "downloader"
-
     /** File converter (images, audio, video, documents). Also the target of "Partager → Convertir avec Gulp". */
     const val CONVERTER = "converter"
 
@@ -184,9 +178,6 @@ object ToolRegistry {
     /** Redimensionneur: several photos made smaller (side, percentage or weight), cut to a shape, as JPG / PNG / WebP copies. */
     const val IMAGE_RESIZER = "image-resizer"
 
-    /** Doublons photos: the photos of the gallery that are the same or look the same, the best one kept, the others deleted. */
-    const val PHOTO_DUPLICATES = "photo-duplicates"
-
     /** Diaporama: photos into a short MP4 (durations, transitions, Ken Burns zoom, music), made on the phone. */
     const val SLIDESHOW = "slideshow"
 
@@ -252,14 +243,6 @@ object ToolRegistry {
     )
 
     val tools: List<GulpTool> = listOf(
-        GulpTool(
-            id = DOWNLOADER,
-            name = "Téléchargeur vidéo",
-            tagline = "YouTube, Instagram, TikTok, X… en vidéo ou en audio, enregistré dans la Galerie.",
-            platforms = listOf(Platform.YOUTUBE, Platform.INSTAGRAM, Platform.TIKTOK, Platform.TWITTER),
-            tags = listOf("Jusqu'à 4K", "MP4 · MP3", "Partager → Gulp"),
-            screen = { vm -> DownloaderTool(vm) },
-        ),
         GulpTool(
             id = CONVERTER,
             name = "Convertisseur",
@@ -437,14 +420,6 @@ object ToolRegistry {
             screen = { vm -> ResizeTool(vm) },
         ),
         GulpTool(
-            id = PHOTO_DUPLICATES,
-            name = "Doublons photos",
-            tagline = "Repère les photos en double ou presque pareilles dans la galerie, garde la meilleure et libère de la place.",
-            tags = listOf("Galerie", "Identiques · Ressemblantes", "Hors ligne"),
-            icon = Icons.Rounded.PhotoLibrary,
-            screen = { vm -> PhotoDupTool(vm) },
-        ),
-        GulpTool(
             id = SLIDESHOW,
             name = "Diaporama",
             tagline = "Transforme quelques photos en petite vidéo, avec transitions, effet Ken Burns et ta musique.",
@@ -604,7 +579,7 @@ object ToolRegistry {
             icon = Icons.Rounded.Timer,
             screen = { vm -> TimerTool(vm) },
         ),
-        comingSoon(45),
+        comingSoon(43),
     )
 
     val available: List<GulpTool> get() = tools.filter { it.available }

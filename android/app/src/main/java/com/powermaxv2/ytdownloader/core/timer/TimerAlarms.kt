@@ -99,12 +99,12 @@ object TimerAlarms {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    /** Alarms ring to the second (Android 12+ may refuse exact alarms; the timer then rings a little late). */
-    fun exactAllowed(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
-        val alarms = context.getSystemService(AlarmManager::class.java) ?: return false
-        return alarms.canScheduleExactAlarms()
-    }
+    /**
+     * Play Store version: no exact-alarm permission is declared, and none is needed: [AlarmManager.setAlarmClock]
+     * (what [schedule] uses) rings to the second on every Android version.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun exactAllowed(context: Context): Boolean = true
 
     /** One alarm per running timer, one notification per running or ringing timer; the rest is cleared. */
     fun sync(context: Context, list: List<TimerItem>, now: Long = System.currentTimeMillis()) {

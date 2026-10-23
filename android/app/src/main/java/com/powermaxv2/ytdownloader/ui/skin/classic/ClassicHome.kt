@@ -53,7 +53,6 @@ import com.powermaxv2.ytdownloader.ui.FeatureChip
 import com.powermaxv2.ytdownloader.ui.IconCircleButton
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.Palette
-import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.bounceClick
 import com.powermaxv2.ytdownloader.ui.brand.GulpLockup
 import com.powermaxv2.ytdownloader.ui.brand.GulpMark
@@ -190,7 +189,7 @@ fun ClassicToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val icon = tool.icon
-                if (tool.platforms.isEmpty() && icon != null) {
+                if (icon != null) {
                     // A tool that is not about a website wears its own symbol on a gradient tile, floating.
                     Box(
                         Modifier
@@ -218,23 +217,6 @@ fun ClassicToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar
                     )
                     Spacer(Modifier.height(3.dp))
                     Text(tool.tagline, color = Palette.TextSecondary, fontSize = 13.sp, lineHeight = 17.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            if (tool.platforms.isNotEmpty()) {
-                Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    tool.platforms.forEachIndexed { i, platform ->
-                        Box(
-                            Modifier
-                                .bob(i)
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(13.dp))
-                                .background(Palette.Surface2),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            PlatformGlyph(platform, Modifier.size(22.dp))
-                        }
-                    }
                 }
             }
             if (tool.tags.isNotEmpty()) {
@@ -419,7 +401,7 @@ fun ClassicToolBubble(
             .padding(16.dp),
     ) {
         val icon = tool.icon
-        if (tool.platforms.isEmpty() && icon != null) {
+        if (icon != null) {
             Box(
                 Modifier
                     .bob(order, amplitude = 2.5.dp)

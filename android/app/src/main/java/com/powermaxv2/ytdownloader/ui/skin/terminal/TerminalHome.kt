@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.Palette
-import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.bounceClick
 import com.powermaxv2.ytdownloader.ui.brand.GulpMark
 import com.powermaxv2.ytdownloader.ui.brand.GulpStyle
@@ -183,22 +182,7 @@ fun TerminalToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onSta
         Spacer(Modifier.height(4.dp))
         Text("# ${tool.tagline}", color = Palette.TextSecondary, fontSize = 12.5.sp, lineHeight = 17.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
         val icon = tool.icon
-        if (tool.platforms.isNotEmpty()) {
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                tool.platforms.forEachIndexed { i, platform ->
-                    Box(
-                        Modifier
-                            .bob(i, amplitude = 2.dp)
-                            .size(36.dp)
-                            .termPanel(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        PlatformGlyph(platform, Modifier.size(19.dp))
-                    }
-                }
-            }
-        } else if (icon != null) {
+        if (icon != null) {
             // A tool that is not about a website: its symbol in phosphor, floating in its cell.
             Spacer(Modifier.height(14.dp))
             Box(
@@ -333,11 +317,7 @@ fun TerminalToolBubble(
                 contentAlignment = Alignment.Center,
             ) {
                 val icon = tool.icon
-                val platform = tool.platforms.firstOrNull()
-                when {
-                    tool.platforms.isEmpty() && icon != null -> Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(19.dp))
-                    platform != null -> PlatformGlyph(platform, Modifier.size(18.dp))
-                }
+                if (icon != null) Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(19.dp))
             }
         }
         Spacer(Modifier.height(10.dp))

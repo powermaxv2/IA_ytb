@@ -55,7 +55,7 @@ class UnitsScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: UnitsUiState) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

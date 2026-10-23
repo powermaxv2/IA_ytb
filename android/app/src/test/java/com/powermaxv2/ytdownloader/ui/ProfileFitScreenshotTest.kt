@@ -64,7 +64,7 @@ class ProfileFitScreenshotTest {
     private fun shot(skin: Skin, name: String, settle: Long = 2_500, state: () -> FitUiState) {
         val s = state()
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

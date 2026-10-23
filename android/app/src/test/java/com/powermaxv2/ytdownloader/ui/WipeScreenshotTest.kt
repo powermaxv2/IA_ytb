@@ -58,7 +58,7 @@ class WipeScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: WipeUiState, settle: Long = 2_500) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

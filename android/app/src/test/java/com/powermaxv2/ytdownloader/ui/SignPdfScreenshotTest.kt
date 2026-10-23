@@ -126,7 +126,7 @@ class SignPdfScreenshotTest {
     private fun shot(skin: Skin, name: String, state: SignUiState, settle: Long = 2_500) {
         val images = SignImages(page = page().asImageBitmap(), signature = signature().asImageBitmap())
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

@@ -52,7 +52,7 @@ class TextCountScreenshotTest {
 
     private fun shot(skin: Skin, name: String, state: TextCountUiState) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

@@ -54,7 +54,7 @@ class ReaderScreenshotTest {
 
     private fun start(skin: Skin, name: String) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(
@@ -74,7 +74,7 @@ class ReaderScreenshotTest {
 
     private fun open(skin: Skin, name: String, state: ReaderUiState) {
         composeRule.setContent {
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ReaderScreen(

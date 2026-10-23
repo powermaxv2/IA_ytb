@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.Palette
-import com.powermaxv2.ytdownloader.ui.PlatformGlyph
 import com.powermaxv2.ytdownloader.ui.bounceClick
 import com.powermaxv2.ytdownloader.ui.brand.GulpColors
 import com.powermaxv2.ytdownloader.ui.brand.GulpLockup
@@ -185,7 +184,7 @@ fun PaperToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar: 
                 letterSpacing = (-1.5).sp,
             )
             val icon = tool.icon
-            if (tool.platforms.isEmpty() && icon != null) {
+            if (icon != null) {
                 Spacer(Modifier.width(12.dp))
                 // The tool's symbol next to its number, floating on the cream.
                 Box(
@@ -218,23 +217,6 @@ fun PaperToolCard(tool: GulpTool, index: Int, starred: Boolean = false, onStar: 
         )
         Spacer(Modifier.height(4.dp))
         Text(tool.tagline, color = Palette.TextSecondary, fontSize = 14.sp, lineHeight = 19.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-        if (tool.platforms.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                tool.platforms.forEachIndexed { i, platform ->
-                    Box(
-                        Modifier
-                            .bob(i, amplitude = 2.5.dp)
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Palette.Background),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        PlatformGlyph(platform, Modifier.size(21.dp))
-                    }
-                }
-            }
-        }
         if (tool.tags.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             Text(
@@ -400,11 +382,7 @@ fun PaperToolBubble(
                 contentAlignment = Alignment.Center,
             ) {
                 val icon = tool.icon
-                val platform = tool.platforms.firstOrNull()
-                when {
-                    tool.platforms.isEmpty() && icon != null -> Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
-                    platform != null -> PlatformGlyph(platform, Modifier.size(20.dp))
-                }
+                if (icon != null) Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
             }
         }
         Spacer(Modifier.height(10.dp))

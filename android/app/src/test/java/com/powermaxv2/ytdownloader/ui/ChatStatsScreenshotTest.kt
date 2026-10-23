@@ -69,7 +69,7 @@ class ChatStatsScreenshotTest {
         lateinit var scroll: ScrollState
         composeRule.setContent {
             scroll = rememberScrollState()
-            AppTheme(Platform.YOUTUBE, skin) {
+            AppTheme(Platform.GULP, skin) {
                 Box(Modifier.fillMaxSize()) {
                     SkinBackground()
                     ToolScaffold(

@@ -7,18 +7,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.powermaxv2.ytdownloader.core.AudioFormat
 import com.powermaxv2.ytdownloader.core.EngineState
-import com.powermaxv2.ytdownloader.core.MediaMode
 import com.powermaxv2.ytdownloader.core.Platform
-import com.powermaxv2.ytdownloader.core.QualityOption
 import com.powermaxv2.ytdownloader.core.Settings
 import com.powermaxv2.ytdownloader.core.Skin
-import com.powermaxv2.ytdownloader.core.VideoContainer
-import com.powermaxv2.ytdownloader.core.VideoInfo
-import com.powermaxv2.ytdownloader.ui.LinkPane
 import com.powermaxv2.ytdownloader.ui.MainViewModel
-import com.powermaxv2.ytdownloader.ui.Tab
 import com.powermaxv2.ytdownloader.ui.hub.GulpTool
 import com.powermaxv2.ytdownloader.ui.hub.ToolCategory
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicCategoryChips
@@ -43,25 +36,8 @@ import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalToolCard
 import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalToolBubble
 import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalHomeSection
 import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicBackground
-import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicBottomBar
-import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicGuide
-import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicHeader
-import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicLinkCard
-import com.powermaxv2.ytdownloader.ui.skin.classic.ClassicVideoCard
 import com.powermaxv2.ytdownloader.ui.skin.paper.PaperBackground
-import com.powermaxv2.ytdownloader.ui.skin.paper.PaperBottomBar
-import com.powermaxv2.ytdownloader.ui.skin.paper.PaperGuide
-import com.powermaxv2.ytdownloader.ui.skin.paper.PaperHeader
-import com.powermaxv2.ytdownloader.ui.skin.paper.PaperLinkCard
-import com.powermaxv2.ytdownloader.ui.skin.paper.PaperRecentDownload
-import com.powermaxv2.ytdownloader.ui.skin.paper.PaperVideoCard
 import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalBackground
-import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalBottomBar
-import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalGuide
-import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalHeader
-import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalLinkCard
-import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalRecentDownload
-import com.powermaxv2.ytdownloader.ui.skin.terminal.TerminalVideoCard
 
 // Skin-specific parts of the shared screens, dispatched on LocalSkin.
 
@@ -72,101 +48,6 @@ fun SkinBackground(modifier: Modifier = Modifier) {
         Skin.CLASSIC -> ClassicBackground(modifier)
         Skin.PAPER -> PaperBackground(modifier)
         Skin.TERMINAL -> TerminalBackground(modifier)
-    }
-}
-
-/**
- * Bottom navigation; [activeCount] = running downloads (badge), [pulse] grows each time a download is queued.
- * [bottomInset] is the navigation bar height: Classique and Papier float 12dp above it, Terminal sits flush and fills it.
- */
-@Composable
-fun SkinBottomBar(tab: Tab, activeCount: Int, pulse: Int, onSelect: (Tab) -> Unit, bottomInset: Dp, modifier: Modifier = Modifier) {
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicBottomBar(tab, activeCount, pulse, onSelect, modifier.padding(bottom = bottomInset + 12.dp))
-        Skin.PAPER -> PaperBottomBar(tab, activeCount, pulse, onSelect, modifier.padding(bottom = bottomInset + 12.dp))
-        Skin.TERMINAL -> TerminalBottomBar(tab, activeCount, pulse, onSelect, bottomInset, modifier)
-    }
-}
-
-/** Title block of a link tab with the settings button; [onHome]: the logo also leads back to the home screen. */
-@Composable
-fun SkinHeader(platform: Platform, engineState: EngineState, onSettings: () -> Unit, onHome: (() -> Unit)? = null) {
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicHeader(platform, onSettings, onHome)
-        Skin.PAPER -> PaperHeader(platform, engineState, onSettings, onHome)
-        Skin.TERMINAL -> TerminalHeader(platform, engineState, onSettings, onHome)
-    }
-}
-
-/** Link field with its paste / analyse actions. */
-@Composable
-fun SkinLinkCard(vm: MainViewModel, pane: LinkPane, enabled: Boolean) {
-    SkinLinkCard(
-        pane = pane,
-        enabled = enabled,
-        onPaste = { text -> vm.paste(pane, text) },
-        onAnalyze = { vm.analyze(pane) },
-        onReset = { vm.reset(pane) },
-    )
-}
-
-/** Stateless form of [SkinLinkCard] (also used by the screenshot tests). */
-@Composable
-fun SkinLinkCard(
-    pane: LinkPane,
-    enabled: Boolean,
-    onPaste: (String?) -> Unit,
-    onAnalyze: () -> Unit,
-    onReset: () -> Unit,
-) {
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicLinkCard(pane, enabled, onPaste, onAnalyze, onReset)
-        Skin.PAPER -> PaperLinkCard(pane, enabled, onPaste, onAnalyze, onReset)
-        Skin.TERMINAL -> TerminalLinkCard(pane, enabled, onPaste, onAnalyze, onReset)
-    }
-}
-
-/** Idle state of a link tab: how-to and features. */
-@Composable
-fun SkinGuide(platform: Platform) {
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicGuide(platform)
-        Skin.PAPER -> PaperGuide(platform)
-        Skin.TERMINAL -> TerminalGuide(platform)
-    }
-}
-
-/** Single video result: thumbnail, mode, quality / format choice and the download button. */
-@Composable
-fun SkinVideoCard(info: VideoInfo, sourceUrl: String, vm: MainViewModel) {
-    val settings by vm.prefs.settings.collectAsStateWithLifecycle()
-    SkinVideoCard(info, sourceUrl, settings) { mode, quality, container, audioFormat ->
-        vm.downloadVideo(info, sourceUrl, mode, quality, container, audioFormat)
-    }
-}
-
-/** Stateless form of [SkinVideoCard]: [settings] gives the default format choices (also used by the screenshot tests). */
-@Composable
-fun SkinVideoCard(
-    info: VideoInfo,
-    sourceUrl: String,
-    settings: Settings,
-    onDownload: (MediaMode, QualityOption?, VideoContainer, AudioFormat) -> Unit,
-) {
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicVideoCard(info, sourceUrl, settings, onDownload)
-        Skin.PAPER -> PaperVideoCard(info, sourceUrl, settings, onDownload)
-        Skin.TERMINAL -> TerminalVideoCard(info, sourceUrl, settings, onDownload)
-    }
-}
-
-/** Compact strip of the latest download under the result (Papier, Terminal); Classique shows nothing. */
-@Composable
-fun SkinRecentDownload(vm: MainViewModel) {
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> Unit
-        Skin.PAPER -> PaperRecentDownload(vm)
-        Skin.TERMINAL -> TerminalRecentDownload(vm)
     }
 }
 

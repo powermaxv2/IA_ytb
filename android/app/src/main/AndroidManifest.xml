@@ -5,12 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <!-- Updates of the app itself, published as GitHub releases (Android asks the user to allow it once). -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
-    <!-- Keeps the periodic update check after a reboot. -->
+    <!-- Minuteur et chrono: puts the alarms back after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- QR code tool (live scanner) and Scanner tool (photos of pages): asked the first time the camera is needed; the camera is optional. -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -30,20 +25,6 @@
     <uses-permission
         android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
-    <!-- Doublons photos: reads the gallery's photos to find the copies (asked when the tool opens). -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <!-- Minuteur et chrono: a timer rings to the second, screen off (alarm clock). Granted at install: USE_EXACT_ALARM on
-         Android 13+, SCHEDULE_EXACT_ALARM on 12 (older versions need neither). Without it the timer rings a bit late. -->
-    <uses-permission
-        android:name="android.permission.USE_EXACT_ALARM"
-        tools:ignore="ExactAlarm" />
-    <uses-permission
-        android:name="android.permission.SCHEDULE_EXACT_ALARM"
-        android:maxSdkVersion="32" />
     <!-- Only needed to save into the public folders on Android 9 and older. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -80,7 +61,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Partager" from the YouTube, Instagram, X, TikTok… apps. -->
+            <!-- A .txt file shared by WhatsApp ("Exporter la discussion"), opened in "Vu, répondu". -->
             <intent-filter android:label="@string/share_label">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -169,11 +150,6 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- Entry of the "Mise à jour disponible" notification: not exported, so other apps cannot start an update. -->
-        <activity-alias
-            android:name=".UpdateEntry"
-            android:exported="false"
-            android:targetActivity=".MainActivity" />
 
         <!-- The Scanner hands the camera app a content:// URI of a new file in Gulp's private work folder, so the photo
              never lands in the Gallery. Not exported: the camera app only gets the one URI it is granted. -->
@@ -196,19 +172,6 @@
             android:exported="true"
             android:readPermission="com.whatsapp.sticker.READ" />
 
-        <service
-            android:name=".core.DownloadService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <service
-            android:name=".core.UpdateCheckJob"
-            android:exported="true"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
-
-        <receiver
-            android:name=".core.InstallStatusReceiver"
-            android:exported="false" />
 
         <!-- Minuteur et chrono: rings a timer (its own PendingIntents only, not exported) and puts the alarms back
              after a reboot or an update of Gulp. -->
@@ -222,12 +185,5 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".core.AppReplacedReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>

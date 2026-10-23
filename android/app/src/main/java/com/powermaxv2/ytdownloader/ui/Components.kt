@@ -528,9 +528,7 @@ fun FeatureChip(text: String, modifier: Modifier = Modifier, icon: ImageVector? 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (platform != null) {
-            PlatformGlyph(platform, Modifier.size(17.dp))
-        } else if (icon != null) {
+        if (icon != null) {
             Icon(icon, contentDescription = null, tint = LocalAccent.current.start, modifier = Modifier.size(16.dp))
         }
         Text(text, color = Palette.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)

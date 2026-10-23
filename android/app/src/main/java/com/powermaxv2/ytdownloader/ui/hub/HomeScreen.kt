@@ -49,7 +49,6 @@ import com.powermaxv2.ytdownloader.core.Skin
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
-import com.powermaxv2.ytdownloader.ui.UpdateBanner
 import com.powermaxv2.ytdownloader.ui.skin.LocalSkin
 import com.powermaxv2.ytdownloader.ui.skin.LocalTokens
 import com.powermaxv2.ytdownloader.ui.skin.SkinCategoryChips
@@ -81,8 +80,6 @@ fun HomeScreen(vm: MainViewModel, insets: PaddingValues) {
             top = insets.calculateTopPadding() + 16.dp,
             bottom = insets.calculateBottomPadding() + 32.dp,
         ),
-        // The update card lives here too: the hub is where the app opens.
-        banner = { UpdateBanner(vm) },
     )
 }
 
@@ -302,7 +299,7 @@ private fun HomeEmpty(query: String, category: ToolCategory?) {
  * nothing has been used (or when the last one is gone from this version).
  */
 internal fun featuredTool(ready: List<GulpTool>, lastUsedId: String?): GulpTool =
-    ready.firstOrNull { it.id == lastUsedId } ?: ready.firstOrNull { it.id == ToolRegistry.DOWNLOADER } ?: ready.first()
+    ready.firstOrNull { it.id == lastUsedId } ?: ready.firstOrNull { it.id == ToolRegistry.CONVERTER } ?: ready.first()
 
 /** "1 outil prêt", "3 à venir". */
 internal fun readyText(count: Int): String = if (count > 1) "$count outils prêts" else "$count outil prêt"

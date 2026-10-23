@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Play Store version: the yt-dlp script that comes with the FFmpeg wrapper library is never used (no downloader), so it is dropped from the bundle. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:discard="@raw/ytdlp" />

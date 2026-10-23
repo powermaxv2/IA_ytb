@@ -195,7 +195,7 @@ private fun HowToCard() {
     val steps = listOf(
         "Ouvre la discussion dans WhatsApp.",
         "Android : ⋮ › Plus › Exporter la discussion. iPhone : nom du groupe › Exporter la discussion. « Sans médias » suffit pour les temps de réponse ; « Avec médias » ajoute le top stickers, la durée des vocaux, le poids envoyé par chacun et les dernières photos.",
-        "Dans la liste de partage, choisis « Analyser avec Gulp » pour un .zip, « Télécharger avec Gulp » pour un .txt : l'analyse s'ouvre directement. Ou enregistre le fichier puis choisis-le ici.",
+        "Dans la liste de partage, choisis « Analyser avec Gulp » pour un .zip, « Ouvrir avec Gulp » pour un .txt : l'analyse s'ouvre directement. Ou enregistre le fichier puis choisis-le ici.",
     )
     val accent = LocalAccent.current
     Column(
