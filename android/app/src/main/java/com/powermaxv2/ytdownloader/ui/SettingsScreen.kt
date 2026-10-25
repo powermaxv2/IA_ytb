@@ -86,6 +86,9 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             IconCircleButton(Icons.Rounded.Close, contentDescription = "Fermer", onClick = vm::closeSettings)
         }
 
+        GroupTitle("Gulp Plus", 0)
+        com.powermaxv2.ytdownloader.ui.plus.PlusSettingsSection(vm)
+
         SettingsInterfaceSection(settings.skin) { s -> vm.prefs.update { it.copy(skin = s) } }
 
         GroupTitle("Application", 1)

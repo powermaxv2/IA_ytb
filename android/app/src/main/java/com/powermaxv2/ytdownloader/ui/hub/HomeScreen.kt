@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,6 +47,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.powermaxv2.ytdownloader.core.Skin
+import com.powermaxv2.ytdownloader.core.billing.PlusCatalog
+import com.powermaxv2.ytdownloader.ui.plus.PlusBanner
+import com.powermaxv2.ytdownloader.ui.plus.PlusLockBadge
 import com.powermaxv2.ytdownloader.ui.LocalAccent
 import com.powermaxv2.ytdownloader.ui.MainViewModel
 import com.powermaxv2.ytdownloader.ui.Palette
@@ -80,6 +84,8 @@ fun HomeScreen(vm: MainViewModel, insets: PaddingValues) {
             top = insets.calculateTopPadding() + 16.dp,
             bottom = insets.calculateBottomPadding() + 32.dp,
         ),
+        lockedIds = if (vm.plus) emptySet() else PlusCatalog.premiumIds,
+        banner = { PlusBanner(vm.plus, PlusCatalog.premiumIds.size, onPlus = { vm.showPaywall() }, onDonate = vm::openDonate) },
     )
 }
 
@@ -100,6 +106,8 @@ fun HomeContent(
     banner: @Composable () -> Unit = {},
     initialQuery: String = "",
     initialCategory: ToolCategory? = null,
+    /** Tools that need Gulp Plus (still locked): they wear a PLUS badge. */
+    lockedIds: Set<String> = emptySet(),
 ) {
     var query by rememberSaveable { mutableStateOf(initialQuery) }
     var categoryName by rememberSaveable { mutableStateOf(initialCategory?.name) }
@@ -125,6 +133,7 @@ fun HomeContent(
                 star(tool)
             }
         },
+        lockedIds,
     )
     CompositionLocalProvider(LocalJustStarred provides justStarred) {
         Column(
@@ -175,7 +184,10 @@ fun HomeContent(
                     SkinHomeSection(if (featured.id == lastUsedId) "Dernier utilisé" else "Pour commencer", order = order++)
                     // Keyed by the tool, so a new featured tool plays its entrance again instead of morphing the old card.
                     key(featured.id) {
-                        SkinToolCard(featured, number(featured), featured.id in favoriteIds, stars.onStar?.let { star -> { star(featured) } }) { onOpen(featured) }
+                        Box {
+                            SkinToolCard(featured, number(featured), featured.id in favoriteIds, stars.onStar?.let { star -> { star(featured) } }) { onOpen(featured) }
+                            if (featured.id in lockedIds) PlusLockBadge(Modifier.align(Alignment.TopEnd).padding(end = 28.dp).offset(y = (-8).dp))
+                        }
                     }
                 }
                 categories.forEach { c ->
@@ -193,7 +205,7 @@ fun HomeContent(
 }
 
 /** Which tools are starred, and what a star does (null: no stars drawn). */
-private class StarRef(val ids: List<String>, val onStar: ((GulpTool) -> Unit)?)
+private class StarRef(val ids: List<String>, val onStar: ((GulpTool) -> Unit)?, val locked: Set<String> = emptySet())
 
 /** Tools as small bubbles, two per row of equal height, each with its star. */
 @Composable
@@ -202,14 +214,17 @@ private fun BubbleGrid(tools: List<GulpTool>, number: (GulpTool) -> Int, firstOr
         tools.chunked(2).forEachIndexed { row, pair ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 pair.forEachIndexed { col, tool ->
-                    SkinToolBubble(
-                        tool,
-                        number(tool),
-                        order = firstOrder + row * 2 + col,
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        starred = tool.id in stars.ids,
-                        onStar = stars.onStar?.let { star -> { star(tool) } },
-                    ) { onOpen(tool) }
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                        SkinToolBubble(
+                            tool,
+                            number(tool),
+                            order = firstOrder + row * 2 + col,
+                            modifier = Modifier.fillMaxSize(),
+                            starred = tool.id in stars.ids,
+                            onStar = stars.onStar?.let { star -> { star(tool) } },
+                        ) { onOpen(tool) }
+                        if (tool.id in stars.locked) PlusLockBadge(Modifier.align(Alignment.TopEnd).padding(end = 18.dp).offset(y = (-8).dp))
+                    }
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }

@@ -56,3 +56,12 @@ doit être examiné avant d'arriver ici : voir `docs/play-store/listing.md`.
 ## Documents pour la fiche
 
 Dans `docs/play-store/` : politique de confidentialité (FR, EN), textes de la fiche, réponses aux formulaires, checklist.
+
+## Gulp Plus (version monétisable, simulée)
+
+- 14 outils sont « Plus » (`PlusCatalog.premiumIds`), les 28 autres restent gratuits. Toucher un outil Plus ouvre le pop-up
+  (paiement unique de 2 €, `PlusProduct`) ; un bouton cœur ouvre le pop-up de don (1, 2, 5 ou 10 €).
+- Aucun vrai paiement : `SimulatedBilling` attend 1,7 s puis réussit. Pour brancher Google Play Billing, écrire un `PlayBilling`
+  qui implémente `BillingGateway` (produit non consommable `gulp_plus`, dons consommables) et le donner à `MainViewModel.billing`.
+- L'état est dans `Prefs.plusUnlocked` / `donatedCents`. Avant la publication, remplacer la simulation (Google exige son propre
+  système de facturation pour les achats dans l'app) et retirer le texte « Mode démonstration ».

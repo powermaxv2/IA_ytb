@@ -110,6 +110,7 @@ fun AppRoot(vm: MainViewModel) {
                                 }
                             }
                         }
+                        com.powermaxv2.ytdownloader.ui.plus.PlusOverlays(vm)
                     }
                 }
             }

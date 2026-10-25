@@ -56,4 +56,14 @@ class Prefs(context: Context) {
     var favoriteTools: String?
         get() = sp.getString("favoriteTools", null)
         set(value) = sp.edit().putString("favoriteTools", value).apply()
+
+    /** Gulp Plus unlocked (set by the billing backend after a purchase or a restore). */
+    var plusUnlocked: Boolean
+        get() = sp.getBoolean("plusUnlocked", false)
+        set(value) = sp.edit().putBoolean("plusUnlocked", value).apply()
+
+    /** Total given through the donation button, in cents, on this phone. */
+    var donatedCents: Int
+        get() = sp.getInt("donatedCents", 0)
+        set(value) = sp.edit().putInt("donatedCents", value).apply()
 }
