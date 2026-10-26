@@ -50,6 +50,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -190,6 +193,8 @@ private fun ToastHost(toasts: SharedFlow<Toast>, modifier: Modifier = Modifier) 
         AnimatedContent(targetState = toast, label = "toastContent") { shown ->
             Row(
                 Modifier
+                    // Read out by TalkBack as soon as it appears.
+                    .semantics { liveRegion = LiveRegionMode.Polite }
                     .shadow(18.dp, CircleShape, ambientColor = Color.Black, spotColor = Color.Black)
                     .clip(CircleShape)
                     .background(tokens.toastBackground)

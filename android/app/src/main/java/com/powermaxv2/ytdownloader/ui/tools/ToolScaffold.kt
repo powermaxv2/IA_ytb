@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.powermaxv2.ytdownloader.core.Skin
@@ -147,6 +148,13 @@ fun ToolScaffold(
     }
 }
 
+/**
+ * Title size for the top bars: [base] sp up to [fitsAtBase] characters on a line, then smaller (down to 62%) so
+ * "Convertisseur d'unités" is not cut to "Convertisseur d'u…"; what still does not fit wraps on a second line.
+ */
+private fun fitTitle(title: String, base: Float, fitsAtBase: Int): TextUnit =
+    (base * (fitsAtBase.toFloat() / title.length.coerceAtLeast(1)).coerceIn(0.62f, 1f)).sp
+
 /** Top of a tool screen in the current skin. */
 @Composable
 fun ToolTopBar(title: String, command: String, subtitle: String?, onHome: (() -> Unit)?) {
@@ -172,14 +180,14 @@ private fun ClassicToolTopBar(title: String, subtitle: String?, onHome: (() -> U
             title,
             color = Color.Unspecified,
             style = TextStyle(
-                fontSize = 38.sp,
-                lineHeight = 42.sp,
+                fontSize = fitTitle(title, 38f, 15),
+                lineHeight = fitTitle(title, 42f, 15),
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = LocalTokens.current.display,
                 letterSpacing = (-1).sp,
                 brush = LocalAccent.current.horizontal(),
             ),
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.graphicsLayer {
                 val p = rise.value
@@ -234,12 +242,12 @@ private fun PaperToolTopBar(title: String, subtitle: String?, onHome: (() -> Uni
         Text(
             title,
             color = ink,
-            fontSize = 44.sp,
-            lineHeight = 48.sp,
+            fontSize = fitTitle(title, 44f, 13),
+            lineHeight = fitTitle(title, 48f, 13),
             fontWeight = FontWeight.ExtraBold,
             fontFamily = LocalTokens.current.display,
             letterSpacing = (-1).sp,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.graphicsLayer {
                 alpha = 0.3f + 0.7f * rise.value.coerceIn(0f, 1f)
@@ -292,10 +300,10 @@ private fun TerminalToolTopBar(title: String, command: String, subtitle: String?
         Text(
             title.uppercase(),
             color = Palette.TextPrimary,
-            fontSize = 34.sp,
-            lineHeight = 40.sp,
+            fontSize = fitTitle(title, 34f, 12),
+            lineHeight = fitTitle(title, 40f, 12),
             fontFamily = tokens.display,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.staggeredEntrance(0, baseDelay = 120),
         )
