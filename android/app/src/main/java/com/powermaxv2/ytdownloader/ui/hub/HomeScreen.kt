@@ -30,7 +30,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -129,7 +131,9 @@ fun HomeContent(
             }
         },
     )
-    CompositionLocalProvider(LocalJustStarred provides justStarred) {
+    val bobClock = rememberInfiniteTransition(label = "homeBob")
+        .animateFloat(0f, 1f, infiniteRepeatable(tween(BOB_PERIOD_MS, easing = LinearEasing)), label = "homeBobPhase")
+    CompositionLocalProvider(LocalJustStarred provides justStarred, LocalBobClock provides bobClock) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -325,14 +329,26 @@ internal fun toolNumber(n: Int): String = n.toString().padStart(2, '0')
  */
 @Composable
 fun Modifier.bob(index: Int, amplitude: Dp = 3.dp, periodMs: Int = 2400): Modifier {
-    val transition = rememberInfiniteTransition(label = "bob")
-    val t by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(periodMs, easing = LinearEasing)), label = "bobPhase")
+    // On the home screen every bubble reads the same clock: one animator instead of one per bubble.
+    val shared = LocalBobClock.current
+    val own = if (shared == null && periodMs > 0) {
+        val transition = rememberInfiniteTransition(label = "bob")
+        transition.animateFloat(0f, 1f, infiniteRepeatable(tween(periodMs, easing = LinearEasing)), label = "bobPhase")
+    } else {
+        null
+    }
     return graphicsLayer {
+        val t = (shared ?: own)?.value ?: 0f
         val angle = (t * 2f * PI.toFloat()) - index * 0.9f
         translationY = sin(angle) * amplitude.toPx()
         rotationZ = sin(angle + 0.6f) * 3f
     }
 }
+
+/** The home screen's shared floating clock (0..1 over [BOB_PERIOD_MS]); null elsewhere, where each [bob] runs its own. */
+val LocalBobClock = staticCompositionLocalOf<State<Float>?> { null }
+
+private const val BOB_PERIOD_MS = 2400
 
 /** Periodic nudge to the right (arrows of the "Ouvrir" buttons): rests, then a quick double push. */
 @Composable
