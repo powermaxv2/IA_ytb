@@ -218,6 +218,23 @@ class ToolRegistryTest {
         assertEquals(ToolRegistry.available.size, found("  ").size)
     }
 
+    @Test fun everyToolHasExplicitCategoryAndKeywords() {
+        ToolRegistry.available.forEach { tool ->
+            assertTrue("${tool.id} missing from ToolCategories.byId", ToolCategories.hasCategory(tool.id))
+            assertTrue("${tool.id} missing from ToolCategories.keywords", !ToolCategories.keywords[tool.id].isNullOrBlank())
+        }
+    }
+
+    @Test fun searchFindsAllWhatsAppAndUtilitySynonyms() {
+        fun found(q: String) = ToolRegistry.available.filter { ToolCategories.matches(it, q) }.map { it.id }
+        assertTrue(ToolRegistry.VOICE_TEXT in found("transcrire"))
+        assertTrue(ToolRegistry.CLEANER in found("menage stockage"))
+        assertTrue(ToolRegistry.STICKERS in found("autocollant"))
+        assertTrue(ToolRegistry.STATUSES in found("story"))
+        assertTrue(ToolRegistry.STYLED_TEXT in found("gothique police"))
+        assertTrue(ToolRegistry.STATUS_SPLIT in found("tronconner 30s"))
+    }
+
     @Test fun resultsWording() {
         assertEquals("Aucun outil trouvé", resultsText(0))
         assertEquals("1 outil trouvé", resultsText(1))

@@ -16,17 +16,19 @@ enum class Platform(val label: String) {
 object Links {
     private val urlRegex = Regex("""https?://[^\s<>"']+""", RegexOption.IGNORE_CASE)
     private val bareLinkRegex = Regex(
-        """^(www\.|m\.|mobile\.|music\.|vm\.|vt\.|web\.)?""" +
-            """(youtube\.com|youtu\.be|instagram\.com|x\.com|twitter\.com|tiktok\.com|snapchat\.com|facebook\.com|fb\.watch|""" +
-            """bereal\.com|bere\.al)/\S+$""",
+        """^(www\.|m\.|mobile\.|music\.|vm\.|vt\.|web\.|old\.)?""" +
+            """(youtube\.com|youtu\.be|instagram\.com|instagr\.am|x\.com|twitter\.com|tiktok\.com|snapchat\.com|""" +
+            """facebook\.com|fb\.watch|fb\.com|bereal\.com|bere\.al|vimeo\.com|dailymotion\.com|twitch\.tv|reddit\.com)/\S+$""",
         RegexOption.IGNORE_CASE,
     )
 
     /** First http(s) link found in a shared or pasted text ("Regarde ça : https://youtu.be/…"). */
     fun extract(text: String?): String? {
         val match = text?.let { urlRegex.find(it) } ?: return null
-        return match.value.trimEnd('.', ',', ')', ']', '!', '?', ';', '»')
+        return match.value.trimEnd('.', ',', ')', ']', '}', '!', '?', ';', ':', '»')
     }
+
+    internal fun isBareLink(input: String): Boolean = bareLinkRegex.matches(input.trim())
 
     /** Returns a clean https:// link, or null if the text contains no usable web link. */
     fun normalize(input: String): String? {

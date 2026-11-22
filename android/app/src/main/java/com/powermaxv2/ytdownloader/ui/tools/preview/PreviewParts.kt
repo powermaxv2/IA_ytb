@@ -32,10 +32,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.InsertDriveFile
@@ -172,6 +173,7 @@ internal fun InfoCard(
     body: PreviewBody?,
     hash: HashState,
     onHash: () -> Unit,
+    onCopyHash: (String) -> Unit = {},
     initiallyOpen: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -251,7 +253,7 @@ internal fun InfoCard(
                 enter = expandVertically(spring(dampingRatio = 0.85f, stiffness = 380f)) + fadeIn(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
-                InfoDetails(file, body, hash, onHash)
+                InfoDetails(file, body, hash, onHash, onCopyHash)
             }
         }
     }
@@ -261,7 +263,7 @@ internal fun InfoCard(
 private fun Modifier.pulsingIf(on: Boolean): Modifier = if (on) pulsing(0.94f, 1.04f, 900) else this
 
 @Composable
-private fun InfoDetails(file: PreviewFile, body: PreviewBody?, hash: HashState, onHash: () -> Unit) {
+private fun InfoDetails(file: PreviewFile, body: PreviewBody?, hash: HashState, onHash: () -> Unit, onCopyHash: (String) -> Unit) {
     val terminal = LocalSkin.current == Skin.TERMINAL
     Column(Modifier.padding(top = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Divider()
@@ -306,12 +308,12 @@ private fun InfoDetails(file: PreviewFile, body: PreviewBody?, hash: HashState, 
             }
         }
         BlockLabel("Empreinte SHA-256")
-        HashBlock(hash, onHash, terminal)
+        HashBlock(hash, onHash, onCopyHash, terminal)
     }
 }
 
 @Composable
-private fun HashBlock(hash: HashState, onHash: () -> Unit, terminal: Boolean) {
+private fun HashBlock(hash: HashState, onHash: () -> Unit, onCopyHash: (String) -> Unit, terminal: Boolean) {
     val accent = LocalAccent.current.start
     AnimatedContent(
         targetState = when {
@@ -352,19 +354,39 @@ private fun HashBlock(hash: HashState, onHash: () -> Unit, terminal: Boolean) {
                     fontSize = 12.5.sp,
                 )
             }
-            else -> SelectionContainer {
-                Text(
-                    hash.value.orEmpty(),
-                    color = Palette.TextPrimary,
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    fontFamily = MonoFamily,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(LocalTokens.current.fieldRadius))
-                        .background(Palette.Surface2)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                )
+            else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val digest = hash.value.orEmpty()
+                SelectionContainer {
+                    Text(
+                        digest,
+                        color = Palette.TextPrimary,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        fontFamily = MonoFamily,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(LocalTokens.current.fieldRadius))
+                            .background(Palette.Surface2)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                }
+                Row(
+                    Modifier
+                        .bounceClick { onCopyHash(digest) }
+                        .clip(RoundedCornerShape(LocalTokens.current.chipRadius))
+                        .border(1.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(LocalTokens.current.chipRadius))
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.ContentCopy, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (terminal) "COPIER" else "Copier l'empreinte",
+                        color = accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
     }

@@ -1,6 +1,8 @@
 package com.powermaxv2.ytdownloader.ui.tools.preview
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -28,9 +30,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.material3.Icon
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.powermaxv2.ytdownloader.core.Skin
+import com.powermaxv2.ytdownloader.core.compress.Media as CompressMedia
 import com.powermaxv2.ytdownloader.core.convert.Category
 import com.powermaxv2.ytdownloader.core.files.FileKind
 import com.powermaxv2.ytdownloader.core.preview.PreviewBody
@@ -84,8 +88,10 @@ const val PREVIEW_SUBTITLE = "Regarde ce qu'il y a dans une image, une vidéo, u
 data class PreviewActions(
     val onChooseFile: () -> Unit = {},
     val onConvert: (Uri) -> Unit = {},
+    val onCompress: (Uri) -> Unit = {},
     val onOpenWith: (PreviewFile) -> Unit = {},
     val onHash: () -> Unit = {},
+    val onCopyHash: (String) -> Unit = {},
 )
 
 /** One opening of a file: the same file picked twice opens twice. */
@@ -137,6 +143,7 @@ fun PreviewTool(vm: MainViewModel) {
                 }
             },
             onConvert = { vm.openToolWithFile(ToolRegistry.CONVERTER, it) },
+            onCompress = { vm.openToolWithFile(ToolRegistry.COMPRESSOR, it) },
             onOpenWith = { openWith(context, it, vm) },
             onHash = {
                 val file = (phase as? PreviewPhase.Ready)?.doc?.file
@@ -161,6 +168,11 @@ fun PreviewTool(vm: MainViewModel) {
                         if (current()) hash = result
                     }
                 }
+            },
+            onCopyHash = { digest ->
+                val clipboard = context.getSystemService(ClipboardManager::class.java)
+                clipboard?.setPrimaryClip(ClipData.newPlainText("Empreinte SHA-256", digest))
+                vm.toast("Empreinte SHA-256 copiée")
             },
         )
     }
@@ -232,7 +244,7 @@ private fun IdleStep(actions: PreviewActions) {
 /** The file card stays while the viewer swaps from the loading skeleton to the content. */
 @Composable
 private fun OpenStep(doc: PreviewDoc?, actions: PreviewActions, hash: HashState, infoInitiallyOpen: Boolean) {
-    InfoCard(doc?.file, doc?.body, hash, actions.onHash, initiallyOpen = infoInitiallyOpen)
+    InfoCard(doc?.file, doc?.body, hash, actions.onHash, actions.onCopyHash, initiallyOpen = infoInitiallyOpen)
     AnimatedContent(
         targetState = doc,
         contentKey = { it?.file?.uri },
@@ -354,28 +366,39 @@ private fun NoticeViewer(message: String) {
 
 @Composable
 private fun ActionsBlock(doc: PreviewDoc, actions: PreviewActions) {
+    val canCompress = CompressMedia.of(doc.file.kind, doc.file.name) != CompressMedia.OTHER
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        var order = 0
         if (Category.of(doc.file.kind) != null) {
             MainButton(
                 "Convertir",
                 subtitle = "Ouvre le Convertisseur avec ce fichier",
                 icon = Icons.Rounded.SwapHoriz,
-                modifier = Modifier.staggeredEntrance(0, key = doc.file.uri, baseDelay = 200),
+                modifier = Modifier.staggeredEntrance(order++, key = doc.file.uri, baseDelay = 200),
             ) { actions.onConvert(doc.file.uri) }
+        }
+        if (canCompress) {
+            SideButton(
+                "Compresser",
+                Icons.Rounded.Compress,
+                Modifier
+                    .fillMaxWidth()
+                    .staggeredEntrance(order++, key = doc.file.uri, baseDelay = 200),
+            ) { actions.onCompress(doc.file.uri) }
         }
         SideButton(
             "Ouvrir avec…",
-            Icons.Rounded.OpenInNew,
+            Icons.AutoMirrored.Rounded.OpenInNew,
             Modifier
                 .fillMaxWidth()
-                .staggeredEntrance(1, key = doc.file.uri, baseDelay = 200),
+                .staggeredEntrance(order++, key = doc.file.uri, baseDelay = 200),
         ) { actions.onOpenWith(doc.file) }
         SideButton(
             "Choisir un autre fichier",
             Icons.Rounded.UploadFile,
             Modifier
                 .fillMaxWidth()
-                .staggeredEntrance(2, key = doc.file.uri, baseDelay = 200),
+                .staggeredEntrance(order, key = doc.file.uri, baseDelay = 200),
             onClick = actions.onChooseFile,
         )
     }

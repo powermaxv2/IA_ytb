@@ -42,6 +42,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -67,14 +72,24 @@ import kotlin.math.sin
  * the brand gradient starts running around the outline.
  */
 @Composable
-fun ClassicSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>) {
+fun ClassicSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>, onSubmit: () -> Unit = {}) {
     val accent = LocalAccent.current
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.focusedState()
-    val ring by animateFloatAsState(if (focused || query.isNotEmpty()) 1f else 0f, tween(320), label = "searchRing")
-    val transition = rememberInfiniteTransition(label = "classicSearch")
-    val angle by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(4200, easing = LinearEasing)), label = "searchAngle")
-    val sway by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "searchSway")
+    val active = focused || query.isNotEmpty()
+    val ring by animateFloatAsState(if (active) 1f else 0f, tween(320), label = "searchRing")
+    val angle = if (ring > 0f) {
+        val transition = rememberInfiniteTransition(label = "classicSearchRing")
+        transition.animateFloat(0f, 360f, infiniteRepeatable(tween(4200, easing = LinearEasing)), label = "searchAngle").value
+    } else {
+        0f
+    }
+    val sway = if (query.isEmpty()) {
+        val transition = rememberInfiniteTransition(label = "classicSearchSway")
+        transition.animateFloat(0f, 1f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "searchSway").value
+    } else {
+        0f
+    }
     val shape = CircleShape
     Row(
         Modifier
@@ -118,7 +133,7 @@ fun ClassicSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions
         }
         Spacer(Modifier.width(12.dp))
         val style = TextStyle(color = Palette.TextPrimary, fontSize = 16.sp, fontFamily = LocalTokens.current.body)
-        SearchField(query, onQueryChange, style, accent.start, interaction, Modifier.weight(1f)) {
+        SearchField(query, onQueryChange, style, accent.start, interaction, Modifier.weight(1f), onSubmit = onSubmit) {
             RollingHint("Chercher ", suggestions, style.copy(color = Palette.TextTertiary), Palette.TextTertiary)
         }
         ClearPop(query.isNotEmpty()) {
@@ -165,11 +180,20 @@ private fun ClassicChip(label: String, icon: ImageVector, count: Int, picked: Bo
     val accent = LocalAccent.current
     val fill by animateFloatAsState(if (picked) 1f else 0f, spring(dampingRatio = 0.6f, stiffness = 380f), label = "chipFill")
     val text by animateColorAsState(if (picked) Palette.OnAccent else Palette.TextSecondary, tween(220), label = "chipText")
-    val transition = rememberInfiniteTransition(label = "chipGlow")
-    val glow by transition.animateFloat(0.85f, 1f, infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "chipGlowA")
+    val glow = if (picked) {
+        val transition = rememberInfiniteTransition(label = "chipGlow")
+        transition.animateFloat(0.85f, 1f, infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "chipGlowA").value
+    } else {
+        1f
+    }
     Row(
         Modifier
             .staggeredEntrance(order, baseDelay = 240)
+            .semantics(mergeDescendants = true) {
+                role = Role.Tab
+                selected = picked
+                contentDescription = "$label, $count outils"
+            }
             .bounceClick(pressedScale = 0.9f, onClick = onClick)
             .graphicsLayer {
                 // Picked: a little bigger, overshooting on the spring.

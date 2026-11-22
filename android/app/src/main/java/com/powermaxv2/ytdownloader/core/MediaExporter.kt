@@ -10,6 +10,7 @@ import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import com.powermaxv2.ytdownloader.core.files.MimeTypes
+import com.powermaxv2.ytdownloader.core.files.SafeNames
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -54,9 +55,15 @@ object MediaExporter {
         else -> Kind.OTHER
     }
 
-    /** Characters refused by the shared storage file system. */
-    private fun safeName(name: String): String =
-        name.replace(Regex("""[\\/:*?"<>|\u0000-\u001F]"""), "_").trim().ifEmpty { "media" }
+    /** Characters refused by the shared storage file system (plus bidi controls and leading dots). */
+    internal fun safeName(name: String): String = SafeNames.sanitize(name, fallback = "media")
+
+    /** "video.mp4" + 2 → "video (2).mp4"; "archive" + 2 → "archive (2)" (never a trailing dot). */
+    internal fun numberedName(name: String, index: Int): String {
+        val base = SafeNames.baseOf(name)
+        val ext = name.substring(base.length)
+        return "$base ($index)$ext"
+    }
 
     suspend fun export(context: Context, file: File): SavedFile = withContext(Dispatchers.IO) {
         val name = safeName(file.name)
@@ -106,7 +113,7 @@ object MediaExporter {
         var target = File(dir, name)
         var n = 1
         while (target.exists()) {
-            target = File(dir, "${name.substringBeforeLast('.')} ($n).${name.substringAfterLast('.', "")}")
+            target = File(dir, numberedName(name, n))
             n++
         }
         file.copyTo(target)

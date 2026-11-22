@@ -84,6 +84,7 @@ fun SearchField(
     cursor: Color,
     interaction: MutableInteractionSource,
     modifier: Modifier = Modifier,
+    onSubmit: () -> Unit = {},
     hint: @Composable () -> Unit,
 ) {
     val focus = LocalFocusManager.current
@@ -95,7 +96,10 @@ fun SearchField(
         cursorBrush = SolidColor(cursor),
         interactionSource = interaction,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
+        keyboardActions = KeyboardActions(onSearch = {
+            focus.clearFocus()
+            onSubmit()
+        }),
         modifier = modifier.semantics { contentDescription = "Chercher un outil" },
         decorationBox = { inner ->
             Box(contentAlignment = Alignment.CenterStart) {

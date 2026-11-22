@@ -144,7 +144,17 @@ fun HomeContent(
         ) {
             SkinHomeHeader(ready.size, upcoming.size, onSettings)
             banner()
-            SkinSearchBar(query, onQueryChange = { query = it }, suggestions = ready.map { it.name })
+            val found = if (filtering) {
+                ready.filter { (category == null || ToolCategories.of(it) == category) && ToolCategories.matches(it, query) }
+            } else {
+                emptyList()
+            }
+            SkinSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                suggestions = ready.map { it.name },
+                onSubmit = { if (found.size == 1) onOpen(found.first()) },
+            )
             SkinCategoryChips(
                 categories = categories,
                 counts = categories.associateWith { c -> ready.count { ToolCategories.of(it) == c } },
@@ -153,7 +163,6 @@ fun HomeContent(
                 onSelect = { categoryName = it?.name },
             )
             if (filtering) {
-                val found = ready.filter { (category == null || ToolCategories.of(it) == category) && ToolCategories.matches(it, query) }
                 val title = when {
                     query.isNotBlank() -> resultsText(found.size)
                     else -> category!!.label
@@ -161,7 +170,14 @@ fun HomeContent(
                 // Keyed by the filter: every new search deals its bubbles again, in cascade.
                 key(category, ToolCategories.fold(listOf(query))) {
                     SkinHomeSection(title, order = 0)
-                    if (found.isEmpty()) HomeEmpty(query, category) else BubbleGrid(found, ::number, firstOrder = 1, stars, onOpen = onOpen)
+                    if (found.isEmpty()) {
+                        HomeEmpty(query, category) {
+                            query = ""
+                            categoryName = null
+                        }
+                    } else {
+                        BubbleGrid(found, ::number, firstOrder = 1, stars, onOpen = onOpen)
+                    }
                 }
             } else {
                 var order = 0
@@ -259,7 +275,8 @@ private fun FavoritesHint(order: Int) {
 
 /** Nothing matches: a magnifier that searches left and right, and what to try instead. */
 @Composable
-private fun HomeEmpty(query: String, category: ToolCategory?) {
+private fun HomeEmpty(query: String, category: ToolCategory?, onReset: () -> Unit) {
+    val terminal = LocalSkin.current == Skin.TERMINAL
     val transition = rememberInfiniteTransition(label = "emptySearch")
     val t by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "emptySearchT")
     Column(
@@ -297,6 +314,13 @@ private fun HomeEmpty(query: String, category: ToolCategory?) {
             color = Palette.TextSecondary,
             fontSize = 13.5.sp,
             textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(16.dp))
+        com.powermaxv2.ytdownloader.ui.TonalButton(
+            text = if (terminal) "[ TOUT AFFICHER ]" else "Tout afficher",
+            icon = null,
+            compact = true,
+            onClick = onReset,
         )
     }
 }

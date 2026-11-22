@@ -369,10 +369,9 @@ fun FileDropZone(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val skin = LocalSkin.current
     val transition = rememberInfiniteTransition(label = "dropZone")
     val march by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "dropMarch")
-    val spin by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing)), label = "dropSpin")
-    val glow by transition.animateFloat(0.10f, 0.26f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "dropGlow")
     val base = modifier
         .fillMaxWidth()
         .staggeredEntrance(2, baseDelay = 160)
@@ -382,8 +381,12 @@ fun FileDropZone(
             contentDescription = title
         }
         .bounceClick(enabled = enabled, pressedScale = 0.96f, onClick = onClick)
-    when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicDropZone(title, hint, icon, march, spin, glow, base)
+    when (skin) {
+        Skin.CLASSIC -> {
+            val spin by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing)), label = "dropSpin")
+            val glow by transition.animateFloat(0.10f, 0.26f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "dropGlow")
+            ClassicDropZone(title, hint, icon, march, spin, glow, base)
+        }
         Skin.PAPER -> PaperDropZone(title, hint, icon, march, base)
         Skin.TERMINAL -> TerminalDropZone(title, hint, icon, march, base)
     }

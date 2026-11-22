@@ -98,12 +98,16 @@ class DownloadManager(
         if (_jobs.value.firstOrNull { it.id == id }?.isActive == true) cancel(id)
         _jobs.update { list -> list.filterNot { it.id == id } }
         specs -= id
+        canceled -= id
     }
 
     fun clearFinished() {
         val finished = _jobs.value.filter { it.isFinished }.map { it.id }.toSet()
         _jobs.update { list -> list.filterNot { it.id in finished } }
-        finished.forEach { specs -= it }
+        finished.forEach {
+            specs -= it
+            canceled -= it
+        }
     }
 
     private fun launch(id: String) {

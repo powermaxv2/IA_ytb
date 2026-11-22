@@ -118,6 +118,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var queuedPulse by mutableStateOf(0)
         private set
 
+    /** Size in bytes of Gulp's temporary cache; null until measured by SettingsScreen. */
+    var cacheBytes by mutableStateOf<Long?>(null)
+        private set
+
+    var clearingCache by mutableStateOf(false)
+        private set
+
     private val _toasts = MutableSharedFlow<Toast>(extraBufferCapacity = 8)
     val toasts: SharedFlow<Toast> = _toasts.asSharedFlow()
 
@@ -497,6 +504,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 throw e
             } catch (e: Throwable) {
                 "Échec de la mise à jour : ${e.message ?: e.javaClass.simpleName}"
+            }
+        }
+    }
+
+    // MARK: - Temporary cache
+
+    fun refreshCacheSize() {
+        viewModelScope.launch {
+            val activeJobs = downloads.jobs.value.any { it.isActive }
+            cacheBytes = withContext(Dispatchers.IO) {
+                com.powermaxv2.ytdownloader.core.files.CacheCleaner.measureBytes(app.cacheDir, skipJobs = activeJobs)
+            }
+        }
+    }
+
+    fun clearCache() {
+        if (clearingCache) return
+        clearingCache = true
+        viewModelScope.launch {
+            try {
+                val activeJobs = downloads.jobs.value.any { it.isActive }
+                val freed = withContext(Dispatchers.IO) {
+                    com.powermaxv2.ytdownloader.core.files.CacheCleaner.clear(app.cacheDir, skipJobs = activeJobs)
+                }
+                cacheBytes = withContext(Dispatchers.IO) {
+                    com.powermaxv2.ytdownloader.core.files.CacheCleaner.measureBytes(app.cacheDir, skipJobs = activeJobs)
+                }
+                if (freed > 0L) {
+                    toast("Cache vidé · ${com.powermaxv2.ytdownloader.core.Fmt.bytes(freed.toDouble())} libérés")
+                } else {
+                    toast("Le cache temporaire est déjà vide")
+                }
+            } finally {
+                clearingCache = false
             }
         }
     }
