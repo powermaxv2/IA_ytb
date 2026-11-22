@@ -270,7 +270,7 @@ internal fun SweepingBroom(modifier: Modifier = Modifier, size: Dp = 64.dp) {
     )
 }
 
-private val dayFormat = SimpleDateFormat("d MMM yyyy", Locale.FRANCE)
+private val dayFormat = ThreadLocal.withInitial { SimpleDateFormat("d MMM yyyy", Locale.FRANCE) }
 
 /** "Vidéos · 12 mars 2026" (or "Envoyé par toi" for the copies WhatsApp keeps of what the user sent). */
 internal fun fileDetail(file: MediaFile): String {
@@ -280,7 +280,7 @@ internal fun fileDetail(file: MediaFile): String {
         last.equals("Private", ignoreCase = true) -> "Privé"
         else -> file.type.label
     }
-    val day = if (file.modified > 0) dayFormat.format(Date(file.modified)) else null
+    val day = if (file.modified > 0) dayFormat.get()?.format(Date(file.modified)) else null
     return listOfNotNull(where, day).joinToString(" · ")
 }
 

@@ -40,6 +40,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,13 +68,17 @@ import kotlin.math.sin
 
 /** White card with an ink magnifier that circles a little; the accent pen underlines the field with the focus. */
 @Composable
-fun PaperSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>) {
+fun PaperSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>, onSubmit: () -> Unit = {}) {
     val accent = LocalAccent.current.start
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.focusedState()
     val line by animateFloatAsState(if (focused || query.isNotEmpty()) 1f else 0f, tween(420), label = "paperSearchLine")
-    val transition = rememberInfiniteTransition(label = "paperSearch")
-    val orbit by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(3000, easing = LinearEasing)), label = "paperOrbit")
+    val orbit = if (query.isEmpty()) {
+        val transition = rememberInfiniteTransition(label = "paperSearch")
+        transition.animateFloat(0f, 1f, infiniteRepeatable(tween(3000, easing = LinearEasing)), label = "paperOrbit").value
+    } else {
+        0f
+    }
     Column(Modifier.staggeredEntrance(1, baseDelay = 160)) {
         Row(
             Modifier
@@ -112,7 +121,7 @@ fun PaperSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: 
             }
             Spacer(Modifier.width(12.dp))
             val style = TextStyle(color = Palette.TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, fontFamily = LocalTokens.current.display)
-            SearchField(query, onQueryChange, style, accent, interaction, Modifier.weight(1f)) {
+            SearchField(query, onQueryChange, style, accent, interaction, Modifier.weight(1f), onSubmit = onSubmit) {
                 RollingHint("Chercher ", suggestions, style.copy(color = Palette.TextTertiary, fontWeight = FontWeight.Normal), Palette.TextTertiary)
             }
             ClearPop(query.isNotEmpty()) {
@@ -166,6 +175,11 @@ private fun PaperChip(label: String, icon: ImageVector, count: Int, picked: Bool
     Row(
         Modifier
             .staggeredEntrance(order, baseDelay = 240)
+            .semantics(mergeDescendants = true) {
+                role = Role.Tab
+                selected = picked
+                contentDescription = "$label, $count outils"
+            }
             .bounceClick(pressedScale = 0.9f, onClick = onClick)
             .graphicsLayer {
                 // Stamped: slight tilt that settles with a bounce.

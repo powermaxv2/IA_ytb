@@ -184,11 +184,11 @@ fun SkinHomeHeader(ready: Int, upcoming: Int, onSettings: () -> Unit) {
 
 /** Search bar of the home screen; the hint cycles through [suggestions] (tool names). */
 @Composable
-fun SkinSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>) {
+fun SkinSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>, onSubmit: () -> Unit = {}) {
     when (LocalSkin.current) {
-        Skin.CLASSIC -> ClassicSearchBar(query, onQueryChange, suggestions)
-        Skin.PAPER -> PaperSearchBar(query, onQueryChange, suggestions)
-        Skin.TERMINAL -> TerminalSearchBar(query, onQueryChange, suggestions)
+        Skin.CLASSIC -> ClassicSearchBar(query, onQueryChange, suggestions, onSubmit)
+        Skin.PAPER -> PaperSearchBar(query, onQueryChange, suggestions, onSubmit)
+        Skin.TERMINAL -> TerminalSearchBar(query, onQueryChange, suggestions, onSubmit)
     }
 }
 

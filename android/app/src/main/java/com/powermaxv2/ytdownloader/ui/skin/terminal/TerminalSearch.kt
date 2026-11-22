@@ -28,6 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,7 +52,7 @@ import com.powermaxv2.ytdownloader.ui.staggeredEntrance
 
 /** "$ grep -i" prompt; the hint types tool names behind a blinking block caret, the outline glows with the focus. */
 @Composable
-fun TerminalSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>) {
+fun TerminalSearchBar(query: String, onQueryChange: (String) -> Unit, suggestions: List<String>, onSubmit: () -> Unit = {}) {
     val accent = LocalAccent.current.start
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.focusedState()
@@ -76,7 +81,7 @@ fun TerminalSearchBar(query: String, onQueryChange: (String) -> Unit, suggestion
             fontFamily = LocalTokens.current.body,
             shadow = Shadow(accent.copy(alpha = 0.5f * glow), Offset.Zero, 8f),
         )
-        SearchField(query, onQueryChange, style, accent, interaction, Modifier.weight(1f)) {
+        SearchField(query, onQueryChange, style, accent, interaction, Modifier.weight(1f), onSubmit = onSubmit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RollingHint("", suggestions.map { it.lowercase() }, style.copy(color = Palette.TextTertiary, shadow = null), Palette.TextTertiary, quote = { "\"$it\"" })
                 Spacer(Modifier.width(2.dp))
@@ -90,6 +95,10 @@ fun TerminalSearchBar(query: String, onQueryChange: (String) -> Unit, suggestion
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
+                    .semantics {
+                        contentDescription = "Effacer"
+                        role = Role.Button
+                    }
                     .bounceClick(pressedScale = 0.85f) { onQueryChange("") }
                     .padding(horizontal = 6.dp, vertical = 8.dp),
             )
@@ -114,9 +123,9 @@ fun TerminalCategoryChips(
             .padding(horizontal = 4.dp, vertical = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TerminalFlag("tout", total, selected == null, order = 0) { onSelect(null) }
+        TerminalFlag("tout", "Tout", total, selected == null, order = 0) { onSelect(null) }
         categories.forEachIndexed { i, c ->
-            TerminalFlag(flagName(c.label), counts[c] ?: 0, selected == c, order = i + 1) { onSelect(if (selected == c) null else c) }
+            TerminalFlag(flagName(c.label), c.label, counts[c] ?: 0, selected == c, order = i + 1) { onSelect(if (selected == c) null else c) }
         }
     }
 }
@@ -127,7 +136,7 @@ private fun flagName(label: String): String = java.text.Normalizer.normalize(lab
     .lowercase()
 
 @Composable
-private fun TerminalFlag(name: String, count: Int, picked: Boolean, order: Int, onClick: () -> Unit) {
+private fun TerminalFlag(name: String, spokenLabel: String, count: Int, picked: Boolean, order: Int, onClick: () -> Unit) {
     val accent = LocalAccent.current.start
     val dark = Palette.Background
     val fill by animateColorAsState(if (picked) accent else Palette.Surface, tween(160), label = "termFlagFill")
@@ -138,6 +147,11 @@ private fun TerminalFlag(name: String, count: Int, picked: Boolean, order: Int, 
     Row(
         Modifier
             .staggeredEntrance(order, baseDelay = 260)
+            .semantics(mergeDescendants = true) {
+                role = Role.Tab
+                selected = picked
+                contentDescription = "$spokenLabel, $count outils"
+            }
             .bounceClick(pressedScale = 0.9f, onClick = onClick)
             .height(36.dp)
             .clip(shape)

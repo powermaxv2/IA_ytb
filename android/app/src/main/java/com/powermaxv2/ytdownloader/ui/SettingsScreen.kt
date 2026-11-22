@@ -46,6 +46,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.MusicNote
@@ -55,6 +57,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +72,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.powermaxv2.ytdownloader.BuildConfig
 import com.powermaxv2.ytdownloader.core.AudioFormat
+import com.powermaxv2.ytdownloader.core.Fmt
 import com.powermaxv2.ytdownloader.core.MediaExporter
 import com.powermaxv2.ytdownloader.core.VideoContainer
 
@@ -78,6 +82,7 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
     val version by vm.engine.version.collectAsStateWithLifecycle()
     val updating by vm.engine.updating.collectAsStateWithLifecycle()
     val checking by vm.updater.checking.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { vm.refreshCacheSize() }
 
     Column(
         Modifier
@@ -151,6 +156,10 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             SwitchRow("Notification à la fin", null, settings.notify) { v -> vm.prefs.update { it.copy(notify = v) } }
             RowDivider()
             SwitchRow("Vibrations", "Petit retour quand vous touchez un bouton", settings.haptics) { v -> vm.prefs.update { it.copy(haptics = v) } }
+            RowDivider()
+            SwitchRow("Animation au lancement", "Logo Gulp à l'ouverture (touchez l'écran pour la passer)", settings.launchIntro) { v ->
+                vm.prefs.update { it.copy(launchIntro = v) }
+            }
         }
 
         GroupTitle("Moteur yt-dlp", 4)
@@ -188,6 +197,29 @@ fun SettingsScreen(vm: MainViewModel, contentPadding: PaddingValues) {
             ValueRow("Musique", "Musique › ${MediaExporter.FOLDER}", Icons.Rounded.MusicNote)
             RowDivider()
             ValueRow("Photos", "Images › ${MediaExporter.FOLDER}", Icons.Rounded.Image)
+            RowDivider()
+            ValueRow("Documents & ZIP", "Téléchargements › ${MediaExporter.FOLDER}", Icons.Rounded.Description)
+            RowDivider()
+            val cacheLabel = when (val b = vm.cacheBytes) {
+                null -> "…"
+                0L -> "Vide"
+                else -> Fmt.bytes(b.toDouble())
+            }
+            ValueRow("Cache temporaire", cacheLabel)
+            RowDivider()
+            ActionArea(
+                button = {
+                    TonalButton(
+                        "Vider le cache temporaire",
+                        Icons.Rounded.DeleteOutline,
+                        Modifier.fillMaxWidth(),
+                        enabled = (vm.cacheBytes ?: 0L) > 0L,
+                        loading = vm.clearingCache,
+                    ) { vm.clearCache() }
+                },
+                message = null,
+                hint = "Supprime les fichiers de travail et miniatures temporaires ; le Coffre-fort, vos mémos et vos réglages ne sont jamais touchés.",
+            )
         }
 
         GroupTitle("Sécurité", 7)

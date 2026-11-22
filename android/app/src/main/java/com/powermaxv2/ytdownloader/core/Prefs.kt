@@ -23,6 +23,7 @@ data class Settings(
     val notify: Boolean = true,
     val autoUpdateYtDlp: Boolean = true,
     val haptics: Boolean = true,
+    val launchIntro: Boolean = true,
     val autoCheckAppUpdates: Boolean = true,
     val skin: Skin = Skin.CLASSIC,
 )
@@ -46,6 +47,7 @@ class Prefs(context: Context) {
             .putBoolean("notify", next.notify)
             .putBoolean("autoUpdateYtDlp", next.autoUpdateYtDlp)
             .putBoolean("haptics", next.haptics)
+            .putBoolean("launchIntro", next.launchIntro)
             .putBoolean("autoCheckAppUpdates", next.autoCheckAppUpdates)
             .putString("skin", next.skin.name)
             .apply()
@@ -64,6 +66,7 @@ class Prefs(context: Context) {
             notify = sp.getBoolean("notify", d.notify),
             autoUpdateYtDlp = sp.getBoolean("autoUpdateYtDlp", d.autoUpdateYtDlp),
             haptics = sp.getBoolean("haptics", d.haptics),
+            launchIntro = sp.getBoolean("launchIntro", d.launchIntro),
             autoCheckAppUpdates = sp.getBoolean("autoCheckAppUpdates", d.autoCheckAppUpdates),
             skin = enumOr(sp.getString("skin", null), d.skin),
         )
@@ -85,12 +88,12 @@ class Prefs(context: Context) {
         get() = sp.getLong("lastAppUpdateCheck", 0)
         set(value) = sp.edit().putLong("lastAppUpdateCheck", value).apply()
 
-    /** Id of the last tool opened (shown big on the home screen); null until a tool has been used. */
     /** Last codes read by the QR code tool (QrHistory.encode), on this phone only. */
     var qrHistory: String?
         get() = sp.getString("qrHistory", null)
         set(value) = sp.edit().putString("qrHistory", value).apply()
 
+    /** Id of the last tool opened (shown big on the home screen); null until a tool has been used. */
     var lastToolId: String?
         get() = sp.getString("lastToolId", null)
         set(value) = sp.edit().putString("lastToolId", value).apply()

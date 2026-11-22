@@ -94,10 +94,17 @@ fun FavoriteStar(starred: Boolean, toolName: String, onToggle: () -> Unit, modif
         }
     }
     // A starred tool's star glints now and then (classic and paper): a slow breath of its size.
-    val transition = rememberInfiniteTransition(label = "star")
-    val glint by transition.animateFloat(
-        1f, 1.08f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "starGlint",
-    )
+    // On the home screen, reuse LocalBobClock so 44 stars don't spawn 44 infinite animators.
+    val needsGlint = starred && skin != Skin.TERMINAL
+    val sharedClock = LocalBobClock.current
+    val ownGlint = if (needsGlint && sharedClock == null) {
+        val transition = rememberInfiniteTransition(label = "star")
+        transition.animateFloat(
+            1f, 1.08f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "starGlint",
+        )
+    } else {
+        null
+    }
     val label = if (starred) "Retirer $toolName des favoris" else "Ajouter $toolName aux favoris"
     Box(
         modifier
@@ -133,7 +140,12 @@ fun FavoriteStar(starred: Boolean, toolName: String, onToggle: () -> Unit, modif
             }
         }
         val layer = Modifier.graphicsLayer {
-            val s = pop.value * (if (starred && skin != Skin.TERMINAL) glint else 1f)
+            val glintScale = when {
+                !needsGlint -> 1f
+                sharedClock != null -> 1f + 0.04f * (1f + sin(sharedClock.value * 2f * PI.toFloat()))
+                else -> ownGlint?.value ?: 1f
+            }
+            val s = pop.value * glintScale
             scaleX = s
             scaleY = s
             rotationZ = spin.value

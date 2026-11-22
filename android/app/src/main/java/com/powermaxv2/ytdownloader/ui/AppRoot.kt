@@ -130,8 +130,8 @@ fun AppRoot(vm: MainViewModel) {
         AppTheme(vm.accentPlatform, settings.skin) {
             ToastHost(vm.toasts, toastModifier)
         }
-        // Gulp launch animation, once per launch (not again on rotation).
-        var introDone by rememberSaveable { mutableStateOf(false) }
+        // Gulp launch animation, once per launch (not again on rotation); skipped when disabled or opened straight into a tool.
+        var introDone by rememberSaveable { mutableStateOf(!settings.launchIntro || vm.place != Place.HOME) }
         if (!introDone) {
             val tokens = tokensFor(settings.skin)
             GulpIntro(tokens.background, tokens.textPrimary, onFinished = { introDone = true })

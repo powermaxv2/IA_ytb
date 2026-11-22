@@ -38,23 +38,15 @@ object ToolCategories {
         ToolRegistry.PDF_JOIN to ToolCategory.FILES,
         ToolRegistry.CHAT_STATS to ToolCategory.WHATSAPP,
         ToolRegistry.QR_CODE to ToolCategory.HANDY,
-        // Tools of 1.14.0, written in parallel: their likely ids (the word guess below covers the others).
-        "stickers" to ToolCategory.WHATSAPP,
-        "sticker" to ToolCategory.WHATSAPP,
-        "status" to ToolCategory.WHATSAPP,
-        "statuses" to ToolCategory.WHATSAPP,
-        "status-saver" to ToolCategory.WHATSAPP,
-        "status-split" to ToolCategory.WHATSAPP,
-        "status-cut" to ToolCategory.WHATSAPP,
+        // Tools of 1.14.0.
+        ToolRegistry.STICKERS to ToolCategory.WHATSAPP,
+        ToolRegistry.STATUSES to ToolCategory.WHATSAPP,
+        ToolRegistry.STATUS_SPLIT to ToolCategory.WHATSAPP,
         ToolRegistry.VOICE_TEXT to ToolCategory.WHATSAPP,
-        "voice-to-text" to ToolCategory.WHATSAPP,
-        "voice-notes" to ToolCategory.WHATSAPP,
-        "whatsapp-cleaner" to ToolCategory.WHATSAPP,
-        "cleaner" to ToolCategory.WHATSAPP,
+        ToolRegistry.CLEANER to ToolCategory.WHATSAPP,
         ToolRegistry.DIRECT_CHAT to ToolCategory.WHATSAPP,
         ToolRegistry.CHAT_READER to ToolCategory.WHATSAPP,
-        "styled-text" to ToolCategory.HANDY,
-        "fancy-text" to ToolCategory.HANDY,
+        ToolRegistry.STYLED_TEXT to ToolCategory.HANDY,
         // Tools of 1.16.0.
         ToolRegistry.QUICK_REPLIES to ToolCategory.WHATSAPP,
         ToolRegistry.PROFILE_FIT to ToolCategory.WHATSAPP,
@@ -66,7 +58,7 @@ object ToolCategories {
         ToolRegistry.MY_LINK to ToolCategory.WHATSAPP,
         ToolRegistry.RENAMER to ToolCategory.FILES,
         ToolRegistry.VAULT to ToolCategory.HANDY,
-        // Tools of 1.17.0 (the ones still being written are filed by their planned ids).
+        // Tools of 1.17.0.
         ToolRegistry.VOICE_RECORDER to ToolCategory.MEDIA,
         ToolRegistry.BILL_SPLIT to ToolCategory.HANDY,
         ToolRegistry.UNIT_CONVERTER to ToolCategory.HANDY,
@@ -86,7 +78,7 @@ object ToolCategories {
     )
 
     /** Extra words people may type to find a tool (synonyms, formats, sites), on top of its name, tagline and tags. */
-    private val keywords: Map<String, String> = mapOf(
+    internal val keywords: Map<String, String> = mapOf(
         ToolRegistry.DOWNLOADER to "telecharger download youtube instagram tiktok twitter musique mp3 mp4 video reel short",
         ToolRegistry.CONVERTER to "convertir format jpg jpeg png webp heic mp3 m4a wav mp4 gif pdf",
         ToolRegistry.PREVIEW to "ouvrir voir lire visionneuse zip pdf texte image",
@@ -97,6 +89,12 @@ object ToolCategories {
         ToolRegistry.TRIMMER to "couper decouper extrait sonnerie gif passage",
         ToolRegistry.WIPER to "metadonnees exif gps localisation vie privee effacer photo",
         ToolRegistry.PDF_JOIN to "fusionner assembler coller pdf pages separer diviser",
+        ToolRegistry.VOICE_TEXT to "vocal vocaux transcrire transcription audio parole texte opus whatsapp dictee",
+        ToolRegistry.CLEANER to "nettoyer nettoyeur menage espace stockage supprimer gros fichiers doublons whatsapp memoire",
+        ToolRegistry.STICKERS to "sticker stickers autocollant autocollants pack detourage fond transparent webp whatsapp",
+        ToolRegistry.STYLED_TEXT to "texte style police font gras italique barre gothique unicode bio pseudo whatsapp",
+        ToolRegistry.STATUSES to "statut statuts story stories sauvegarder enregistrer garder 24h whatsapp",
+        ToolRegistry.STATUS_SPLIT to "decouper couper statut statuts 30s 60s 1min video tronconner morceaux whatsapp",
         ToolRegistry.DIRECT_CHAT to "numero telephone contact inconnu annonce leboncoin message direct ecrire lien wa me",
         ToolRegistry.CHAT_READER to "lire relire lecteur export discussion conversation historique recherche imprimer pdf archive",
         ToolRegistry.QUICK_REPLIES to "reponse rapide message tout fait modele copier envoyer raccourci texte",
@@ -126,6 +124,8 @@ object ToolCategories {
         ToolRegistry.COLOR_PICKER to "couleur pipette hex rgb palette teinte peinture",
         ToolRegistry.TIMER to "minuteur chrono chronometre compte rebours temps cuisson sport tours",
     )
+
+    internal fun hasCategory(id: String): Boolean = id in byId
 
     /** Words that file a tool missing from [byId] in a category (checked in this order). */
     private val guesses: List<Pair<ToolCategory, List<String>>> = listOf(
